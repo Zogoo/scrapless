@@ -12,7 +12,7 @@ All figures in **€**; canonical market data in [doc 11](11-germany-berlin-mark
 flowchart TB
     subgraph R1[" "]
       direction LR
-      KP["🤝 <b>KEY PARTNERS</b><br/>Receipt OCR vendor (dual-sourced, EU-region)<br/>LLM provider<br/>Open Food Facts (⚠️ ODbL)<br/>BMLEH / Verbraucherzentrale data<br/>Flink · REWE · Knuspr · Picnic (hand-off)<br/>Berliner Bezirke · EXIST · IBB Ventures"]
+      KP["🤝 <b>KEY PARTNERS</b><br/>Vision-model provider (EU residency)<br/><i>no OCR vendor — see doc 12</i><br/>Open Food Facts (⚠️ ODbL)<br/>BMLEH / Verbraucherzentrale data<br/>Flink · REWE · Knuspr · Picnic (hand-off)<br/>Berliner Bezirke · EXIST · IBB Ventures"]
       KA["⚙️ <b>KEY ACTIVITIES</b><br/>German receipt→item normalisation<br/><b>Consumption inference</b><br/>Shelf-life modelling (MHD vs Verbrauchsdatum)<br/>Notification restraint<br/>Efficacy evidence generation"]
       VP["🎁 <b>VALUE PROPOSITION</b><br/><b>“Unter 3 Minuten pro Woche —<br/>und du wirfst nichts mehr weg.”</b><br/><br/>You never maintain a list.<br/>We guess, and we forget<br/>when we stop believing<br/>our own guess.<br/><br/><i>Wir machen den Bon nützlich.</i>"]
       CR["💬 <b>CUSTOMER RELATIONSHIPS</b><br/>Deliberately low-touch<br/>≤3 notifications/week<br/>Self-serve, no account wall<br/>Household-shared, not personal<br/>German-first, privacy-forward"]
@@ -25,7 +25,7 @@ flowchart TB
     end
     subgraph R3[" "]
       direction LR
-      CO["💸 <b>COST STRUCTURE</b><br/>Team ~85% of costs (fixed) — <b>~€110k/yr offset by EXIST/Stipendium in Y1</b><br/>OCR is the only true variable cost, <b>and it is incurred on non-payers</b><br/>LLM fallback ~100% at launch → ~15% at maturity<br/>Fixed base, lean team: <b>~€36k/month</b>"]
+      CO["💸 <b>COST STRUCTURE</b><br/>Team ~92% of costs (fixed) — <b>~€110k/yr offset by EXIST/Stipendium in Y1</b><br/>Variable cost is now trivial: <b>~$0.0015 per receipt</b> via a vision model<br/>Fully loaded COGS €0.11/paying household/month → <b>95% gross margin</b><br/>Fixed base, lean team: <b>~€36k/month</b>"]
       RS["💰 <b>REVENUE STREAMS</b><br/>Subscription €29/yr (65%) / €3.49/mo (35%) · Lifetime €69<br/><b>Quick-commerce basket hand-off — the real model</b><br/>Web checkout via <b>PayPal + SEPA</b> (cards are only ~11% in DE)<br/>❌ Never: selling shopping data"]
     end
     R1 --> R2 --> R3
@@ -43,8 +43,8 @@ patch, and it is why the launch city is Berlin rather than Germany at large.
 
 | | Helpful | Harmful |
 |---|---|---|
-| **Internal** | **STRENGTHS**<br/>• A named technical insight nobody has shipped: **repurchase-cadence consumption inference**<br/>• Doctrine that attacks the category's known killer (drift)<br/>• Two independent senior reviews already absorbed<br/>• Privacy position **worth more in Germany than anywhere** — Germans are Europe's most privacy-conscious consumers<br/>• **~€110k of the round is non-dilutive** (EXIST / Startup Stipendium)<br/>• Small team, low fixed base | **WEAKNESSES**<br/>• **Pre-revenue, pre-product, no traction, no pre-orders, no company yet**<br/>• No distribution and no audience<br/>• **Cannot buy customers** — paid CAC €140 vs €29 subscription LTV<br/>• No proprietary data until ~10k receipts per chain<br/>• **Berlin's demographics are wrong for the primary segment** (50% single-person households)<br/>• Team unproven in this domain **[FOUNDER TO COMPLETE]** |
-| **External** | **OPPORTUNITIES**<br/>• ⭐ **Belegausgabepflicht** — German law hands every shopper a receipt, the best capture substrate in Europe<br/>• **35% of avoidable German waste is fresh produce, 13% bakery** — exactly the barcode-less food our design targets<br/>• 10 receipt templates cover ~80% of German grocery spend<br/>• **Berlin is Europe's most competitive online-grocery city** — where the hand-off works<br/>• Post-LLM parsing removed the constraint that killed Kitche<br/>• **Nobody has published an efficacy figure** — first credible proof is a moat and a channel key<br/>• BMLEH "Zu gut für die Tonne!" has already done the awareness job | **THREATS**<br/>• **15-year category failure record**, structural not executional<br/>• **foodsharing.de and the BMLEH app anchor the price at zero** in German minds<br/>• **SirPlus's insolvency** — a famous Berlin food-waste brand with real stores, and it still failed<br/>• **German online grocery is only ~2.4% nationally** — the hand-off does not travel outside big cities<br/>• NoWaste.ai can ship the same thing; no tech moat<br/>• AI Overviews eroding the one affordable channel<br/>• **Selection bias: buyers ≠ sufferers** |
+| **Internal** | **STRENGTHS**<br/>• A named technical insight nobody has shipped: **repurchase-cadence consumption inference**<br/>• Doctrine that attacks the category's known killer (drift)<br/>• Two independent senior reviews already absorbed<br/>• Privacy position **worth more in Germany than anywhere** — Germans are Europe's most privacy-conscious consumers<br/>• **~€110k of the round is non-dilutive** (EXIST / Startup Stipendium)<br/>• Small team, low fixed base | **WEAKNESSES**<br/>• **Pre-revenue, pre-product, no traction, no pre-orders, no company yet**<br/>• No distribution and no audience<br/>• **Cannot buy customers** — paid CAC €140 vs €42 subscription LTV<br/>• No proprietary data until ~10k receipts per chain<br/>• **Berlin's demographics are wrong for the primary segment** (50% single-person households)<br/>• Team unproven in this domain **[FOUNDER TO COMPLETE]** |
+| **External** | **OPPORTUNITIES**<br/>• ⭐ **Belegausgabepflicht** — German law hands every shopper a receipt, the best capture substrate in Europe<br/>• ⭐ **German receipts carry their own error-checking** — the Summe checksum, the A/B VAT class as a free food classifier, and the TSE QR code — which is exactly what a vision LLM lacks<br/>• **VLM-first parsing at ~$0.0015/receipt** takes gross margin to ~95% and makes the free tier nearly free to serve<br/>• **35% of avoidable German waste is fresh produce, 13% bakery** — exactly the barcode-less food our design targets<br/>• 10 receipt templates cover ~80% of German grocery spend<br/>• **Berlin is Europe's most competitive online-grocery city** — where the hand-off works<br/>• Post-LLM parsing removed the constraint that killed Kitche<br/>• **Nobody has published an efficacy figure** — first credible proof is a moat and a channel key<br/>• BMLEH "Zu gut für die Tonne!" has already done the awareness job | **THREATS**<br/>• **15-year category failure record**, structural not executional<br/>• **foodsharing.de and the BMLEH app anchor the price at zero** in German minds<br/>• **SirPlus's insolvency** — a famous Berlin food-waste brand with real stores, and it still failed<br/>• **German online grocery is only ~2.4% nationally** — the hand-off does not travel outside big cities<br/>• NoWaste.ai can ship the same thing; no tech moat<br/>• AI Overviews eroding the one affordable channel<br/>• **Selection bias: buyers ≠ sufferers** |
 
 ---
 
@@ -55,7 +55,7 @@ patch, and it is why the launch city is Berlin rather than Germany at large.
 ```mermaid
 flowchart TB
     NE["<b>THREAT OF NEW ENTRANTS</b><br/>🔴 VERY HIGH<br/>No capital barrier, no regulation,<br/>no network effect, no patent.<br/>Post-LLM, a competent team<br/>ships v1 in ~4 months.<br/><i>German receipt templates are<br/>the only real delay — and 10<br/>of them is not a moat for long.</i>"]
-    SUP["<b>SUPPLIER POWER</b><br/>🟠 MODERATE<br/>OCR vendors set the only real<br/>variable cost and can reprice.<br/>Open Food Facts is ODbL-encumbered.<br/>Quick-commerce partners control<br/>hand-off commission terms.<br/><i>Mitigation: dual-source.</i>"]
+    SUP["<b>SUPPLIER POWER</b><br/>🟢 LOW-MODERATE<br/><i>Downgraded: removing the OCR vendor<br/>removed the main supplier risk.</i><br/>Vision models are commoditised and<br/>interchangeable. Open Food Facts is<br/>ODbL-encumbered; quick-commerce<br/>partners control commission terms."]
     RIV["<b>COMPETITIVE RIVALRY</b><br/>🟡 MODERATE<br/>Many weak players, none dominant,<br/>none well-capitalised in consumer<br/>prevention. Rivalry is low<br/><i>because the prize is small.</i>"]
     BUY["<b>BUYER POWER</b><br/>🔴 VERY HIGH<br/>Zero switching cost. Discretionary<br/>demand. And in Germany the price<br/>is anchored at <b>zero</b> by<br/>foodsharing.de and a free<br/>government app."]
     SUB["<b>THREAT OF SUBSTITUTES</b><br/>🔴 VERY HIGH<br/>Opening the fridge. A photo.<br/>Meal kits. Shopping more often —<br/>which Germans already do.<br/><b>The dominant substitute is free,<br/>instant and 100% accurate.</b>"]
@@ -66,11 +66,12 @@ flowchart TB
     style NE fill:#fdecea,stroke:#c62828
     style BUY fill:#fdecea,stroke:#c62828
     style SUB fill:#fdecea,stroke:#c62828
-    style SUP fill:#fff4e5,stroke:#ef6c00
+    style SUP fill:#e7f6ec,stroke:#2e7d32
     style RIV fill:#fffde7,stroke:#f9a825
 ```
 
-> **Verdict: structurally unattractive.** Three of five forces at maximum, and **buyer power is
+> **Verdict: structurally unattractive.** Three of five forces at maximum (supplier power was
+> downgraded after [doc 12](12-technical-research-capture.md) removed the OCR vendor), and **buyer power is
 > worse in Germany than the UK** because a volunteer network and a state app have set the
 > reference price at zero. That explains the graveyard better than any story about bad UX.
 >
@@ -107,16 +108,20 @@ flowchart TB
 | Subscription revenue | 14 | 78 | 234 | 470 | 780 |
 | Hand-off commission | 24 | 164 | 436 | 850 | 1,370 |
 | **Total revenue** | **38** | **242** | **670** | **1,320** | **2,150** |
-| Cost of sales | (14) | (70) | (188) | (356) | (559) |
-| **Gross profit** | **24** | **172** | **482** | **964** | **1,591** |
-| *Gross margin %* | *63%* | *71%* | *72%* | *73%* | *74%* |
+| Cost of sales | (6) | (17) | (40) | (66) | (108) |
+| **Gross profit** | **32** | **225** | **630** | **1,254** | **2,042** |
+| *Gross margin %* | *84%* | *93%* | *94%* | *95%* | *95%* |
 | Staff costs *(net of €110k EXIST/Stipendium in Y1)* | (295) | (405) | (475) | (585) | (720) |
 | Marketing | (25) | (48) | (72) | (110) | (160) |
 | Legal, insurance, professional | (32) | (26) | (28) | (36) | (46) |
 | Infrastructure & tools | (23) | (31) | (33) | (42) | (52) |
 | Other operating | (20) | (30) | (32) | (27) | (43) |
 | **Total operating costs** | **(395)** | **(540)** | **(640)** | **(800)** | **(1,021)** |
-| **Operating profit / (loss)** | **(371)** | **(368)** | **(158)** | **+164** | **+570** |
+| **Operating profit / (loss)** | **(363)** | **(315)** | **(10)** | **+454** | **+1,021** |
+
+*Hand-off commission carries no cost of sales, which is why blended margin rises with the revenue
+mix. The Y1 margin is lower because the retailer dictionary is empty and more receipts take a
+second pass.*
 
 ### Balance sheet — opening, post-pre-seed (€k)
 
@@ -138,10 +143,10 @@ sits as a liability until conversion.*
 
 | | Y1 | Y2 | Y3 |
 |---|---|---|---|
-| Operating cash flow | (358) | (352) | (150) |
-| Financing (pre-seed + grant + seed) | 790 | 430 | — |
-| **Net movement** | **+432** | **+78** | **(150)** |
-| **Closing cash** | **432** | **510** | **360** |
+| Operating cash flow | (350) | (300) | (5) |
+| Financing (pre-seed + grant + seed) | 790 | 350 | — |
+| **Net movement** | **+440** | **+50** | **(5)** |
+| **Closing cash** | **440** | **490** | **485** |
 
 **Burn: €21k/mo (Phase 0) → €43k/mo (post-team).**
 **The €360k pre-seed funds ~11 months. Seed must close by month 10 → start raising month 6.**
@@ -155,9 +160,12 @@ Monthly 18-month detail in [§9.8](09-investor-pack.md#98-forecast-cash-and-brea
 
 | Model | Contribution/unit/month | Break-even volume | % of German SAM |
 |---|---|---|---|
-| Subscription only | €1.44 per paying household | **25,000 payers ≈ 833k installs** | 41% ❌ |
-| + hand-off, base case | €0.373 per **active** household | **~96,500 actives ≈ 290k installs** | 14% ⚠️ |
-| + hand-off, best case | €0.62 per active household | **~58,000 actives** | 8% ✅ |
+| Subscription only | €2.08 per paying household | **17,300 payers ≈ 577k installs** | 28% ⚠️ |
+| + hand-off, base case | €0.392 per **active** household | **~91,800 actives ≈ 278k installs** | 14% ⚠️ |
+| + hand-off, best case | €0.65 per active household | **~55,400 actives** | 8% ✅ |
+
+⚠️ **VLM-first parsing improved the subscription-only row from 41% to 28% of SAM — real, but still
+not a standalone path. The blended row barely moved, because the hand-off dominates contribution.**
 
 ```mermaid
 xychart-beta
@@ -165,8 +173,8 @@ xychart-beta
     x-axis "Active households (thousands)" [0, 25, 50, 75, 100, 150, 200]
     y-axis "€ thousands per month" 0 --> 80
     line "Fixed costs" [36, 36, 36, 36, 36, 36, 36]
-    line "Contribution - with hand-off (base)" [0, 9, 19, 28, 37, 56, 75]
-    line "Contribution - subscription only" [0, 1, 2, 3, 4, 6, 9]
+    line "Contribution - with hand-off (base)" [0, 10, 20, 29, 39, 59, 78]
+    line "Contribution - subscription only" [0, 2, 3, 5, 6, 9, 12]
 ```
 
 **The gap between those two lines is the entire commercial argument of this plan.**
@@ -199,8 +207,8 @@ The model has exactly two variables that matter. Everything else is noise by com
 | Hand-off adoption | 6% | 12% | 20% |
 | Blended CAC | €33 | €20 | €12 |
 | **Y3 revenue** | **€175k** | **€670k** | **€1.50m** |
-| **LTV/CAC** | **0.6×** | **2.4×** | **5.6×** |
-| **Break-even** | never at this cost base | month 40 | month 29 |
+| **LTV/CAC** | **0.9×** | **3.1×** | **7.2×** |
+| **Break-even** | never at this cost base | month 36 | month 26 |
 | **Outcome** | Shut down or pivot to B2B | A real, modest business | Venture-viable |
 
 > **The worst case is not a tail risk — it is the outcome one reviewer explicitly predicted**
@@ -224,13 +232,15 @@ and because the honest output is more useful than a flattering one.*
 
 | | Y1 | Y2 | Y3 | Y4 | Y5 | Terminal |
 |---|---|---|---|---|---|---|
-| Free cash flow (€k) | (371) | (368) | (158) | 164 | 570 | 6,450 |
+| Free cash flow (€k) | (363) | (315) | (10) | 454 | 1,021 | 6,450 |
 | Discount factor @45% | 0.690 | 0.476 | 0.328 | 0.226 | 0.156 | 0.156 |
-| **Present value (€k)** | (256) | (175) | (52) | 37 | 89 | **1,006** |
+| **Present value (€k)** | (251) | (150) | (3) | 103 | 159 | **1,006** |
 
-**NPV ≈ €649k.** Sensitivity: **€380k at a 55% discount rate; €1.07m at 35%.**
+**NPV ≈ €864k.** Sensitivity: **€548k at a 55% discount rate; €1.36m at 35%.**
+*(Up from €649k before [doc 12](12-technical-research-capture.md) removed the OCR vendor.)*
 
-> **The honest conclusion: DCF does not support a €2.5m cap.** The valuation rests on comparables
+> **The honest conclusion: DCF still does not support a €2.5m cap** — though the gap has narrowed
+> from roughly 4× to 3× on the back of the margin improvement. The valuation rests on comparables
 > and option value — the normal basis at pre-seed — **not on projected cash flows.**
 > **That is precisely why the instrument is a convertible.** A convertible defers the valuation
 > argument until the concierge test has produced evidence to have it with; a priced round now
@@ -290,7 +300,9 @@ work, regardless of what any other metric says.
 ## 10.11 Research methods — what has been done, and what has not
 
 ### Done (secondary research only)
-Competitor teardown across 15 products including the German field; EU LOWINFOOD outputs;
+Competitor teardown across 15 products including the German field; a technical capture study
+covering vision-LLM receipt extraction economics, browser and native auto-capture support, and
+in-fridge camera precedent ([doc 12](12-technical-research-capture.md)); EU LOWINFOOD outputs;
 BMLEH/Destatis/GfK German waste data; WRAP and ReFED national datasets; four peer-reviewed RCTs
 and three systematic reviews; app-store review corpora; 2026 subscription benchmarks (RevenueCat,
 Business of Apps); German grocery, quick-commerce and payments data; Berlin funding programmes;
@@ -303,6 +315,8 @@ two independent senior engineering reviews of this plan.
 | **Concierge study** | ⏳ Designed, funded by this round | **The go/no-go.** Revealed behaviour, not intent. **25 households, outer Berlin Bezirke, ≥16 with children** |
 | **Pre-sale** | ❌ Not attempted | **Pre-orders are the strongest demand evidence there is.** 100 × €19 lifetime licences is the cheapest credible next step |
 | **German receipt corpus** | ❌ Not collected | 200 receipts across 10 chains, ≥40% photographed by real households, before any parser claim |
+| **TSE QR payload verification** | ❌ Not done | 2 days. If German receipt QR codes carry per-VAT-rate totals as expected, it is **the cheapest high-confidence signal in the pipeline** |
+| **Observing households unpack** | ⏳ Folded into the concierge test | Free. Settles the auto-capture and in-fridge-camera questions with evidence instead of argument |
 | **Survey** | 🚫 **Deliberately declined** | §8.2: stated intent overstates revealed preference by ~an order of magnitude here. A survey would produce an encouraging number and teach us nothing |
 | Competitor financials | ⚠️ Partial | German competitors file at **Bundesanzeiger** — cheap, public, and not yet pulled. Do this before the first investor meeting |
 

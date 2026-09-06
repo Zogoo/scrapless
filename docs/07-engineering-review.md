@@ -8,6 +8,15 @@
 > guarantees the receipt input; Berlin grants reduce the raise; PayPal/SEPA web checkout improves
 > the margin) that is noted in Part C.
 
+> ⚠️ **Read this in context.** Both reviews were conducted against the **UK-first** version of the
+> plan, and their figures are in **£** as reviewed. The plan has since been re-based on a
+> **Berlin → Germany → DACH** launch ([doc 11](11-germany-berlin-market.md)) and the receipt
+> pipeline rebuilt around a vision LLM ([doc 12](12-technical-research-capture.md)).
+> **Their findings are recorded verbatim rather than retro-fitted** — the reasoning stands, and
+> Part C records where the German re-base changed the answer. Two of their criticisms were
+> materially resolved by the later work: the cost model (VLM-first takes gross margin from 66% to
+> ~95%) and the missing per-field confidence scores (German receipt checksums supply them).
+
 Two independent senior reviewers read documents 0–6 cold and were instructed to be blunt
 rather than agreeable. Their findings are recorded here **unsoftened**, followed by what was
 changed in response and what was deliberately not changed.
@@ -410,6 +419,15 @@ signal (1 week — the highest-leverage missing piece in the entire architecture
 | **A1 — selection inverts the value** | ⚠️ **Sharper in Berlin than the UK.** Phase 0 now recruits in Marzahn-Hellersdorf, Spandau and Reinickendorf, ≥16 of 25 households with children |
 | **A7 / B6 — legal and evidence discipline** | 🔴 **Heavier.** DSGVO plus BDSG, the Kündigungsbutton requirement, UWG substantiation enforced by competitor *Abmahnung*, and Verbrauchsdatum vs MHD as a safety-critical distinction |
 | **The raise** | ✅ **Improved.** EXIST / Berlin Startup Stipendium make ~€110k of the round non-dilutive, and IBB's B# convertible defers the valuation argument the DCF cannot win |
+
+### Postscript — what the German re-base and doc 12 resolved
+
+| Their finding | Status now |
+|---|---|
+| **B3 — the cost model is wrong in the direction that kills the company** | ✅ **Resolved, and reversed.** Removing the OCR vendor for VLM-first extraction takes fully-loaded COGS from €0.75 to €0.11 per paying household/month, gross margin from 66% to ~95%, and LTV/CAC with the hand-off from 2.4× to **3.1×** — the first version to clear the threshold. Their diagnosis (cost per household vs revenue per *paying* household) was correct and is what made the error visible |
+| **A "VLM has no confidence scores" problem this would have created** | ✅ **Pre-empted** by the German receipt checksums — Summe total, A/B VAT class, TSE QR |
+| **B5 — iOS push and the native shell** | ⚠️ Unchanged, and now **reinforced**: auto-capture (ML Kit / VisionKit) is a second independent reason for the shell, since the web Shape Detection API is broken on iOS 18 |
+| **A1 — "is the thesis right at all?"** | ⚠️ **Still open, and still the real risk.** No amount of cheaper parsing answers it. The Berlin concierge test does |
 
 ### The one-line summary of this review
 

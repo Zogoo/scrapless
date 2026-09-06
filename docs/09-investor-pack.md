@@ -142,7 +142,7 @@ is itself an argument against a large equity raise.
 
 | Area | Detail |
 |---|---|
-| **"Suppliers"** | Receipt OCR vendor (Veryfi / Mindee / Taggun / Tabscanner — **dual-sourced**), LLM provider, EU-region cloud host, push infrastructure, **Open Food Facts** (⚠️ **ODbL — share-alike may attach to a derived database; legal opinion is a Phase 0 blocker**), German shelf-life sources (BMLEH, Verbraucherzentrale) |
+| **"Suppliers"** | ⚠️ *Changed in [doc 12](12-technical-research-capture.md): the commercial OCR vendor is removed — a vision LLM reads the receipt end-to-end at ~40× lower cost.* Vision-model provider (EU residency required), EU-region cloud host, push infrastructure, **Open Food Facts** (⚠️ **ODbL — share-alike may attach to a derived database; legal opinion is a Phase 0 blocker**), German shelf-life sources (BMLEH, Verbraucherzentrale) |
 | **Lead times / MOQs** | No physical goods. The real lead times are regulatory and grant-related: **EXIST / Berlin Startup Stipendium applications take ~6–10 weeks**; a **DSGVO DPIA must complete before beta**; Gmail restricted-scope CASA review ($3k–15k, 4–12 weeks) is **avoided entirely** by shipping forward-to-address only |
 | **Cost per unit (direct)** | Per paying household/month: OCR ~€0.28 (5 receipts @ ~$0.06 negotiated), LLM residual €0.02, infra/storage/push €0.05 = **€0.35 direct**. Plus **€0.40 allocated free-tier cost** = **€0.75 fully loaded** |
 | **What breaks at 10×** | (1) **OCR cost scales with free users** — the only true variable cost, incurred on non-payers. (2) **Support**: human-in-loop review for the first 1,000 users is up to 5,000 receipts/month with nobody assigned. (3) **Retailer template drift** — Edeka is a federation of independent retailers with *non-uniform receipt formats*, which is a harder parsing problem than REWE or the discounters. (4) Timezone-sharded decay passes. (5) **Silence is our happy path and also our outage signature** |
@@ -188,23 +188,26 @@ is itself an argument against a large equity raise.
 ### Cost per unit (direct only)
 | Item | €/paying household/month | Assumption |
 |---|---|---|
-| Receipt OCR | 0.28 | *5 receipts/mo @ ~$0.06 negotiated — **not** the $0.01–0.03 list-price fantasy* |
-| LLM normalisation | 0.02 | *~15% fallback **after** the German dictionary matures; ~€0.16 at launch* |
+| **Receipt parsing (VLM-first)** | **0.02** | *5 receipts/mo. A vision model reads the receipt end-to-end for **~$0.0008–0.002**, against $0.04–0.08 for negotiated OCR — see [doc 12](12-technical-research-capture.md). Includes a 15% second pass on a stronger model* |
 | Infra, storage, push (EU region) | 0.05 | |
-| **Direct COGS** | **0.35** | |
-| Allocated free-tier cost | 0.40 | *~32 free users per payer at 3% conversion; ~20% remain monthly-active; 2 scans/mo cap* |
-| **Fully loaded COGS** | **0.75** | |
+| **Direct COGS** | **0.07** | |
+| Allocated free-tier cost | 0.04 | *~32 free users per payer at 3% conversion; ~20% remain monthly-active; 2 scans/mo cap. **A free active household now costs ~€0.006/month*** |
+| **Fully loaded COGS** | **0.11** | |
 
 ### Gross margin
 | | €/month | % |
 |---|---|---|
 | Net ARPU | 2.19 | 100% |
-| Fully loaded COGS | 0.75 | 34% |
-| **Gross profit** | **€1.44** | **66%** |
+| Fully loaded COGS | 0.11 | 5% |
+| **Gross profit** | **€2.08** | **95%** |
 
-⚠️ **66%, not the ">93%" originally claimed** — which counted cost per household while revenue
-arrives per *paying* household. **At launch, with an empty German dictionary and ~100% LLM
-fallback, gross margin is nearer 30%**, improving only as the dictionary fills.
+⚠️ **This number moved twice, in opposite directions, and both moves matter.**
+The original ">93%" was wrong for the right reason the reviewer identified — it counted cost per
+*household* while revenue arrives per *paying* household, which gave a true figure of **66%**.
+Then [doc 12](12-technical-research-capture.md) removed the OCR vendor: a vision LLM reads a
+receipt for ~$0.0015 instead of ~$0.06, and the honest number becomes **95%**.
+**At launch, with an empty German dictionary, expect ~85%** — improving as the dictionary fills.
+The bootstrap problem that made costs peak when cash is scarcest is now small rather than severe.
 
 ### LTV, CAC and the ratio — the number that decides everything
 *Churn: 8%/month on monthly plans (benchmark average 5.3%; top performers <3%; we assume worse
@@ -212,14 +215,17 @@ than average because engagement is deliberately low). Annual renewal 50%. Blende
 
 | | Subscription only | **With Berlin quick-commerce hand-off** |
 |---|---|---|
-| Gross profit / month | €1.44 | €1.44 + **€0.99** = **€2.43** |
-| **LTV (gross profit)** | **€29** | **€49** |
+| Gross profit / month | €2.08 | €2.08 + **€0.99** = **€3.07** |
+| **LTV (gross profit)** | **€42** | **€61** |
 | Blended CAC (organic-only) | €20 | €20 |
-| **LTV / CAC** | **1.4×** ❌ | **2.4×** ⚠️ |
-| CAC payback | 14 months | 8 months |
+| **LTV / CAC** | **2.1×** ⚠️ | **3.1× ✅** |
+| CAC payback | 10 months | 7 months |
 
-> **The single most important finding in this document:**
-> **On subscription alone the business does not clear a 3× LTV/CAC and barely clears 1×.**
+> **This is the first version of the model that clears the 3× LTV/CAC threshold** — and it does so
+> only *with* the hand-off. On subscription alone it is 2.1×: survivable, not fundable.
+>
+> **The single most important structural finding still stands:**
+> the grocery basket hand-off is **not a "second revenue leg for month 12" — it is the model.**
 > The grocery basket hand-off is **not a "second revenue leg for month 12" — it is the model.**
 >
 > *Hand-off assumption: 45% of paying households complete one referred basket per month at €2.20
@@ -276,14 +282,14 @@ Berlin beachhead, grant-funded founders, organic-only growth, hand-off revenue f
 | Subscription revenue | €14k | €78k | €234k |
 | Hand-off commission | €24k | €164k | €436k |
 | **Total revenue** | **€38k** | **€242k** | **€670k** |
-| Gross profit | €24k (63%) | €172k (71%) | €482k (72%) |
+| Gross profit | €32k (84%) | €225k (93%) | €630k (94%) |
 | Operating costs | €395k | €540k | €640k |
-| **Profit / (loss)** | **(€371k)** | **(€368k)** | **(€158k)** |
-| Cumulative | (€371k) | (€739k) | (€897k) |
+| **Profit / (loss)** | **(€363k)** | **(€315k)** | **(€10k)** |
+| Cumulative | (€363k) | (€678k) | (€688k) |
 | *of which non-dilutive grant-funded* | *€110k* | *—* | *—* |
 
-**Y4 +€164k · Y5 +€570k. Break-even ≈ month 40.**
-**Total capital: ~€1.0–1.1m, of which ~€110k non-dilutive.**
+**Y4 +€454k · Y5 +€1.02m. Break-even ≈ month 36** *(was month 40 before the VLM cost collapse)*.
+**Total capital: ~€850k–1.0m, of which ~€110k non-dilutive.**
 
 #### Path B — Venture
 Larger team, faster build, DACH in year 2, UK in year 3.
@@ -304,9 +310,14 @@ successful DACH entry. **Higher risk of the year-three B2B pivot** flagged in §
 
 | Model | Contribution per unit | **Break-even volume** | As % of German SAM (2.05m installs) |
 |---|---|---|---|
-| Subscription only | €1.44 / paying household / mo | **25,000 payers ≈ 833k installs** | **41%** ❌ |
-| **With hand-off, base** | ~€0.373 / *active* household / mo | **~96,500 actives ≈ 290k installs** | **14%** ⚠️ achievable |
-| With hand-off, best case | ~€0.62 / active household | **~58,000 actives** | **8%** ✅ |
+| Subscription only | €2.08 / paying household / mo | **17,300 payers ≈ 577k installs** | **28%** ⚠️ |
+| **With hand-off, base** | ~€0.392 / *active* household / mo | **~91,800 actives ≈ 278k installs** | **14%** ⚠️ achievable |
+| With hand-off, best case | ~€0.65 / active household | **~55,400 actives** | **8%** ✅ |
+
+⚠️ **Note what cheaper parsing did and did not fix.** Subscription-only break-even improved from
+41% to 28% of SAM — real, but still not a viable standalone path. The *blended* break-even barely
+moved (96,500 → 91,800 actives) because **the hand-off commission dominates contribution**.
+The gain from VLM-first is risk reduction, not volume.
 
 > **Berlin alone cannot pay for the company.** Berlin's entire SAM is ~97,000 installs
 > ([§11.6](11-germany-berlin-market.md#116-market-sizing-germany-bottom-up)) — **below the

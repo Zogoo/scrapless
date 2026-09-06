@@ -26,24 +26,28 @@ receipt on every transaction — the best capture substrate in Europe. See [doc 
 | 9 | [Investor pack](09-investor-pack.md) | Customer, market, channels, CAC, unit economics, forecast, cash, the ask |
 | 10 | [Frameworks & financials](10-frameworks-and-financials.md) | BMC, SWOT, Porter, PESTEL, P&L, break-even, scenarios, DCF, comps, cohorts |
 | 11 | [Germany & Berlin market](11-germany-berlin-market.md) | **Canonical market figures.** Why Berlin, the German landscape, German operating differences, the revised ask and roadmap |
+| 12 | [Technical research — capture](12-technical-research-capture.md) | **Canonical capture architecture.** Vision-LLM receipt reading vs OCR vendors, auto-capture, in-fridge cameras — what to adopt and what to reject |
 
 **Visual companion:** [Interactive product brief](https://claude.ai/code/artifact/bcd6a143-4d45-4464-af49-7a5f7e19a9e3) — screens, a draggable decay model, roadmap and gates.
 
 ## Reading order for a first-time reader
-**0 → 11 → 8 → 9 → 7 → 2 → 3 → 4.** Read doc 7 second: two senior reviewers found problems that changed the plan
+**0 → 11 → 12 → 8 → 9 → 7 → 2 → 3 → 4.** Read doc 7 in context: two senior reviewers found problems that changed the plan
 materially, and every other document now carries ⚠️ markers where it was corrected.
 Documents 1, 5, 6, 10 are reference depth.
 
 ## Precedence, when documents disagree
 1. **[Doc 11](11-germany-berlin-market.md)** — canonical market, currency and geography figures
 2. **[Doc 9](09-investor-pack.md)** — canonical unit economics, metrics ladder and the ask
-3. **[Doc 3](03-product-strategy-prd.md)** — canonical scope and acceptance criteria
-4. Everything else
+3. **[Doc 12](12-technical-research-capture.md)** — canonical capture architecture and parsing cost
+4. **[Doc 3](03-product-strategy-prd.md)** — canonical scope and acceptance criteria
+5. Everything else
 
 All figures are in **€**, German VAT **19%**, except where doc 7 quotes the original reviewers
 verbatim — their £ figures are preserved deliberately, because editing a reviewer's numbers to
 match a later decision would misrepresent the review.
 
 ## Status
-Research and planning complete. No code written yet. Decision gate: see
-[§ Go/No-go](06-business-plan-roadmap.md#gono-go-and-kill-criteria).
+Research and planning complete, reviewed by two independent senior engineers, re-based on a
+Berlin launch, and the capture architecture rebuilt around a vision LLM.
+**No code written yet, and none should be** until the Berlin concierge test reports.
+Decision gate: [§ Go/No-go](06-business-plan-roadmap.md#65-gono-go-and-kill-criteria).

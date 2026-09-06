@@ -69,7 +69,12 @@ the fridge will be abandoned.** That is the design constraint the whole category
 
 ## 2.3 Where the effort actually goes (and why "scan everything" fails)
 
-> ⚠️ **These proportions are an internal estimate, not measured data.** They are our working
+> ✅ **Partly confirmed for Germany.** The GfK study for the BMEL finds **35% of avoidable German
+> household food waste is fresh fruit and vegetables and 13% is bread and bakery** — 48% in two
+> categories with no barcode, no printed date and a shelf life of days. That is independent
+> confirmation of the split below and of the decision to cut barcode scanning from v1.
+>
+> ⚠️ **The remaining proportions are still an internal estimate, not measured data.** They are our working
 > assumption from receipt inspection, and they are load-bearing (they justify cutting barcode
 > from v1), so Phase 0 must replace them with real counts from real receipts. Note also the
 > denominator: these are shares *of items*, and the sharper claim we make below — "45% of

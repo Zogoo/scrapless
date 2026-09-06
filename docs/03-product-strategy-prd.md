@@ -141,7 +141,7 @@ size. Cut to recover ~7–9 weeks:
 | Cut from v1 | Reason |
 |---|---|
 | **Voice capture** | Web Speech is unusable on iOS; the record→upload→transcribe→parse path is a **second NLP pipeline with its own eval set**, and it will not hit the 8-second budget |
-| **"Photo of the shelf"** | Contradicted our own v3 placement, and doc 1 shows Samsung failing at this *with dedicated hardware* |
+| **"Photo of the shelf"** | Contradicted our own v3 placement, and doc 1 shows Samsung failing at this *with dedicated hardware*. ⚠️ *[Doc 12](12-technical-research-capture.md) closes this: fine-grained grocery recognition is 41–89% top-1 on real shelf data and 58 mAP@50 under realistic occlusion — and waving 30 items past a camera takes 60+ seconds against an 8-second receipt photo. **It fails the effort budget by 2× and is less accurate.*** |
 | **OAuth mailbox import** | `gmail.readonly` is a restricted scope requiring a **CASA Tier 2/3 assessment — $3k–15k and 4–12 weeks of calendar time**, annually re-verified. Apple Mail has no API at all. **v1 ships forward-to-address only** (`shop@in.crisper.app`), which was already the privacy-preferred path |
 | **Notification ranking + learned send time** | At ≤3 observations/week, learning a per-household time-of-day takes ~6 months. Ship a fixed 17:00 send plus a durable weekly counter |
 | **Per-household shelf-life learning** | Statistically broken as specified (see [§5.4c](05-technical-architecture.md)). 28 days buys something that looks right and is silently wrong. Collect the events, ship global rules |
@@ -149,8 +149,14 @@ size. Cut to recover ~7–9 weeks:
 | **Dark mode** | Deferred one release |
 
 **Added instead, all cheap and all missing:** email fallback alerts (1 day), rate-limited device
-identity on the OCR endpoint (2 days), and **repurchase-cadence consumption inference (1 week —
-the highest-leverage missing piece in the architecture)**.
+identity on the parsing endpoint (2 days), the **three German receipt checksums** (3 days — they
+replace the confidence scores a vision LLM does not provide), and **repurchase-cadence consumption
+inference (1 week — the highest-leverage missing piece in the architecture)**.
+
+**Moved into the native shell (v2):** **auto-capture of receipts** via ML Kit Document Scanner
+(Android) and VisionKit (iOS) — automatic edge detection and shutter, saving 3–5 seconds per
+capture. The web Shape Detection API is **broken on iOS 18** and never Baseline, so there is no
+credible PWA version worth building.
 
 ### Explicit v1 cuts and why
 | Cut | Reason |
