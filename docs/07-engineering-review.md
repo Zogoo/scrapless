@@ -425,7 +425,7 @@ signal (1 week — the highest-leverage missing piece in the entire architecture
 | Their finding | Status now |
 |---|---|
 | **B3 — the cost model is wrong in the direction that kills the company** | ✅ **Resolved, and reversed.** Removing the OCR vendor for VLM-first extraction takes fully-loaded COGS from €0.75 to €0.11 per paying household/month, gross margin from 66% to ~95%, and LTV/CAC with the hand-off from 2.4× to **3.1×** — the first version to clear the threshold. Their diagnosis (cost per household vs revenue per *paying* household) was correct and is what made the error visible |
-| **A "VLM has no confidence scores" problem this would have created** | ✅ **Pre-empted** by the German receipt checksums — Summe total, A/B VAT class, TSE QR |
+| **A "VLM has no confidence scores" problem this would have created** | ✅ **Pre-empted** by the German receipt checksums — the Summe total and the A/B VAT class (the TSE QR |
 | **B5 — iOS push and the native shell** | ⚠️ Unchanged, and now **reinforced**: auto-capture (ML Kit / VisionKit) is a second independent reason for the shell, since the web Shape Detection API is broken on iOS 18 |
 | **A1 — "is the thesis right at all?"** | ⚠️ **Still open, and still the real risk.** No amount of cheaper parsing answers it. The Berlin concierge test does |
 

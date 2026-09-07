@@ -11,6 +11,14 @@ Four reasons, one of which is decisive.
 
 ### ⭐ 1. The Belegausgabepflicht — Germany hands every shopper a receipt, by law
 
+> **And the German receipt does more than exist — it validates itself.** A vision model returns no
+> per-field confidence scores, which is the one thing the cheap parsing architecture gives up.
+> German receipts hand it back three times over: the printed **Summe** as an answer key, the
+> legally-required **A (7%) / B (19%) VAT class** as a free per-line food classifier, and the
+> **A (7%) / B (19%) VAT class** as a free per-line food classifier. **Germany is not merely a convenient market for a
+> receipt-based product — it is the best-instrumented one in Europe.** See
+> [doc 12 §12.1](12-technical-research-capture.md#121-idea-1--vlm-first-receipt-reading-).
+
 Since **1 January 2020** (Kassengesetz / KassenSichV), every business with an electronic till in
 Germany **must issue a receipt for every transaction** — regardless of the amount, and **even if
 the customer does not want one**. A €0.80 Brötchen generates a Bon.
@@ -38,12 +46,15 @@ reading the receipt end-to-end at ~40× lower cost. The one thing that architect
 2. **The VAT class as a free food classifier** — German receipts mark each line **`A` = 7%**
    (reduced rate, *Grundnahrungsmittel*) or **`B` = 19%** (standard), and the law requires the
    receipt to show what was taxed at which rate.
-3. **The TSE QR code** — Kassensicherungsverordnung receipts commonly carry a signed transaction
-   record including amounts by VAT rate, readable in-browser via `BarcodeDetector`.
-   ⚠️ *Payload varies by implementation; two days in Phase 0 to verify.*
+3. ~~**The TSE QR code**~~ — ⚠️ **corrected.** The QR carries only the TSE serial, transaction
+   number, signature counter, timestamps and signature — **no amounts**
+   ([§12.1c](12-technical-research-capture.md#121c-the-tse-qr-code--what-it-actually-contains)).
+   It is still free duplicate-detection and an exact purchase timestamp, but it is **not** a totals
+   checksum. **Two checksums, not three** — and the two that remain are the ones doing the work.
 
 **Taken together with the Bonpflicht, Germany is not merely a convenient launch market for a
-receipt-based product — it is the best-instrumented one in Europe.**
+receipt-based product — it is the best-instrumented one in Europe.** Two legally-guaranteed
+checksums on every receipt is still more than any other market offers.
 
 ### 2. Retailer concentration makes the template moat cheap
 
@@ -214,7 +225,7 @@ dominated by *redistribution*, and the *prevention* slot is empty.**
 | **Payments** | PayPal ~28% of e-commerce (87% have used it); invoice 27%; SEPA Direct Debit 17%; **cards only ~11%** — lowest card penetration of any major Western economy | ⚠️ **Must ship PayPal + SEPA Lastschrift at launch.** Card-only checkout would silently halve conversion. App-store IAP is card-centric → **another reason web checkout is primary**, which also avoids the 15–30% store cut and improves margin |
 | **Privacy** | German consumers are **the most privacy-conscious in Europe**; DSGVO plus national law | ❌ Mailbox OAuth will convert far worse than in the UK → **forward-to-address only, indefinitely.** ✅ But our "we never sell your shopping data" position is **worth more in Germany than anywhere else** — make it a headline, in German, on the landing page |
 | **VAT** | **19%** (UK 20%) | Marginally better net revenue |
-| **Receipt structure** | Per-line VAT class (A/B), a mandatory MwSt summary block, and usually a TSE QR code | ✅ **Three independent extraction checksums for free** — see §11.1b |
+| **Receipt structure** | Per-line VAT class (A/B), a mandatory MwSt summary block, and usually a TSE QR code | ✅ **Two legally-guaranteed extraction checksums for free**, plus free duplicate detection from the QR — see §11.1b |
 | **Language** | German-first product, German receipt abbreviations (`BROKKOLI`, `H-MILCH 3,5%`, `SCHW. SCHNITZEL`), German date labels | **"Mindesthaltbarkeitsdatum" (MHD, quality) vs "Verbrauchsdatum" (safety)** is the legally-loaded distinction — the German equivalent of best-before vs use-by, and the safety carve-out depends on it |
 | **Shelf-life data** | **USDA FoodKeeper is US guidance and does not fit German products** | ⚠️ Needs a **German top-200 perishables table** built from BMLEH/Verbraucherzentrale sources. Budgeted as a person-month; this is now a harder line item, not a softer one |
 | **Consumer law** | Fernabsatzrecht, 14-day Widerrufsrecht, Germany's **Kündigungsbutton** requirement for online subscriptions | Annual-first pricing must ship with a compliant one-click cancel button. Non-negotiable |
@@ -285,11 +296,11 @@ Berlin's funding infrastructure changes the shape of the round, for the better.
 | Design, contract | 26k | Onboarding + core loop, in German |
 | Vision-model credits + labelling | 14k | **200 German receipts across 10 chains**, ≥40% shot by real households. ⚠️ *Reduced from €22k — [doc 12](12-technical-research-capture.md) removed the OCR vendor; parsing is now ~$0.0015/receipt* |
 | German shelf-life data curation | 20k | Top-200 German perishables — a real person-month |
-| Legal: DSGVO DPIA, ODbL opinion, Marke (trademark), Kündigungsbutton compliance | 18k | The items that can stop the project dead |
+| Legal: DSGVO DPIA, ODbL opinion, Marke (trademark), Kündigungsbutton compliance, **camera-footage consent protocol** | 22k | The items that can stop the project dead. ⚠️ *+€4k: filming households unpacking needs consent from every adult, child handling and a retention schedule — see [§12.3c-E](12-technical-research-capture.md)* |
 | Payments integration (PayPal + SEPA) | 12k | Non-optional in Germany |
 | Marketing / recruitment | 20k | Concierge recruitment, first content |
 | Contingency (~10%) | 36k | |
-| **Total** | **352k** | *€8k released by the VLM-first change; held in contingency* |
+| **Total** | **356k** | *€8k released by the VLM-first change, €4k consumed by the camera-consent protocol* |
 
 **Why this is a better structure than the £220k pure-equity version:** ~31% of the round is
 non-dilutive; the convertible defers a valuation argument that [§10.8](10-frameworks-and-financials.md#108-discounted-cash-flow)
@@ -312,14 +323,19 @@ gantt
     Grant applications (EXIST / Startup Stipendium) :p0g, 2026-09-15, 56d
     Concierge test, 25 Berlin family households     :crit, p0a, 2026-10-01, 42d
     200 German receipts, 10 chains, labelled        :p0b, 2026-10-01, 35d
-    Verify TSE QR payloads across 4 chains          :p0q, 2026-10-06, 3d
+    Verify A/B VAT convention across 10 chains      :p0q, 2026-10-06, 3d
     Observe 25 households unpacking (in concierge)  :p0u, 2026-10-01, 42d
+    Survey kitchen mounting surfaces + sightlines   :p0m, 2026-10-01, 42d
+    Film unpacking + label later (free CV dataset)  :p0v, 2026-10-01, 42d
     Parser spike vs a DEFINED F1 metric             :p0c, 2026-10-20, 21d
     DSGVO DPIA + ODbL legal opinion                 :p0d, 2026-10-01, 35d
+    Count magnet-compatible fridge fronts           :p0m, 2026-10-01, 42d
+    Film unpacking (consented) for later labelling  :p0f, 2026-10-01, 42d
     Gate 1 — demand first, then feasibility         :milestone, g1, 2026-11-17, 0d
 
     section Phase 1 — MVP (German-first)
     Consumption model (repurchase cadence)          :crit, p1z, 2026-11-24, 14d
+    VLM parser + 2 German checksums                 :crit, p1v, 2026-11-24, 28d
     Receipt capture + review + tap grid (DE)        :p1a, 2026-11-24, 49d
     Freshness engine v1 (German perishables, MHD)   :p1b, 2026-12-08, 42d
     Today screen + rescue card                      :p1c, 2027-01-05, 21d

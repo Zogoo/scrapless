@@ -79,88 +79,125 @@ flowchart TB
 
 ## 5.2 The receipt pipeline — VLM-first
 
-> ⚠️ **Rewritten in [doc 12](12-technical-research-capture.md).** The original design specified a
-> commercial receipt-OCR vendor with an LLM only as a fallback. That was a 2023 architecture.
-> **A mid-tier vision model now reads a receipt end-to-end and returns structured JSON at
-> ~$0.0008–0.002 — roughly 40× cheaper than negotiated OCR pricing.** The OCR vendor, the
-> dual-sourcing requirement and the vendor-concentration risk are all removed.
-
-Accuracy here still determines whether the product works at all (Risk R1) — but **the risk has
-moved from cost to silent accuracy failure**, which is more dangerous because a VLM returns
-fluent, confident JSON with no error bars.
+> ⚠️ **Rewritten.** This section previously specified a commercial receipt-OCR vendor
+> (Veryfi / Mindee / Taggun / Tabscanner) with an LLM only as a fallback. **That was a 2023
+> architecture.** Full evidence and costings: [doc 12](12-technical-research-capture.md).
+> Accuracy here still determines whether the product works at all (Risk R1).
 
 ```mermaid
 flowchart TD
     IMG[Receipt photo] --> PRE["Client: downscale to long edge ~2048<br/>deskew · JPEG q80 — saves tokens"]
-    PRE --> QR["Client: BarcodeDetector → TSE QR payload<br/>(free, if present)"]
-    QR --> VLM["Vision model, temperature 0, pinned version<br/>structured JSON: merchant · date ·<br/>lines[raw_text, name, qty, unit, price, vat_class] ·<br/>totals[sum, by_vat_class]"]
-    VLM --> C1{"CHECKSUM 1<br/>lines sum to printed Summe?"}
-    C1 -->|no| LOWC[Low confidence:<br/>surface whole receipt for review]
+    PRE --> QR["Client: BarcodeDetector → TSE QR<br/>unique receipt id (dedupe) + exact timestamp<br/>⚠️ contains NO amounts"]
+    QR --> VLM["Vision model, temperature 0, pinned version<br/>structured JSON schema:<br/>merchant · date · lines[raw_text, name, qty, unit, price, vat_class]<br/>totals[sum, by_vat_class]"]
+    VLM --> C1{"CHECKSUM 1<br/>lines sum to the printed Summe?"}
+    C1 -->|no| LOW["Low confidence:<br/>surface the whole receipt for review"]
     C1 -->|yes| C2{"CHECKSUM 2<br/>per-VAT-class subtotals match<br/>the MwSt block?"}
-    C2 -->|no| PARTC[Partial: surface only<br/>the mismatched class]
-    C2 -->|yes| C3{"CHECKSUM 3<br/>TSE QR agrees with totals?"}
-    C3 -->|yes / unavailable| HIGHC[High confidence:<br/>auto-accept, collapsed in UI]
-    C2 --> VAT["VAT class = FREE food classifier<br/>A (7%) → food · B (19%) → non-food"]
-    VAT --> SUP[Non-food suppression<br/>without a trained classifier]
-    HIGHC & PARTC & LOWC --> DICT2[Dictionary lookup on raw_text<br/>→ canonical product]
-    DICT2 --> UNRES{Resolved?}
-    UNRES -->|no, ~15%| SECOND[Second pass,<br/>stronger model]
-    UNRES -->|yes| SHELF[Freshness engine]
-    SECOND --> SHELF
-    SECOND -.->|user correction| DICT[(Learned dictionary<br/>per retailer, global)]
-    DICT -.->|improves| DICT2
+    C2 -->|no| PART["Partial: surface only<br/>the mismatched class"]
+    C2 -->|yes| HIGH["High confidence:<br/>auto-accept, collapsed in the UI"]
+    C2 --> VAT["A = 7% → almost always food<br/>B = 19% → almost always non-food"]
+    VAT --> SUP["Non-food suppression<br/>without a trained classifier"]
+    HIGH & PART & LOW --> DICT2["Dictionary lookup on raw_text<br/>→ canonical product"]
+    DICT2 -->|unresolved ~15%| STRONG[Second pass, stronger model]
+    DICT2 --> SHELF[Freshness engine]
+    STRONG --> SHELF
+    STRONG -.->|user correction| DICT[(Learned dictionary<br/>per chain, global)]
+    DICT -.->|improves, and skips the second pass| DICT2
     style VAT fill:#e7f6ec,stroke:#2e7d32,stroke-width:2px
+    style HIGH fill:#e7f6ec,stroke:#2e7d32
+    style LOW fill:#fdecea,stroke:#c62828
     style DICT fill:#e7f6ec,stroke:#2e7d32,stroke-width:2px
-    style VLM fill:#e8eaf6,stroke:#3949ab,stroke-width:2px
 ```
 
-### ⭐ Why the German market makes this architecture work
+### Why this replaced the vendor
 
-A VLM does not give per-field confidence scores, and **our entire doctrine — uncertainty bands,
-what the sweep asks about, what surfaces in the review sheet — depends on knowing what we are
-unsure of.** German receipts supply that for free, three times over:
+| | Commercial OCR vendor | **VLM-first** |
+|---|---|---|
+| Cost per receipt | $0.04–0.08 negotiated | **~$0.0015–0.002 blended** — roughly **40× cheaper** |
+| Vendor concentration risk | Real; needed dual-sourcing | **Gone** |
+| Processors in the DSGVO chain | Two (OCR + LLM) | **One** |
+| Per-field confidence scores | ✅ provided | ❌ **not provided** — see below |
 
-1. **The Summe checksum.** Every receipt contains its own answer key. If the extracted lines do
-   not sum to the printed total, the extraction is wrong, and we know it deterministically.
-   **This single check recovers most of what per-field confidence gave us.**
-2. **The VAT class as a food classifier.** German receipts mark each line with its rate —
-   conventionally **`A` = 7%** (reduced, applies to *Grundnahrungsmittel*) and **`B` = 19%**
-   (standard) — and the law requires the receipt to show what was taxed at which rate.
-   **This largely satisfies [R1-AC2's ≥95% non-food suppression](03-product-strategy-prd.md) for
-   free.** ⚠️ Strong prior, not a rule: alcohol and many beverages are 19%; books and plants are 7%.
-3. **The TSE QR code.** Kassensicherungsverordnung receipts commonly carry a signed transaction
-   record including amounts by VAT rate — a cryptographically-backed cross-check, readable in the
-   browser via `BarcodeDetector`. ⚠️ **Payload varies by implementation (BSI TR-03153 / DSFinV-K);
-   two days in Phase 0 to verify what real Edeka, REWE, Lidl and Aldi codes contain.**
+### The accuracy case, not only the cost case
 
-### What the VLM must return, and why
-
-`raw_text` **verbatim** alongside the normalised name. A VLM gives no bounding boxes, so the raw
-line is the only provenance we get — and it is exactly the training pair the learned dictionary
-needs (`"GRN GNT SWTCRN 340G" → Sweetcorn`). **The dictionary is more valuable under this
-architecture, not less**: it is what lets us skip the second pass.
-
-### Residual risks this architecture introduces
-
-| Risk | Mitigation |
+| Approach | Extraction accuracy |
 |---|---|
-| **Hallucinated line items** — worse than an OCR error because they read correctly | Checksums catch price errors; two passes at temperature 0 compared for name drift (affordable at $0.0008/pass) |
-| **Model deprecation** — the OCR vendor used to absorb this | Pin versions; **re-run the full 200-receipt eval on every model change.** A new standing ops cost |
-| **Non-determinism in CI** | Temperature 0, pinned version, prompt hash recorded with each eval run |
-| **Latency 3–10s on long receipts** | Upload-and-dismiss with async completion — already required by the ≤30s effort budget |
-| **DSGVO** — images to a US model provider | One fewer processor than before. **Verify EU data residency and zero-retention terms before beta** |
+| **Vision-first extraction** | **92.7%** |
+| Parsed-text OCR pipeline | 64.0% |
+| LLM extraction on structured fields | **97–99%** |
+| OCR alone on structured fields | 85–95% |
+
+⚠️ **The catch, and it points at a v2 decision.** **Specialised document models hallucinate far
+less than general-purpose VLMs — 93.2% against 72.6–85.0%.** That is the argument for migrating to
+a **self-hosted, open-weight document-OCR specialist in v2**, which would resolve three problems in
+one move: lower hallucination (R13), **EU data residency** without a transfer impact assessment,
+and **no model-deprecation exposure** (R14). Ship the hosted VLM in v1; plan the migration.
+
+**What survives:** the learned chain dictionary is *more* valuable now, not less — it is what lets
+us skip the second pass, and it still improves with every correction.
+**What dies:** the OCR vendor, the dual-sourcing requirement, the vendor concentration risk, and
+the "$0.01–0.03 list-price fantasy" the engineering reviewer identified.
+
+### ⚠️ The risk moved — it did not disappear
+
+We traded a **cost** risk for an **accuracy** risk, and the second is more dangerous because it is
+**silent**.
+
+| Risk | Why it matters here | Mitigation — **v1, not bolted on** |
+|---|---|---|
+| **No per-field confidence** | Our whole doctrine — uncertainty bands, what the sweep asks about, what surfaces in review — depends on knowing what we are unsure of. A VLM returns fluent JSON with no error bars | The two German checksums below |
+| **Hallucination** | A VLM will invent a plausible line on a faded thermal receipt. **Worse than an OCR error, because it is confident and reads correctly** | Checksums catch price errors; **self-consistency** (two passes at temp 0, compare) catches name drift. At ~$0.0008/pass this is affordable |
+| **No bounding boxes / provenance** | Harder to build `RECEIPT_LINE` and audit a bad parse | The model must return the **verbatim `raw_text`** beside the normalised name — that is the dictionary training pair, without needing coordinates |
+| **Model deprecation** | Providers retire models. **The vendor used to absorb this** | Pin model versions; re-run the full 200-receipt eval on every model change. **A new standing ops cost** — see §5.10 |
+| **Latency** | 3–10 s on a long receipt vs 1–2 s for OCR | Upload-and-dismiss with async completion — already required by the ≤30 s effort budget |
+| **Non-determinism in CI** | Noisy eval gates | Temperature 0, pinned version, **prompt hash recorded with every eval run** |
+| **DSGVO** | Receipt images to a model provider | Same class of problem as the vendor, but **one fewer processor**. Verify EU residency and zero-retention before beta |
+
+### ⭐ Two German validation mechanisms that replace confidence scores
+
+> ⚠️ **Corrected.** This was written as *three* mechanisms. The TSE QR code was checked and **is
+> not a checksum** — see below. Two legally-guaranteed checks is still more than any other market
+> offers.
+
+**This is where the German launch market pays off a second time. German receipts carry their own
+error checking** — exactly what a VLM lacks.
+
+1. **The Summe checksum.** Every receipt contains its own answer key. If the extracted lines don't
+   sum to the printed total, the extraction is wrong — **known deterministically, for free.**
+   This single check recovers most of what per-field confidence gave us.
+2. **The A/B VAT class as a free food classifier.** German receipts mark each line `A` = 7%
+   (reduced rate, *Grundnahrungsmittel*) or `B` = 19% (standard), and the law requires the receipt
+   to show what was taxed at which rate. **A legally-mandated per-line food signal on every Bon**,
+   which largely delivers [R1-AC2](03-product-strategy-prd.md)'s ≥95% non-food suppression for free.
+   ⚠️ *A strong prior, not a rule: alcohol, many beverages and some luxury foods are 19%; books and
+   plants are 7%. High-weight feature, not a hard filter.*
+3. ⚠️ **CORRECTION — the TSE QR is *not* a totals checksum.** Researched in
+   [§12.1c](12-technical-research-capture.md#121c-the-tse-qr-code--what-it-actually-contains):
+   the payload carries **only** the TSE serial, transaction number, signature counter, timestamps
+   and cryptographic signature. **No line items, no totals, no VAT-rate amounts.** The amounts are
+   legally required on the *printed* receipt (§6 KassenSichV) — which is what makes checksums 1
+   and 2 work — but they are printed text, not decodable data.
+   **What the QR is still worth:** a globally unique receipt id (**free, exact duplicate
+   detection**) and an authoritative purchase timestamp, which fixes the **retro-capture** problem
+   noted below, where a receipt photographed days late can make an item *born already at-risk*.
+
+### Build order
+
+1. **Client-side preprocessing** — downscale, deskew, JPEG q80. Cheap, and it directly cuts tokens.
+2. **`BarcodeDetector`** for the TSE QR — free, and better supported than the rest of Shape
+   Detection. **Not for validation** (it carries no amounts): for duplicate detection and an exact
+   purchase timestamp.
+3. **VLM call** with a pinned model, temperature 0 and a structured JSON schema.
+4. **Checksums 1–2** (Summe, per-VAT-class subtotals), then dictionary lookup, then a second pass
+   only on the residue (~15%).
 
 **Evaluation harness before any UI work:** 200 real German receipts across the **10 chains that
 cover ~80% of German grocery spend** (Edeka, REWE, Lidl, Aldi Nord, Aldi Süd, Kaufland, Penny,
 Netto, dm, Rossmann), hand-labelled, **≥40% photographed by real households in their own kitchens**.
-CI gate: ≥85% item-level F1 on a **defined** matching function, ≥95% non-food suppression, and
-**100% checksum agreement on receipts we mark high-confidence** — that last gate is the one that
-catches hallucination.
 
 > 🇩🇪 **Two German specifics that shape this pipeline.**
 > **(1) The Belegausgabepflicht guarantees the input.** Every till transaction issues a receipt by
-> law, so paper-photo capture is the *primary* path, not a fallback — and email import is
-> near-useless nationally, because German online grocery is only ~2.4% of retail volume.
+> law, so paper-photo capture is the *primary* path in Germany, not a fallback — and email import
+> is near-useless nationally, because German online grocery is only ~2.4% of retail volume.
 > **(2) Edeka is a federation of independent retailers with non-uniform receipt formats.** It is
 > the largest chain (€84.7bn) *and* the hardest to template. Budget for Edeka to take as long as
 > the next three chains combined, and stratify the eval set to prove it.
@@ -193,7 +230,7 @@ erDiagram
     CATEGORY { uuid id string name bool high_risk }
     SHELF_LIFE_RULE { uuid id uuid category_id enum storage int days_p50 int days_p90 bool opened_variant }
     HOUSEHOLD_PRIOR { uuid id uuid category_id float observed_days_p50 float variance int n_censored int n_uncensored }
-    RECEIPT_LINE { uuid id uuid capture_id int line_no string raw_text float ocr_conf string parsed_name enum parse_path uuid item_id }
+    RECEIPT_LINE { uuid id uuid capture_id int line_no string raw_text enum vat_class numeric line_price string parsed_name enum parse_path float checksum_state uuid item_id }
     DICTIONARY_ENTRY { uuid id string merchant string raw_text uuid product_id int distinct_household_votes enum promotion_state bool touches_high_risk }
     NOTIFICATION { uuid id uuid household_id string iso_week int slot timestamp sent_at enum outcome }
     REPURCHASE_STAT { uuid id uuid household_id uuid category_id float median_interval_days int n_intervals }
@@ -214,7 +251,10 @@ erDiagram
 | `storage_changed_at` | "Freeze it" claims to reset the clock. Without a timestamp, freezing 8-day-old broccoli is indistinguishable from freezing fresh |
 | `date_label_type` + `date_label_value` | **German launch: "Verbrauchsdatum" (safety — never extended) vs "Mindesthaltbarkeitsdatum/MHD" (quality — may extend) is *the* legally loaded distinction**, and the entire safety carve-out depends on it |
 | `rule_id` + `rule_version` snapshotted on `ITEM` | Shelf-life rules are global. Without a snapshot, recategorising one product **silently re-dates live food in every household** and can fire notifications. Biggest migration hazard in the system |
-| `RECEIPT_LINE` keeps the raw OCR text | Without it a bad parse cannot be audited, diffed against a user correction, retrained on, or scored for production F1 |
+| `RECEIPT_LINE` keeps the **verbatim `raw_text`** | Without it a bad parse cannot be audited, diffed against a user correction, retrained on, or scored for production F1. ⚠️ *Now doubly required: a VLM returns no bounding boxes, so verbatim raw text is the only provenance we get — and it is the dictionary training pair* |
+| `RECEIPT_LINE.vat_class` (A/B) | The legally-mandated German per-line food signal. Drives non-food suppression and is a checksum input |
+| `RECEIPT_LINE.checksum_state` | Which of the two German checksums passed (Summe reconciliation, VAT-class subtotals). **This is our confidence score** now that the OCR vendor's per-field confidence is gone |
+| `CAPTURE.parse_conf` is now *derived from checksums*, not vendor-reported | The architecture must not pretend to a confidence it no longer receives |
 | `DICTIONARY_ENTRY` is a real table | It is described as the compounding asset and was **absent from the original ERD** |
 | `NOTIFICATION` ledger with `UNIQUE(household_id, iso_week, slot)` | The 3/week cap is called an invariant; invariants need durable storage. A Redis counter is voided by a cache flush |
 | `ITEM_EVENT` adds a `PARTIAL_USE` kind | Binary Used/Gone forces the user to lie, and the lie trains the priors |
@@ -260,6 +300,14 @@ GTIN → product → category, with **USDA FoodKeeper as a cross-check only**.
 > shelf-life data. **The German curation is therefore a genuine person-month on the critical path**,
 > not a footnote, and it is budgeted as such.
 
+> ⚠️ **Open Food Facts is ODbL, and share-alike is a *schema* constraint.** Researched in
+> [§12.5](12-technical-research-capture.md#125-open-food-facts-licensing--resolved-and-it-is-an-architecture-rule):
+> *"If you combine data from Open Food Facts with other databases, the resulting database must be
+> released as open data as well."* **So OFF must stay a separate, read-only lookup service — never
+> merged into `PRODUCT` or `DICTIONARY_ENTRY`** — or the learned dictionary, our stated moat,
+> becomes publishable. Store a GTIN reference, not copied OFF rows. Custom User-Agent and
+> attribution are required. Cheap to design in now; expensive to retrofit later.
+>
 > ⚠️ **Corrections from review, plus the German re-base.** (1) FoodKeeper publishes **ranges** ("3–5 days"), not
 > distributions — the original `p50 × 0.8` manufactured percentiles that don't exist. Store the
 > source range and state plainly that the band is heuristic. (2) **FoodKeeper is US guidance and does not fit a German
@@ -375,9 +423,10 @@ historically shown.
 | LLM calls | Zero-retention endpoints; item strings only, never full receipts with totals/payment data |
 | **OCR endpoint identity** | ⚠️ *Added after review.* "No account wall before value" left **the most expensive endpoint in the system unauthenticated** — anyone could use Crisper as a free receipt-OCR API. A device-bound token plus per-device and per-IP rate limits is required **before the first OCR call**, shipped pre-beta. Free-tier abuse was not a risk; it was the default configuration |
 | **Dictionary poisoning** | ⚠️ Corrections are **per-household by default**; global promotion requires **k ≥ 5 independent households**; a correction may **never** downgrade `CATEGORY.high_risk` without human review; corrections are rate-limited and carry provenance for rollback. Without this, remapping a high-risk item into a low-risk category silently removes the safety carve-out for every future user |
-| **OCR vendor data-use terms** | ⚠️ Several commercial document-AI vendors reserve rights to train on submitted documents outside enterprise tiers. Until the contract is read, *"never used for training"* is a claim we cannot make. Dual-source from day 1 |
+| **Model-provider data-use terms** | ⚠️ *Rewritten with the VLM-first architecture.* There is now **one processor instead of two**, which is a genuine privacy improvement. But the claim *"never used for training"* still depends on contract terms — require **zero-retention endpoints and EU data residency** before beta, and record the commitment in the DPIA |
 | **Honest scope of the privacy promise** | ⚠️ "Sensitive lines discarded at parse time" is true of *our database only* — they are still transmitted to the OCR vendor and still visible in the 30-day image. The promise must be worded to say exactly that |
 | International transfer | EU receipt images to US OCR/LLM requires **SCCs plus a transfer impact assessment** — or an EU-resident vendor, which is the preferred answer here |
+| **EU model residency** | ⚠️ *Vendor-specific and partly irreversible ([§12.1d](12-technical-research-capture.md#121d-eu-data-residency--constrains-the-vendor-choice)):* **OpenAI EU residency + zero retention can only be set on a *new* Project** — create it correctly on day one. **Vertex AI pins region per call, not per project** — so region pinning is a **DPIA line item** with an automated assertion, not an implementation detail. **Anthropic's direct API has no EU-only residency** — route via EU-scoped Bedrock or Vertex. The **EU AI Act has been broadly applicable since 2 August 2026** |
 | Hosting | **EU region only.** German consumers are the most privacy-conscious in Europe; US-region storage of receipt images is a conversion problem as well as a legal one. Prefer an **EU-resident OCR vendor** even at a premium |
 | Payments | **PayPal + SEPA Lastschrift on web checkout.** German card penetration is ~11% of online purchases — the lowest of any major Western economy — so card-only checkout would silently halve conversion, and app-store IAP is card-centric. Web-first also avoids the 15–30% store cut |
 | Compliance | **DSGVO + BDSG**, and Germany's **Kündigungsbutton** requirement (a compliant one-click cancel for online subscriptions) before the paywall goes live. **DPIA moved into Phase 0** — receipts are processed from beta start, and Art. 35 requires the assessment *prior to* processing, not after |
@@ -398,6 +447,14 @@ historically shown.
 | Voice input | ⚠️ Web Speech patchy on iOS | Fall back to audio upload + server transcription |
 | Background sync | ⚠️ Limited on iOS | Server-side scheduling instead — we already do this |
 | Install friction | ❌ Meaningful drop-off vs App Store | Mitigate with a well-timed install prompt *after* the first value moment |
+
+> ⭐ **A second, independent reason to build the shell** ([doc 12 §12.2a](12-technical-research-capture.md#2a-auto-capture-of-receipts--adopt-native-shell-v2)):
+> **automatic receipt capture** — camera opens, edges detected, shutter fires itself — is mature
+> and free natively (**ML Kit Document Scanner** on Android, **VisionKit** on iOS) and saves 3–5 s
+> of a 30-second budget. It is **not** available on the web: the Shape Detection API is broken on
+> iOS 18 and never reached Baseline, and an OpenCV.js fallback is multi-MB WASM at ~10–15 fps with
+> a real battery cost. **Ship plain photo capture on web in v1; add auto-capture in the shell in
+> v2. Do not build the OpenCV.js version.**
 
 **Decision: PWA for v1**, with three corrections from review:
 
@@ -423,41 +480,52 @@ historically shown.
 
 ## 5.8 Unit cost model — corrected twice
 
-> ⚠️ **Correction 1 (senior review):** the original model priced OCR at list rates we would not
-> get as a small account and — the real error — computed **cost per household** while revenue
-> arrives **per paying household**. At 6% conversion, 94% of users are pure COGS.
-> ⚠️ **Correction 2 ([doc 12](12-technical-research-capture.md)):** the OCR vendor is gone.
-> **VLM-first extraction costs ~$0.0008–0.002 per receipt against $0.04–0.08 for negotiated OCR.**
+> ⚠️ **Correction 1 (engineering review).** The original model priced OCR at list-price rates we
+> would not get, and — the real error — computed **cost per household** while revenue arrives
+> **per paying household**. At 3% conversion, 97% of users are pure COGS.
+> ⚠️ **Correction 2 ([doc 12](12-technical-research-capture.md)).** Replacing the OCR vendor with
+> direct VLM extraction cuts parsing cost **~40×**, which changes the answer materially.
 
-**Per paying household per month, at 10k households:**
+**Cost per receipt:** ~**$0.0008** on a Gemini-Flash-class model (≈1,550 image tokens in, ~900 JSON
+tokens out); ~$0.0024 on a GPT-5-Mini tier; ~$0.0078 on a Claude-Haiku tier. With a ~15% second
+pass on a stronger model, **blended ≈ $0.0015–0.002** — against **$0.04–0.08** for negotiated
+commercial OCR.
 
-| Component | Before (OCR vendor) | **Now (VLM-first)** | Assumption |
+| Per paying household / month | Before (OCR vendor) | **After (VLM-first)** |
+|---|---|---|
+| Receipt parsing | €0.28 | **€0.02** |
+| LLM normalisation | €0.02 | *(included above)* |
+| Infra, storage, push (EU region) | €0.05 | €0.05 |
+| **Direct COGS** | €0.35 | **€0.07** |
+| Allocated free-tier cost | €0.40 | **€0.04** |
+| **Fully loaded COGS** | **€0.75** | **€0.11** |
+| Net ARPU | €2.19 | €2.19 |
+| **Gross margin** | 66% | **95%** |
+
+**Gross margin at 10k households and 3% conversion** — the table that was previously negative in
+its worst row:
+
+| Scenario | Monthly revenue | Monthly COGS | Gross margin |
 |---|---|---|---|
-| Receipt parsing | €0.28 | **€0.02** | *5 receipts/mo; ~1,550 image tokens + ~900 output; 15% second pass* |
-| Separate LLM normalisation | €0.02 | *included* | |
-| Infra, storage, push (EU region) | €0.05 | €0.05 | |
-| **Direct COGS** | €0.35 | **€0.07** | |
-| Allocated free-tier cost | €0.40 | **€0.04** | *~32 free users/payer; ~20% monthly-active; 2 scans/mo cap* |
-| **Fully loaded COGS** | **€0.75** | **€0.11** | |
-| Net ARPU | €2.19 | €2.19 | |
-| **Gross margin** | 66% | **95%** | |
+| Original assumptions ($0.01/receipt list price) | €2,190 | ~€780 | 64% |
+| Realistic **OCR vendor** ($0.06/receipt) | €2,190 | ~€1,450 | 34% |
+| Realistic OCR vendor, free users at the cap | €2,190 | ~€2,800 | **negative** |
+| **VLM-first** | **€2,190** | **~€110** | **95%** |
 
-**This is the first version of the model where the free tier is nearly free to serve** — ~€0.006
-per free active household per month. The engineering reviewer's "free-tier abuse is the default
-configuration" finding still stands and **rate limits are still required**, but the blast radius
-is 40× smaller.
+**The free-tier abuse risk shrinks with it.** A free active household now costs ~**€0.006/month**
+to serve rather than ~€0.04. Rate limiting and device-bound identity (§5.6) are **still required** —
+but **the blast radius is 40× smaller**, which is what makes an organic-only growth strategy
+survivable.
 
-**The bootstrap problem is also much smaller.** At launch the dictionary is empty and every line
-goes to the model — but "every line" now costs $0.002, not $0.08. **Costs no longer peak
-dangerously when cash is scarcest.**
+⚠️ **Honest caveat on break-even.** Cheaper parsing barely moves the *blended* break-even
+(96,500 → **~91,800** active households), because in the blended model the hand-off commission
+dominates contribution. **The real gain is risk reduction, not volume.**
 
-**Free tier: 2 receipt scans/month.** Retained despite the cost collapse — not for cost reasons
-now, but because it is the correct packaging line ([§6.2](06-business-plan-roadmap.md)).
-
-⚠️ **What did not improve:** cheaper parsing barely moves the *blended* break-even
-(96,500 → ~92,000 active households), because the hand-off commission dominates contribution
-([§10.6](10-frameworks-and-financials.md#106-break-even-analysis)). **The gain is risk reduction,
-not volume.**
+**Free tier design:** unlimited items (never cap items — that's the competitors' mistake and it
+directly causes drift). The **2 receipt scans/month** cap was set when scans were the expensive
+thing; at €0.0008 a scan **that constraint is now nearly free to relax**, and
+[§6.2](06-business-plan-roadmap.md#62-business-model--redrawn-after-review-re-priced-for-germany)
+should be revisited on packaging grounds rather than cost grounds.
 
 ## 5.9 Alternative stack
 
@@ -471,7 +539,8 @@ The receipt pipeline is the hard part; everything else is CRUD.**
 |---|---|
 | LCP, mid-tier Android, 4G | < 2.0 s |
 | Today screen interactive from icon tap | < 1.0 s (cached shell) |
-| Receipt parse p50 / p95 | < 6 s / < 15 s |
+| Receipt parse p50 / p95 | < 8 s / < 20 s ⚠️ *widened: a VLM takes 3–10 s on a long receipt vs 1–2 s for OCR. Upload-and-dismiss with async completion is mandatory, not optional* |
+| **Model-version eval re-run** | ⚠️ *New standing ops cost.* The full 200-receipt eval re-runs on **every** model version change, with temperature 0, a pinned version and the prompt hash recorded. The OCR vendor used to absorb this for us |
 | Uptime | 99.5% (v1), 99.9% (post-PMF) |
 | Timezone-sharded decay passes (24+ per day), 100k households | < 10 min per shard |
 | **Model-version eval re-run** | On every VLM version change, the full 200-receipt eval must pass before rollout. ⚠️ *A new standing ops cost — the OCR vendor used to absorb this* |

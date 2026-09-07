@@ -132,13 +132,32 @@ users; and the MVP was estimated at 15 weeks against a realistic 26–32.
 
 | | Subscription only | With Berlin quick-commerce hand-off |
 |---|---|---|
-| Gross profit / month | €1.44 | **€2.43** |
-| LTV (gross profit) | €29 | **€49** |
+| Gross profit / month | €2.08 | **€3.07** |
+| LTV (gross profit) | €42 | **€61** |
 | Blended CAC (organic-only) | €20 | €20 |
-| **LTV / CAC** | **1.4×** ❌ | **2.4×** ⚠️ |
+| **LTV / CAC** | **2.1×** ⚠️ | **3.1×** ✅ |
 
-**Break-even against a €36k/month base:** subscription-only needs **25,000 payers ≈ 833k installs
-= 41% of the entire German SAM.** With the hand-off: **~96,500 active households ≈ 14%.**
+**Break-even against a €36k/month base:** subscription-only needs **~17,300 payers ≈ 28% of the
+German SAM.** With the hand-off: **~91,800 active households ≈ 14%.**
+
+> ⭐ **The margin has been corrected twice, and the second correction is the good one.** The
+> original ">93%" was wrong for the right reason — it counted cost per household while revenue
+> arrives per *paying* household — and the honest figure was **66%**. Then
+> [doc 12](12-technical-research-capture.md) replaced the commercial OCR vendor with **direct
+> vision-model extraction at ~$0.0008 per receipt against $0.04–0.08 — roughly 40× cheaper** —
+> taking fully-loaded COGS from €0.75 to **€0.11** and margin to **95%**. This is the first version
+> of the model that clears the 3× LTV/CAC threshold, and **it got there by cutting cost, not by
+> assuming better user behaviour** — the only kind of improvement worth trusting in a plan with no
+> primary evidence yet.
+>
+> **And the risk moved rather than vanished.** A vision model returns no per-field confidence, and
+> a hallucinated line item is *worse* than an OCR error because it reads correctly. **German
+> receipts hand that back three times over:** the printed **Summe** as an answer key, the
+> legally-mandated **A (7%) / B (19%) VAT class** as a free per-line food classifier.
+> ⚠️ *A third check — the TSE QR code — was proposed, checked, and dropped: it carries no amounts
+> or VAT subtotals, only tamper-evidence for the tax office. It survives as free duplicate
+> detection and an exact purchase timestamp.* **Two legally-guaranteed checks is still more than
+> any other market offers, and Germany remains the best-instrumented receipt market in Europe.**
 
 > **The grocery basket hand-off is not a "second revenue leg for month 12" — it is the model.**
 > And **paid acquisition is impossible**: €140 CAC through paid social against a €29 LTV. This
@@ -198,6 +217,10 @@ The live strategic alternative the concierge test is designed to surface: refram
 We test it rather than assume it either way.
 
 **Bottom line: spend €18k and eight weeks on a human concierge before spending €700k on software.**
+Three of doc 12's open questions — magnet-compatible fridge fronts, filmed unpacking, and what
+actually happens in those 90 seconds — cost **nothing extra** because the concierge test is already
+in those kitchens. *(A fourth, the TSE QR payload, has since been checked and answered: it is not
+a checksum.)*
 Trading history is €0 across all three years, no product, no customers, **no pre-orders, and zero
 customer interviews conducted.** The cheapest thing left to do is 25 Berlin households and a
 WhatsApp group — then taking €19 off a hundred strangers.

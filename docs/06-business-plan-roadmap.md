@@ -55,6 +55,7 @@ or DACH-wide reach.
 | Tier | Price | Contents |
 |---|---|---|
 | **Free** | €0 | Unlimited items, **unlimited tap/type capture, 2 receipt scans/mo**, the weekly alert, the don't-buy list, **one household partner** |
+| | | ⚠️ *The 2-scan cap was set when a scan cost ~€0.06. With VLM-first parsing at ~$0.0008 ([doc 12](12-technical-research-capture.md)) **the cap is no longer a cost decision** — a free active household costs ~€0.006/month. Keep it, raise it, or drop it on **packaging** grounds, and test it; do not defend it on economics that no longer hold.* |
 | **Plus** | **€29/yr** (annual-first) or €3.49/mo | Unlimited receipt scans, forward-to-address import, the sweep, rescue ideas, multi-source capture, the monthly savings artifact |
 | **Haushalt** | €47/yr | Plus + up to 6 members, multi-kitchen |
 | **Lifetime** | €69 one-off | KitchenPal's $29.99 lifetime sat unexamined in our own competitor table. **One-off pricing is what converts in low-salience utility categories**, and it sidesteps the renewal-audit problem entirely |
@@ -85,12 +86,13 @@ like tracking; that rule needs a carve-out for user-initiated review.
 
 Too Good To Go's lesson: the money is in a **transaction**, not a subscription.
 ⚠️ **And the unit economics in [§9.6](09-investor-pack.md#96-unit-economics) upgraded this from
-"second leg" to "the model": subscription alone yields LTV/CAC of 1.4×; with the hand-off it is
-2.4×.** Candidates, ranked by strategic fit:
+"second leg" to "the model". After the VLM-first margin correction
+([doc 12](12-technical-research-capture.md)) subscription alone yields **2.1×; with the hand-off,
+3.1×** — the hand-off is what clears the 3× threshold.** Candidates, ranked by strategic fit:
 
 | Option | Revenue | Trust risk | Verdict |
 |---|---|---|---|
-| **Grocery basket hand-off** — *"die 4 fehlenden Zutaten in deinen Flink-/REWE-/Knuspr-Warenkorb"* (affiliate/commission) | ~€2.20 per basket (5% of ~€44) | Low, *if* recommendations stay honest | ✅ **Not the best fit — the necessary one.** Berlin is Europe's densest quick-commerce city, which is the real reason to launch there. ⚠️ **It does not travel: German online grocery is ~2.4% nationally**, so national rollout raises volume and *lowers* per-user economics |
+| **Grocery basket hand-off** — *"die 4 fehlenden Zutaten in deinen Flink-/REWE-/Knuspr-Warenkorb"* (affiliate/commission) | ~€2.20 per basket (5% of ~€44) | Low, *if* recommendations stay honest | ✅ **Still the necessary one — it is what takes LTV/CAC from 2.1× to 3.1×.** Berlin is Europe's densest quick-commerce city, which is the real reason to launch there. ⚠️ **It does not travel: German online grocery is ~2.4% nationally**, so national rollout raises volume and *lowers* per-user economics |
 | Anonymised, aggregated waste insights sold to CPG/retail | High | **High** | ❌ Contradicts our privacy promise. Do not. |
 | Brand-sponsored rescue recipes | Medium | Medium | ⚠️ Only with clear labelling |
 | B2B white-label for retailers / appliance makers | High, lumpy | Low | ⚠️ Real option, but a different company. Revisit at Series A |
@@ -132,6 +134,20 @@ Running alongside, not before: the **200-receipt German corpus across 10 chains*
 spike, the **DSGVO DPIA** (Art. 35 requires it *prior to* processing, and beta starts in
 February), the **Open Food Facts ODbL legal opinion**, and the **EXIST / Berlin Startup Stipendium
 applications**, which take ~6–10 weeks and should be submitted first.
+
+⚠️ **Four zero-or-near-zero-cost tasks added from [doc 12](12-technical-research-capture.md)**, all
+of which piggyback on observations the concierge test already makes:
+1. ~~Verify the TSE QR payload~~ — ⚠️ **done, and the answer was no.** The QR carries the till
+   serial, transaction number, signature counter, timestamps and signature: **no amounts, no VAT
+   subtotals.** It cannot validate an extraction. It survives as free **duplicate detection** and
+   an **exact purchase timestamp**, which is what makes a Bon scanned days late safe.
+2. **Count magnet-compatible fridge fronts** — 30 s per household. German *Einbauküchen* hide the
+   door behind a wooden cabinet front, and 304 stainless is non-magnetic; if compatibility is under
+   ~60% the door-mount idea is dead before any code is written.
+3. **Film the unpacking** (with consent) and hand-label it later — a **real-kitchen CV dataset for
+   free**, which answers the camera-capture question with **no CV code written**.
+4. **Watch what actually happens in those 90 seconds** — this settles the "wave goods past the
+   camera" and door-mount proposals with evidence rather than argument.
 
 **Why DACH before the UK:** Austria and Switzerland share the language and most chains
 (REWE/Billa, Lidl, Aldi/Hofer, Spar), so the marginal cost after Germany is small. **The UK now
@@ -199,10 +215,13 @@ support anyway. Full breakdown: [§11.7](11-germany-berlin-market.md#117-the-rev
 
 > ⚠️ **Recomputed after review.** The original claimed LTV ≈ £45 at 6%/mo churn — top-decile
 > consumer-subscription territory. Net of payment fees and 19% VAT, €29/yr is **€23.40**, and at a
-> realistic **8%/mo churn subscription-only LTV is €29, not €45.** The "blended" CAC was really an
-> *organic* CAC, which by definition doesn't scale — so the payback claim was circular.
-> **Paid acquisition does not work at this price point** (€140 CAC via paid social), and the plan
-> says so plainly rather than assuming a blend it cannot buy.
+> realistic **8%/mo churn subscription-only LTV was €29, not €45.** Then
+> [doc 12](12-technical-research-capture.md) cut parsing cost ~40× and gross margin rose 66% → 95%,
+> taking **subscription-only LTV to €42 (2.1× CAC) and the blended figure to €61 (3.1×)** — the
+> first version of the model that clears the 3× threshold. **The "blended" CAC is still really an
+> *organic* CAC**, which by definition doesn't scale, and **paid acquisition still does not work at
+> this price point** (€140 CAC via paid social). The plan says so plainly rather than assuming a
+> blend it cannot buy.
 
 > ⚠️ **The SEO thesis is dated.** *"Wie lange hält Brokkoli im Kühlschrank"* is precisely the
 > query class Google's AI Overviews now answers **without a click** — though German-language

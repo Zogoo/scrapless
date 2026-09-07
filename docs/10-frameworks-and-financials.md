@@ -20,7 +20,7 @@ flowchart TB
     end
     subgraph R2[" "]
       direction LR
-      KR["🏗 <b>KEY RESOURCES</b><br/><b>German retailer dictionary (10 chains)</b><br/><b>Household priors + repurchase data</b><br/>German shelf-life table<br/>Small senior team, grant-funded"]
+      KR["🏗 <b>KEY RESOURCES</b><br/><b>German retailer dictionary (10 chains)</b><br/><b>The two German receipt checksums</b><br/><b>Household priors + repurchase data</b><br/>German shelf-life table<br/>Small senior team, grant-funded"]
       CH["📣 <b>CHANNELS</b><br/>Referral / household invite (€6 CAC)<br/>Assistant-native MCP (€12)<br/>Bezirke · BMLEH partnerships (€16)<br/>Short-form video, Bon-scan demo (€28)<br/>German SEO (€30, AI-threatened)<br/>❌ Paid social (€140 — unviable)"]
     end
     subgraph R3[" "]
@@ -43,7 +43,7 @@ patch, and it is why the launch city is Berlin rather than Germany at large.
 
 | | Helpful | Harmful |
 |---|---|---|
-| **Internal** | **STRENGTHS**<br/>• A named technical insight nobody has shipped: **repurchase-cadence consumption inference**<br/>• Doctrine that attacks the category's known killer (drift)<br/>• Two independent senior reviews already absorbed<br/>• Privacy position **worth more in Germany than anywhere** — Germans are Europe's most privacy-conscious consumers<br/>• **~€110k of the round is non-dilutive** (EXIST / Startup Stipendium)<br/>• Small team, low fixed base | **WEAKNESSES**<br/>• **Pre-revenue, pre-product, no traction, no pre-orders, no company yet**<br/>• No distribution and no audience<br/>• **Cannot buy customers** — paid CAC €140 vs €42 subscription LTV<br/>• No proprietary data until ~10k receipts per chain<br/>• **Berlin's demographics are wrong for the primary segment** (50% single-person households)<br/>• Team unproven in this domain **[FOUNDER TO COMPLETE]** |
+| **Internal** | **STRENGTHS**<br/>• A named technical insight nobody has shipped: **repurchase-cadence consumption inference**<br/>• Doctrine that attacks the category's known killer (drift)<br/>• Two independent senior reviews already absorbed<br/>• Privacy position **worth more in Germany than anywhere** — Germans are Europe's most privacy-conscious consumers<br/>• **~€110k of the round is non-dilutive** (EXIST / Startup Stipendium)<br/>• Small team, low fixed base<br/>• **95% gross margin** — VLM-first parsing at ~$0.0008/receipt, and the two German receipt checksums replace the confidence scores it gives up | **WEAKNESSES**<br/>• **Pre-revenue, pre-product, no traction, no pre-orders, no company yet**<br/>• No distribution and no audience<br/>• **Cannot buy customers** — paid CAC €140 vs €42 subscription LTV<br/>• No proprietary data until ~10k receipts per chain<br/>• **A vision model returns no per-field confidence** — hallucinated line items read correctly, and only the German checksums catch them<br/>• **Berlin's demographics are wrong for the primary segment** (50% single-person households)<br/>• Team unproven in this domain **[FOUNDER TO COMPLETE]** |
 | **External** | **OPPORTUNITIES**<br/>• ⭐ **Belegausgabepflicht** — German law hands every shopper a receipt, the best capture substrate in Europe<br/>• ⭐ **German receipts carry their own error-checking** — the Summe checksum, the A/B VAT class as a free food classifier, and the TSE QR code — which is exactly what a vision LLM lacks<br/>• **VLM-first parsing at ~$0.0015/receipt** takes gross margin to ~95% and makes the free tier nearly free to serve<br/>• **35% of avoidable German waste is fresh produce, 13% bakery** — exactly the barcode-less food our design targets<br/>• 10 receipt templates cover ~80% of German grocery spend<br/>• **Berlin is Europe's most competitive online-grocery city** — where the hand-off works<br/>• Post-LLM parsing removed the constraint that killed Kitche<br/>• **Nobody has published an efficacy figure** — first credible proof is a moat and a channel key<br/>• BMLEH "Zu gut für die Tonne!" has already done the awareness job | **THREATS**<br/>• **15-year category failure record**, structural not executional<br/>• **foodsharing.de and the BMLEH app anchor the price at zero** in German minds<br/>• **SirPlus's insolvency** — a famous Berlin food-waste brand with real stores, and it still failed<br/>• **German online grocery is only ~2.4% nationally** — the hand-off does not travel outside big cities<br/>• NoWaste.ai can ship the same thing; no tech moat<br/>• AI Overviews eroding the one affordable channel<br/>• **Selection bias: buyers ≠ sufferers** |
 
 ---
@@ -180,7 +180,7 @@ xychart-beta
 **The gap between those two lines is the entire commercial argument of this plan.**
 
 ⚠️ **And Berlin alone cannot reach either line.** Berlin's whole SAM is ~97,000 installs — roughly
-32,000 active households at full saturation, against a base-case break-even of ~96,500.
+32,000 active households at full saturation, against a base-case break-even of ~91,800.
 **Berlin proves the loop; Germany pays for it.**
 
 ---
@@ -306,6 +306,7 @@ in-fridge camera precedent ([doc 12](12-technical-research-capture.md)); EU LOWI
 BMLEH/Destatis/GfK German waste data; WRAP and ReFED national datasets; four peer-reviewed RCTs
 and three systematic reviews; app-store review corpora; 2026 subscription benchmarks (RevenueCat,
 Business of Apps); German grocery, quick-commerce and payments data; Berlin funding programmes;
+**vision-model token pricing and grocery-CV benchmarks ([doc 12](12-technical-research-capture.md))**;
 two independent senior engineering reviews of this plan.
 
 ### Not done — and this is the honest gap
@@ -315,7 +316,9 @@ two independent senior engineering reviews of this plan.
 | **Concierge study** | ⏳ Designed, funded by this round | **The go/no-go.** Revealed behaviour, not intent. **25 households, outer Berlin Bezirke, ≥16 with children** |
 | **Pre-sale** | ❌ Not attempted | **Pre-orders are the strongest demand evidence there is.** 100 × €19 lifetime licences is the cheapest credible next step |
 | **German receipt corpus** | ❌ Not collected | 200 receipts across 10 chains, ≥40% photographed by real households, before any parser claim |
-| **TSE QR payload verification** | ❌ Not done | 2 days. If German receipt QR codes carry per-VAT-rate totals as expected, it is **the cheapest high-confidence signal in the pipeline** |
+| **TSE QR payload** | ✅ **Done — and the answer was no** | Checked: the QR carries no amounts or VAT subtotals, so it is **not** a checksum. Retained for free duplicate detection and an exact purchase timestamp |
+| **Magnet-compatible fridge fronts** | ❌ Not counted | 30 s per concierge household. German *Einbauküchen* may break the door-mount assumption entirely |
+| **Filmed unpacking footage** | ❌ Not captured | Free during the concierge test; yields a real-kitchen CV dataset with **no CV code written** |
 | **Observing households unpack** | ⏳ Folded into the concierge test | Free. Settles the auto-capture and in-fridge-camera questions with evidence instead of argument |
 | **Survey** | 🚫 **Deliberately declined** | §8.2: stated intent overstates revealed preference by ~an order of magnitude here. A survey would produce an encouraging number and teach us nothing |
 | Competitor financials | ⚠️ Partial | German competitors file at **Bundesanzeiger** — cheap, public, and not yet pulled. Do this before the first investor meeting |

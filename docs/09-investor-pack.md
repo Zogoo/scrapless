@@ -144,9 +144,9 @@ is itself an argument against a large equity raise.
 |---|---|
 | **"Suppliers"** | ⚠️ *Changed in [doc 12](12-technical-research-capture.md): the commercial OCR vendor is removed — a vision LLM reads the receipt end-to-end at ~40× lower cost.* Vision-model provider (EU residency required), EU-region cloud host, push infrastructure, **Open Food Facts** (⚠️ **ODbL — share-alike may attach to a derived database; legal opinion is a Phase 0 blocker**), German shelf-life sources (BMLEH, Verbraucherzentrale) |
 | **Lead times / MOQs** | No physical goods. The real lead times are regulatory and grant-related: **EXIST / Berlin Startup Stipendium applications take ~6–10 weeks**; a **DSGVO DPIA must complete before beta**; Gmail restricted-scope CASA review ($3k–15k, 4–12 weeks) is **avoided entirely** by shipping forward-to-address only |
-| **Cost per unit (direct)** | Per paying household/month: OCR ~€0.28 (5 receipts @ ~$0.06 negotiated), LLM residual €0.02, infra/storage/push €0.05 = **€0.35 direct**. Plus **€0.40 allocated free-tier cost** = **€0.75 fully loaded** |
-| **What breaks at 10×** | (1) **OCR cost scales with free users** — the only true variable cost, incurred on non-payers. (2) **Support**: human-in-loop review for the first 1,000 users is up to 5,000 receipts/month with nobody assigned. (3) **Retailer template drift** — Edeka is a federation of independent retailers with *non-uniform receipt formats*, which is a harder parsing problem than REWE or the discounters. (4) Timezone-sharded decay passes. (5) **Silence is our happy path and also our outage signature** |
-| **Concentration risk** | Single OCR vendor = pricing and terms risk. **Dual-source from day 1** |
+| **Cost per unit (direct)** | ⚠️ *Recut with VLM-first extraction.* Per paying household/month: receipt parsing **€0.02** (5 receipts @ ~$0.0008–0.002 blended, vs $0.04–0.08 for a vendor), infra/storage/push €0.05 = **€0.07 direct**. Plus **€0.04 allocated free-tier cost** = **€0.11 fully loaded** |
+| **What breaks at 10×** | (1) ~~OCR cost scales with free users~~ — **largely defused**: a free active household now costs ~€0.006/month. Rate limiting still required; the blast radius is 40× smaller. **The new variable-cost risk is model repricing or deprecation**, which the vendor used to absorb. (2) **Support**: human-in-loop review for the first 1,000 users is up to 5,000 receipts/month with nobody assigned. (3) **Retailer template drift** — Edeka is a federation of independent retailers with *non-uniform receipt formats*, which is a harder parsing problem than REWE or the discounters. (4) Timezone-sharded decay passes. (5) **Silence is our happy path and also our outage signature** |
+| **Concentration risk** | ⚠️ *Changed.* Vendor concentration is **gone with the OCR vendor**. What replaces it is **model-provider dependency**: pin versions, keep the prompt and schema provider-agnostic, and re-run the 200-receipt eval on every model change |
 
 ---
 
@@ -238,8 +238,8 @@ than average because engagement is deliberately low). Annual renewal 50%. Blende
 > often nowhere to hand the basket to. National expansion improves subscription volume and
 > *weakens* per-user economics. That trade-off must be modelled, not discovered.
 
-**It also flips the free tier.** A free active household costs ~€0.04/month and, at a 15% hand-off
-rate, contributes ~€0.33/month gross profit. **Free users become contributors rather than a
+**It also flips the free tier — harder than before.** A free active household now costs
+~**€0.006**/month and, at a 15% hand-off rate, contributes ~€0.33/month gross profit. **Free users become contributors rather than a
 subsidised cost** — which is what makes an organic-only, low-ARPU consumer product survivable.
 
 ### Repeat / churn
@@ -302,7 +302,7 @@ Larger team, faster build, DACH in year 2, UK in year 3.
 | Operating costs | €760k | €1.40m | €2.05m |
 | **Profit / (loss)** | **(€716k)** | **(€1.06m)** | **(€600k)** |
 
-**Break-even ≈ month 38. Total capital ~€2.9m.** Requires the hand-off assumption to hold *and*
+**Break-even ≈ month 34. Total capital ~€2.5m.** Requires the hand-off assumption to hold *and*
 successful DACH entry. **Higher risk of the year-three B2B pivot** flagged in §6.6.
 
 ### Break-even analysis
@@ -330,7 +330,7 @@ The gain from VLM-first is risk reduction, not volume.
 |---|---|---|---|---|---|---|
 | Opening cash | 360 | 297 | 214 | 121 | 452 | 356 |
 | Revenue in | 0 | 0 | 2 | 8 | 22 | 48 |
-| Costs out | (63) | (83) | (95) | (107) | (118) | (128) |
+| Costs out | (63) | (83) | (94) | (105) | (114) | (122) |
 | Funding in (seed) | — | — | — | **430** | — | — |
 | **Closing cash** | **297** | **214** | **121** | **452** | **356** | **276** |
 | Runway at that burn | 14 mo | 8 mo | **4 mo** ⚠️ | 13 mo | 9 mo | 6 mo |
@@ -429,7 +429,13 @@ honest answer, whatever it is, beats a vague one.
 ### Milestones this round buys
 1. **Concierge test reports (month 3) — the go/no-go**
 2. Receipt parser at a *defined* F1 metric across **10 German chains**, on a household-photographed
-   corpus (month 5)
+   corpus (month 5) — **VLM-first, validated by the two German receipt checksums**
+   ([doc 12](12-technical-research-capture.md))
+2b. **Parsing accuracy evidenced, not asserted**: vision-first extraction benchmarks at **92.7%
+   against 64.0%** for a parsed-text OCR pipeline (97–99% vs 85–95% on structured fields).
+   ⚠️ *And the v2 decision it implies: specialised document models hallucinate far less than
+   general VLMs (**93.2% vs 72.6–85.0%**), so a **self-hosted open-weight document-OCR specialist**
+   would resolve hallucination, EU residency and model deprecation in one move.*
 3. Consumption model validated against the concierge households' real data (month 6)
 4. DSGVO DPIA complete, ODbL position resolved, DPMA mark filed (month 4)
 5. **A pre-sale: 100 paid €19 lifetime founder licences** (month 7) — the first real demand evidence

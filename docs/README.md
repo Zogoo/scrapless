@@ -26,6 +26,7 @@ receipt on every transaction — the best capture substrate in Europe. See [doc 
 | 9 | [Investor pack](09-investor-pack.md) | Customer, market, channels, CAC, unit economics, forecast, cash, the ask |
 | 10 | [Frameworks & financials](10-frameworks-and-financials.md) | BMC, SWOT, Porter, PESTEL, P&L, break-even, scenarios, DCF, comps, cohorts |
 | 11 | [Germany & Berlin market](11-germany-berlin-market.md) | **Canonical market figures.** Why Berlin, the German landscape, German operating differences, the revised ask and roadmap |
+| 12 | [Technical research — capture](12-technical-research-capture.md) | **Canonical capture architecture.** VLM-first receipt reading, extraction-accuracy and hallucination evidence, the two German receipt checksums, EU data residency, Open Food Facts licensing, auto-capture, and the in-fridge/door-mount camera verdicts |
 | 12 | [Technical research — capture](12-technical-research-capture.md) | **Canonical capture architecture.** Vision-LLM receipt reading vs OCR vendors, auto-capture, in-fridge cameras — what to adopt and what to reject |
 
 **Visual companion:** [Interactive product brief](https://claude.ai/code/artifact/bcd6a143-4d45-4464-af49-7a5f7e19a9e3) — screens, a draggable decay model, roadmap and gates.

@@ -149,7 +149,7 @@ size. Cut to recover ~7–9 weeks:
 | **Dark mode** | Deferred one release |
 
 **Added instead, all cheap and all missing:** email fallback alerts (1 day), rate-limited device
-identity on the parsing endpoint (2 days), the **three German receipt checksums** (3 days — they
+identity on the parsing endpoint (2 days), the **two German receipt checksums** (3 days — they
 replace the confidence scores a vision LLM does not provide), and **repurchase-cadence consumption
 inference (1 week — the highest-leverage missing piece in the architecture)**.
 
@@ -178,6 +178,20 @@ credible PWA version worth building.
   Aldi Süd, Kaufland, Penny, Netto, dm, Rossmann). ⚠️ *Edeka is a federation of independent
   retailers with non-uniform receipt formats — expect it to cost as much as the next three chains
   combined.* Non-food lines (bags, points, discounts) suppressed.
+- **AC2b:** ⚠️ *Added with the VLM-first pipeline ([doc 12](12-technical-research-capture.md)).*
+  Non-food suppression (≥95%) is driven primarily by the **legally-mandated German A/B VAT class**
+  on each receipt line — `A` = 7% is almost always food, `B` = 19% almost always not. Treated as a
+  high-weight feature, **not a hard rule** (alcohol and many beverages are 19%; books and plants 7%).
+- **AC2c:** Every parse is validated by the **two German checksums** — the printed *Summe*
+  reconciliation and the per-VAT-class subtotals. **These are our confidence score**:
+  a vision model returns no per-field confidence, so `checksum_state` replaces it. A receipt whose
+  lines do not sum to its own printed total is **never** auto-accepted.
+  ⚠️ *The TSE QR is **not** a third checksum — it carries no amounts
+  ([§12.1c](12-technical-research-capture.md#121c-the-tse-qr-code--what-it-actually-contains)).
+  It is used instead for **duplicate-receipt detection** and an **exact purchase timestamp**,
+  which is what makes retro-capture (a Bon photographed days late) safe.*
+- **AC2d:** The model returns the **verbatim `raw_text`** beside every normalised name. Without
+  bounding boxes it is the only provenance we get, and it is the dictionary training pair.
 - **AC3:** Review screen is **confirm-by-default** — the user taps ✔ once for everything and
   only touches items that are wrong. Never a form to fill.
 - **AC4:** Failure is graceful: if parsing confidence is low, show what we got, never a wall
@@ -303,7 +317,9 @@ week, open-based retention reads catastrophically low and measures nothing.
 | R3 | Inventory drift makes alerts wrong | High | High | Confidence decay + auto-retire + weekly 60s sweep; measure "already used/gone" tap rate | >20% of alerts stale |
 | R4 | Wrong expiry destroys trust (the Fridgely failure) | High | Medium | Uncertainty bands, no "EXPIRED" language, safety carve-outs | Support tickets, 1★ reviews mentioning dates |
 | R5 | Email/receipt access feels invasive | High | Medium | Read-only scope, forwarding-address alternative, on-device-first framing, plain-language consent, no data resale ever | Consent screen drop-off > 40% |
-| R6 | LLM/OCR cost per **paying** user exceeds ARPU | **High** | **High** | ⚠️ *Upgraded after review.* Cost is per household, revenue is per paying household — at 6% conversion, 94% of users are pure COGS. **At launch the dictionary is empty and LLM fallback is ~100%**, so costs peak when cash is scarcest. Free tier cut to 2 scans/mo; cost gate moved to beta week 4; dual-source OCR | Cost per **paying** household/mo > $2 |
+| R6 | Parsing cost per **paying** user exceeds ARPU | ~~High~~ **Low** | ~~High~~ **Low** | ⚠️ **Downgraded twice.** Upgraded after review (cost is per household, revenue per paying household), then **largely retired by [doc 12](12-technical-research-capture.md)**: VLM-first extraction costs ~$0.0008/receipt against $0.04–0.08 for a vendor. Fully loaded COGS €0.75 → **€0.11**, margin 66% → **95%**, and a free active household costs ~€0.006/mo. Rate limiting still required — **the blast radius is just 40× smaller** | Cost per **paying** household/mo > €0.50 |
+| R13 ⚠️ new | **Silent parse hallucination** — a vision model invents a plausible line item on a faded thermal receipt | **Critical** | Medium | This is **worse than an OCR error, because it is confident and reads correctly.** Mitigated by the two German checksums (a receipt that doesn't sum to its own total is never auto-accepted) plus **self-consistency**: two passes at temperature 0, compared. At ~$0.0008/pass this is affordable | Checksum-failure rate rising, or correction rate > 12% with checksums passing |
+| R14 ⚠️ new | **Model deprecation** — the provider retires the pinned model | Medium | **High** | The OCR vendor used to absorb this. Pin versions; **re-run the full 200-receipt eval on every model change**, with the prompt hash recorded ([§5.10](05-technical-architecture.md)). ⭐ **Structural fix planned for v2:** migrate to a **self-hosted, open-weight document-OCR specialist** — specialised document models also hallucinate far less than general VLMs (**93.2% vs 72.6–85.0%**), so this resolves R13, R14 and the DSGVO transfer question in one move | Provider deprecation notice |
 | R10 ⚠️ new | **Missed captures** — the user simply forgets to photograph the receipt | **Critical** | **High** | No UI fixes forgetting. Forward-to-address import, opt-in geofence nudge on supermarket exit, and capture compliance as a tracked metric | Capture compliance < 45% at W6 |
 | R11 ⚠️ new | **Selection inverts the value** — high-waste households (large, chaotic, time-poor, kids) are least likely to install; installers are already conscientious and waste least | **High** | **High** | Phase 0 recruits *high-waste* households specifically, not enthusiastic ones. No UX fixes this; it is a demand-side fact to be measured | Diary study shows rescue rate concentrated in low-waste households |
 | R12 ⚠️ new | **iOS has no notification surface** for 35–45% of users | **Critical** | **High** | Email fallback in v1; native decision moved before the retention gate; G2 stratified by platform | PWA install × push opt-in < 35% |
