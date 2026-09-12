@@ -1,5 +1,6 @@
 .git
 .github
+.claude
 log/*
 tmp/*
 storage/*
@@ -12,3 +13,14 @@ frontend/dist
 .rubocop.yml
 spec/
 docs/
+
+# Secrets must never be baked into an image.
+#
+# `COPY . .` in the production Dockerfile would otherwise copy .env — which
+# holds OPENAI_API_KEY and the Fly deploy token — and config/master.key into a
+# layer, readable by anyone who can pull the image. Production takes its
+# configuration from real environment variables and Fly secrets instead.
+.env
+.env.*
+config/master.key
+config/credentials/*.key

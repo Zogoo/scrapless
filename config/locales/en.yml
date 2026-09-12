@@ -1,6 +1,7 @@
 en:
   auth:
     no_fridge: "No fridge yet — start one and we'll remember it."
+    too_many_fridges: "That is a lot of new fridges. Try again in an hour."
   record:
     not_found: "We couldn't find that."
   capture:

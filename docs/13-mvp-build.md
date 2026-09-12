@@ -152,9 +152,45 @@ looked like the AI was free when in fact every call was being refused.
 
 ---
 
+## 13.4c Deployment
+
+Live at **https://scrapless-app.fly.dev** — one 512MB shared-CPU machine in `fra`, a 1GB
+volume for SQLite, `auto_stop_machines` on so it sleeps when idle. Rails serves the built
+Angular app from `public/`, so production is single-origin and CORS is never exercised.
+
+Secrets (`RAILS_MASTER_KEY`, `SECRET_KEY_BASE`, `OPENAI_API_KEY`, `AI_MODE`,
+`AI_DAILY_BUDGET_USD`) are Fly secrets, piped to `fly secrets import` on stdin so no value
+reaches an argument list or a log.
+
+⚠️ **Two things had to be fixed before it was safe to expose.**
+
+1. **`.dockerignore` did not exclude `.env` or `config/master.key`**, so `COPY . .` would
+   have baked the OpenAI key, the Fly deploy token and the Rails master key into an image
+   layer. Now excluded, and verified by building a throwaway image that asserts their
+   absence from the build context. *(This comes from the scaffold generator's overlay and is
+   worth reporting upstream — every project generated from it has the same hole.)*
+2. **The wallet was open.** `POST /api/v1/fridge` is unauthenticated and fridges are free, so
+   the per-fridge capture limit was no defence at all — doc 5 §5.6's "anyone could use
+   Scrapless as a free receipt-OCR API", exactly. Now bounded by
+   [`Ai::Budget`](../app/services/ai/budget.rb), a daily spend ceiling counted out of the
+   `ai_calls` ledger (not a cache counter, which a restart would reset), plus a Rails-native
+   rate limit on fridge creation.
+
+**The ceiling is $2/day by default** (`AI_DAILY_BUDGET_USD`). At the measured $0.0025 a
+receipt that is ~800 receipts a day; set it to `0` to disable. When it trips, the app degrades
+exactly as a provider outage does — camera off, typing and voice still working.
+
+Redeploy with:
+
+```bash
+fly deploy --remote-only -a scrapless-app
+```
+
+---
+
 ## 13.5 Verification
 
-Backend 125 examples, frontend 12, RuboCop and Brakeman clean. Beyond the suites, the running app was
+Backend 133 examples, frontend 12, RuboCop and Brakeman clean. Beyond the suites, the running app was
 driven end to end: fridge created and named, four items added through the tap grid with
 **zero** billed model calls, the shop rewound a week to exercise the risk model, chicken
 correctly suppressed, localStorage cleared and the fridge restored from the cookie alone, and

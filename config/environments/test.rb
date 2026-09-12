@@ -20,7 +20,12 @@ Rails.application.configure do
 
   # Show full error reports.
   config.consider_all_requests_local = true
-  config.cache_store = :null_store
+  # Not :null_store. ActionController's rate_limit is cache-backed and captures
+  # its store when the controller class loads, so under a null store every rate
+  # limit in the app silently does nothing — including the one guarding the only
+  # unauthenticated endpoint. A memory store means the limiter is exercised here
+  # the same way it runs in production; rails_helper clears it between examples.
+  config.cache_store = :memory_store
 
   # Render exception templates for rescuable exceptions and raise for other exceptions.
   config.action_dispatch.show_exceptions = :rescuable

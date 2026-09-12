@@ -36,6 +36,10 @@ RSpec.configure do |config|
   config.filter_rails_from_backtrace!
 
   config.include FactoryBot::Syntax::Methods
+
+  # The cache now backs rate limiting (see config/environments/test.rb), so it
+  # has to be reset or one example's requests count against the next one's.
+  config.before { Rails.cache.clear }
 end
 
 Shoulda::Matchers.configure do |config|

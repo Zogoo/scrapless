@@ -4,6 +4,16 @@ module Api
     class FridgesController < ApplicationController
       skip_before_action :authenticate!, only: :create
 
+      # The only unauthenticated endpoint in the app, and the door to the only
+      # expensive one. A per-fridge capture limit is no defence when fridges are
+      # free to mint, so the minting itself is capped per client.
+      #
+      # A speed bump, not a wall: it is cache-backed, so a restart resets it.
+      # The durable protection is Ai::Budget, which counts real spend.
+      rate_limit to: 10, within: 1.hour, only: :create,
+                 with: -> { render json: { error: I18n.t("auth.too_many_fridges") },
+                                   status: :too_many_requests }
+
       # The only unauthenticated endpoint. Called once, on first visit, after the
       # single onboarding question ("name your fridge?" / skip).
       def create

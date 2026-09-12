@@ -5,6 +5,15 @@ set -e
 if [ "${*}" == "bundle exec puma -C config/puma.rb" ]; then
   echo "Preparing database..."
   bundle exec rails db:prepare
+
+  # Seeded on every boot, not only on first creation.
+  #
+  # db:prepare seeds only when it creates the database, so without this a new
+  # shelf-life rule or dictionary entry would never reach production — and the
+  # dictionary is the thing that keeps model calls off the bill. The seeds are
+  # idempotent (find_or_initialize_by), so re-running them is free.
+  echo "Seeding reference data..."
+  bundle exec rails db:seed
 fi
 
 exec "${@}"

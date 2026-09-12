@@ -1,12 +1,20 @@
+# CI and deploy in one workflow, on purpose.
+#
+# The generated setup had a separate fly-deploy.yml triggering on the same push
+# to main. Two workflows on one event race: a commit that fails its tests
+# deploys anyway, because nothing connects them. Here `deploy` has `needs`, so
+# a red build cannot reach production.
 name: CI
 
 on:
   pull_request:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   scan_ruby:
+    name: Security scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -19,6 +27,7 @@ jobs:
         run: bin/bundler-audit
 
   lint:
+    name: RuboCop
     runs-on: ubuntu-latest
     env:
       RUBOCOP_CACHE_ROOT: tmp/rubocop
@@ -27,13 +36,22 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
-      - name: RuboCop
-        run: bin/rubocop -f github
+      - run: bin/rubocop -f github
 
   test:
+    name: RSpec
     runs-on: ubuntu-latest
     env:
       RAILS_ENV: test
+      # config/master.key is not in the repo, so nothing here can read encrypted
+      # credentials; an explicit key keeps boot deterministic rather than relying
+      # on a generated tmp/local_secret.txt.
+      SECRET_KEY_BASE: ci-secret-key-base-not-used-outside-github-actions
+      # Belt and braces. spec/rails_helper.rb already forces both, because a
+      # developer's .env would otherwise put the suite in live mode against a
+      # real API key — see docs/13 §13.4b.
+      AI_MODE: stub
+      DATABASE_PATH: storage/test.sqlite3
     steps:
       - uses: actions/checkout@v6
       - uses: ruby/setup-ruby@v1
@@ -44,7 +62,8 @@ jobs:
       - name: RSpec
         run: bundle exec rspec
 
-  test_frontend:
+  frontend:
+    name: Frontend
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -58,5 +77,40 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+      - name: Prettier
+        run: npm run lint
       - name: Vitest
         run: npm run test:ci
+      # The deploy builds this same app inside the Dockerfile, so a template or
+      # type error would otherwise fail *after* CI went green — at deploy time,
+      # which is the expensive place to find out.
+      - name: Production build
+        run: npm run build -- --configuration=production
+
+  deploy:
+    name: Deploy to Fly
+    # Only a real push to main deploys. Pull requests and manual runs on other
+    # branches still get the full check suite above.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [ scan_ruby, lint, test, frontend ]
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-scrapless
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      # FLY_API_TOKEN is the only secret this workflow needs. Everything the app
+      # itself requires — OPENAI_API_KEY, RAILS_MASTER_KEY, SECRET_KEY_BASE,
+      # AI_DAILY_BUDGET_USD — already lives in Fly secrets, so it never passes
+      # through GitHub at all.
+      - name: Deploy
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      # "Deployed" and "working" are different claims. This makes the second one.
+      - name: Smoke test the deployment
+        run: .github/scripts/smoke-test.sh https://scrapless-app.fly.dev

@@ -15,6 +15,21 @@ RSpec.describe "Api::V1::Fridges", type: :request do
       expect(response.parsed_body["name"]).to be_present
     end
 
+    # The only unauthenticated endpoint, and the door to the expensive one.
+    #
+    it "will not let one client mint fridges without limit" do
+      11.times { post "/api/v1/fridge", params: {}, as: :json }
+
+      expect(response).to have_http_status(:too_many_requests)
+      expect(response.parsed_body["error"]).to match(/lot of new fridges/i)
+    end
+
+    it "is not blocked by the limiter under normal use" do
+      3.times { post "/api/v1/fridge", params: {}, as: :json }
+
+      expect(response).to have_http_status(:created)
+    end
+
     # Two independent stores, so clearing either one alone does not lose the
     # fridge. This is the cookie half.
     it "sets a ten-year cookie alongside the token it returns" do

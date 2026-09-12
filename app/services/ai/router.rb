@@ -14,6 +14,11 @@ module Ai
   class Router
     class NoProviderAvailable < Client::Unavailable; end
 
+    # Deliberately an Unavailable: the app already degrades gracefully from one
+    # of those — it stops offering the camera and points at the typed and spoken
+    # paths, which cost nothing and keep working.
+    class BudgetExceeded < Client::Unavailable; end
+
     def initialize(household: nil)
       @household = household
     end
@@ -38,6 +43,10 @@ module Ai
     private
 
     def attempt(job, require_transcription: false)
+      if Budget.exceeded?
+        raise BudgetExceeded, "daily AI budget of $#{Budget.daily_limit_usd} reached"
+      end
+
       candidates = Config.chain
       candidates = candidates.select(&:transcription) if require_transcription
       raise NoProviderAvailable, "no provider can #{job}" if candidates.empty?
