@@ -27,7 +27,8 @@ receipt on every transaction — the best capture substrate in Europe. See [doc 
 | 10 | [Frameworks & financials](10-frameworks-and-financials.md) | BMC, SWOT, Porter, PESTEL, P&L, break-even, scenarios, DCF, comps, cohorts |
 | 11 | [Germany & Berlin market](11-germany-berlin-market.md) | **Canonical market figures.** Why Berlin, the German landscape, German operating differences, the revised ask and roadmap |
 | 12 | [Technical research — capture](12-technical-research-capture.md) | **Canonical capture architecture.** VLM-first receipt reading, extraction-accuracy and hallucination evidence, the two German receipt checksums, EU data residency, Open Food Facts licensing, auto-capture, and the in-fridge/door-mount camera verdicts |
-| 12 | [Technical research — capture](12-technical-research-capture.md) | **Canonical capture architecture.** Vision-LLM receipt reading vs OCR vendors, auto-capture, in-fridge cameras — what to adopt and what to reject |
+| 13 | [The MVP build](13-mvp-build.md) | **What now exists in this repo**, which conclusions it implements, and which it does not |
+| 14 | [MVP cost model](14-mvp-cost-model.md) | What the OpenAI calls cost per receipt, per household, per month — and which model to use |
 
 **Visual companion:** [Interactive product brief](https://claude.ai/code/artifact/bcd6a143-4d45-4464-af49-7a5f7e19a9e3) — screens, a draggable decay model, roadmap and gates.
 
@@ -48,7 +49,12 @@ verbatim — their £ figures are preserved deliberately, because editing a revi
 match a later decision would misrepresent the review.
 
 ## Status
+⚠️ **There is now code.** A working MVP of the core loop lives in this repository — see
+[doc 13](13-mvp-build.md). It does not overturn the decision gate below: it exists so the
+concierge test can put a real thing in front of households, and so the model calls can be
+priced against a real invoice.
+
 Research and planning complete, reviewed by two independent senior engineers, re-based on a
 Berlin launch, and the capture architecture rebuilt around a vision LLM.
-**No code written yet, and none should be** until the Berlin concierge test reports.
+**Nothing launches** until the Berlin concierge test reports.
 Decision gate: [§ Go/No-go](06-business-plan-roadmap.md#65-gono-go-and-kill-criteria).

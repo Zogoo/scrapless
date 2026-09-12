@@ -1,0 +1,185 @@
+.today {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 1rem 0;
+  max-width: 34rem;
+  margin: 0 auto;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.fridge-name {
+  margin: 0.15rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.icon-link {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  display: grid;
+  place-items: center;
+  font-size: 1.25rem;
+  text-decoration: none;
+}
+
+.install {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.9rem 1rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+
+  p {
+    margin: 0;
+  }
+
+  .ios-steps {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+}
+
+.section-head {
+  margin: 0.5rem 0 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.rescue {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+
+  &.high-risk {
+    border-left: 4px solid var(--danger);
+  }
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.badge {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  color: var(--ink);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.headline {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* Actions live in the bottom third of the card and wrap rather than shrink,
+   so no target ever drops below 48px. */
+.rescue .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  button {
+    flex: 1 1 auto;
+    min-width: 6.5rem;
+  }
+}
+
+.calm {
+  padding: 2.5rem 1rem;
+  text-align: center;
+
+  .mark {
+    font-size: 2.5rem;
+  }
+
+  h2 {
+    margin: 0.75rem 0 0.35rem;
+  }
+
+  p {
+    margin: 0;
+    color: var(--muted);
+  }
+}
+
+.rest-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  justify-content: flex-start;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+
+  .count {
+    margin-left: auto;
+  }
+}
+
+.rest {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.25rem 0.75rem;
+    align-items: center;
+  }
+
+  .name {
+    font-weight: 500;
+  }
+
+  .note {
+    grid-column: 1 / -1;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .bar {
+    width: 5rem;
+  }
+}
+
+.ghosts {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.fab {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  width: 3.75rem;
+  height: 3.75rem;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 2rem;
+  line-height: 1;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 18%);
+  z-index: 5;
+}

@@ -1,0 +1,75 @@
+<section class="kitchen">
+  <h1>{{ 'kitchen.title' | translate }}</h1>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (loading()) {
+    <p class="loading">{{ 'common.loading' | translate }}</p>
+  } @else {
+    @for (storage of storages; track storage) {
+      <section class="group">
+        <button type="button" class="group-head" (click)="toggle(storage)">
+          <span>{{ 'storage.' + storage | translate }}</span>
+          <span class="count">{{ groups()[storage].length }}</span>
+          <span aria-hidden="true">{{ open() === storage ? '▾' : '▸' }}</span>
+        </button>
+
+        @if (open() === storage) {
+          @if (groups()[storage].length === 0) {
+            <p class="lede">{{ 'kitchen.empty_group' | translate }}</p>
+          } @else {
+            <ul>
+              @for (item of groups()[storage]; track item.id) {
+                <li>
+                  @if (editingId() === item.id) {
+                    <div class="edit">
+                      <input
+                        type="text"
+                        [value]="draftName()"
+                        (input)="draftName.set($any($event.target).value)"
+                        (keyup.enter)="saveEdit(item)"
+                      />
+                      <button type="button" class="primary" (click)="saveEdit(item)">
+                        {{ 'common.save' | translate }}
+                      </button>
+                      <button type="button" class="ghost" (click)="editingId.set(null)">
+                        {{ 'common.cancel' | translate }}
+                      </button>
+                    </div>
+                  } @else {
+                    <div class="row">
+                      <button type="button" class="name-btn" (click)="startEdit(item)">
+                        {{ item.display_name }}
+                      </button>
+                      <span class="bar small" [attr.data-phase]="item.phase">
+                        <span [style.width]="barWidth(item)"></span>
+                      </span>
+                    </div>
+                    <p class="headline">{{ item.headline }}</p>
+                    <div class="row-actions">
+                      <button type="button" (click)="resolve(item, 'used')">
+                        ✔ {{ 'today.used' | translate }}
+                      </button>
+                      @if (item.storage !== 'freezer') {
+                        <button type="button" (click)="resolve(item, 'froze')">
+                          ❄️ {{ 'today.froze' | translate }}
+                        </button>
+                      }
+                      @if (!item.opened_on) {
+                        <button type="button" (click)="resolve(item, 'opened')">
+                          {{ 'kitchen.opened' | translate }}
+                        </button>
+                      }
+                    </div>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        }
+      </section>
+    }
+  }
+</section>

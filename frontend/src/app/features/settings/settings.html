@@ -1,0 +1,107 @@
+<section class="settings">
+  <h1>{{ 'settings.title' | translate }}</h1>
+
+  <label class="field">
+    <span>{{ 'settings.fridge_name' | translate }}</span>
+    <input
+      type="text"
+      maxlength="60"
+      [ngModel]="name()"
+      (ngModelChange)="name.set($event)"
+      (keyup.enter)="rename()"
+    />
+  </label>
+  <button type="button" class="primary wide" (click)="rename()">
+    {{ (saved() ? 'settings.saved' : 'common.save') | translate }}
+  </button>
+
+  @if (fridge.fridge(); as current) {
+    <p class="meta">
+      {{ 'settings.fridge_id' | translate }} <code>{{ current.id }}</code>
+    </p>
+    <p class="meta">{{ 'settings.identity_note' | translate }}</p>
+  }
+
+  @if (!install.installed()) {
+    <section class="block">
+      <h2>{{ 'install.title' | translate }}</h2>
+      @if (install.available()) {
+        <button type="button" class="primary wide" (click)="installApp()">
+          {{ 'install.add' | translate }}
+        </button>
+      } @else if (install.isIos) {
+        <p class="meta">{{ 'install.ios_steps' | translate }}</p>
+      } @else {
+        <p class="meta">{{ 'install.unavailable' | translate }}</p>
+      }
+    </section>
+  }
+
+  <!-- Published in the product on purpose: the unit-economics claim for this
+       MVP is "a capture costs a fraction of a cent", and a claim like that
+       should be checkable by whoever is paying for it. -->
+  @if (costs(); as report) {
+    <section class="block">
+      <h2>{{ 'settings.costs' | translate }}</h2>
+
+      @if (report.mode === 'stub') {
+        <p class="meta">{{ 'settings.stub_mode' | translate }}</p>
+      }
+
+      <dl class="costs">
+        <div>
+          <dt>{{ 'settings.calls' | translate }}</dt>
+          <dd>{{ report.totals.calls }}</dd>
+        </div>
+        <div>
+          <dt>{{ 'settings.total_spend' | translate }}</dt>
+          <dd>${{ report.totals.usd | number: '1.4-6' }}</dd>
+        </div>
+        <div>
+          <dt>{{ 'settings.per_receipt' | translate }}</dt>
+          <dd>${{ costPerCapture(report) | number: '1.4-6' }}</dd>
+        </div>
+      </dl>
+
+      @if (report.by_purpose.length > 0) {
+        <table class="breakdown">
+          <thead>
+            <tr>
+              <th>{{ 'settings.job' | translate }}</th>
+              <th>{{ 'settings.calls' | translate }}</th>
+              <th>{{ 'settings.spend' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of report.by_purpose; track row.purpose) {
+              <tr>
+                <td>{{ row.purpose }}</td>
+                <td>{{ row.calls }}</td>
+                <td>${{ row.usd | number: '1.4-6' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+  }
+
+  <section class="block danger-zone">
+    <h2>{{ 'settings.forget' | translate }}</h2>
+    <p class="meta">{{ 'settings.forget_note' | translate }}</p>
+    @if (confirmingForget()) {
+      <div class="confirm">
+        <button type="button" class="danger-btn" (click)="forget()">
+          {{ 'settings.forget_confirm' | translate }}
+        </button>
+        <button type="button" class="ghost" (click)="confirmingForget.set(false)">
+          {{ 'common.cancel' | translate }}
+        </button>
+      </div>
+    } @else {
+      <button type="button" (click)="confirmingForget.set(true)">
+        {{ 'settings.forget' | translate }}
+      </button>
+    }
+  </section>
+</section>

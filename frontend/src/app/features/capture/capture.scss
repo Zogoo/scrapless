@@ -1,0 +1,264 @@
+.capture {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0;
+  max-width: 34rem;
+  margin: 0 auto;
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+
+  h1 {
+    font-size: 1.35rem;
+  }
+}
+
+.lede {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* Capture options: the most automated path is the biggest target. */
+.option {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  padding: 1rem;
+  text-align: left;
+  border-radius: var(--radius);
+
+  .glyph {
+    font-size: 1.6rem;
+  }
+
+  .text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  small {
+    color: var(--muted);
+  }
+
+  &.primary-option {
+    padding: 1.4rem 1rem;
+    border-color: var(--accent);
+
+    .glyph {
+      font-size: 2rem;
+    }
+  }
+
+  &.quiet-option {
+    opacity: 0.85;
+  }
+}
+
+/* --- camera --- */
+.viewfinder {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  video {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: var(--radius);
+    background: #000;
+  }
+}
+
+.reticle {
+  position: absolute;
+  inset: 1.5rem 1.5rem auto;
+  height: 62%;
+  border: 3px dashed rgb(255 255 255 / 45%);
+  border-radius: 12px;
+  pointer-events: none;
+
+  &[data-status='steady'] {
+    border-style: solid;
+    border-color: var(--fresh);
+  }
+
+  &[data-status='captured'] {
+    border-style: solid;
+    border-color: var(--fresh);
+    background: rgb(46 125 50 / 15%);
+  }
+
+  .progress {
+    position: absolute;
+    left: 0;
+    bottom: -3px;
+    height: 3px;
+    background: var(--fresh);
+    transition: width 120ms linear;
+  }
+}
+
+.hint {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  min-height: 1.5rem;
+}
+
+.camera-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+
+  .on {
+    color: var(--accent);
+    font-weight: 600;
+  }
+}
+
+.shutter {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 50%;
+  border: 5px solid var(--ink);
+  background: var(--surface);
+}
+
+/* --- voice --- */
+.voice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem 0 0;
+  text-align: center;
+
+  .pulse {
+    font-size: 3rem;
+
+    &.live {
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+  }
+
+  .prompt {
+    margin: 0;
+  }
+
+  .interim {
+    margin: 0;
+    min-height: 3rem;
+    color: var(--muted);
+    font-size: 1.1rem;
+  }
+}
+
+.voice-controls {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+
+  button {
+    flex: 1;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* --- manual --- */
+.grid-head {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.chip {
+  padding: 0.75rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+
+  &.picked {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+}
+
+.wide {
+  width: 100%;
+}
+
+/* --- review --- */
+.review-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+
+  li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.15rem 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .uncertain {
+    border-color: var(--at-risk);
+  }
+
+  .days {
+    color: var(--muted);
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+
+  .raw {
+    grid-column: 1 / -1;
+    color: var(--muted);
+    font-family: ui-monospace, monospace;
+    font-size: 0.8rem;
+  }
+}
+
+.suppressed {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.fallbacks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  button {
+    flex: 1 1 auto;
+  }
+}

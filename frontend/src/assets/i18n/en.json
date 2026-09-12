@@ -1,0 +1,122 @@
+{
+  "nav": {
+    "main": "Main",
+    "today": "Today",
+    "kitchen": "Kitchen",
+    "memo": "Shop",
+    "settings": "You"
+  },
+  "onboarding": {
+    "title": "Crisper",
+    "lede": "Snap the receipt. We'll tell you what needs eating.",
+    "question": "Want to name your fridge?",
+    "placeholder": "e.g. Kitchen, Flat 3, Home",
+    "name_it": "That's the one",
+    "skip": "Skip — just get started",
+    "footnote": "No email, no password. This browser stays signed in for ten years."
+  },
+  "today": {
+    "use_first": "Use these first",
+    "used": "Used",
+    "partial": "Used half",
+    "froze": "Froze it",
+    "gone": "It's gone",
+    "safety_date": "Go by the date",
+    "fine_for_now": "Fine for now",
+    "probably_gone": "{{count}} probably gone — already tidied away",
+    "calm_title": "Nothing's at risk.",
+    "calm_body": "Your kitchen's in good shape.",
+    "empty_title": "Nothing in here yet.",
+    "empty_body": "Next time you shop, point the camera at the receipt.",
+    "add": "Add food"
+  },
+  "capture": {
+    "title": "What did you get?",
+    "camera": "Point the camera",
+    "camera_hint": "Receipt or the shopping itself — it works out which",
+    "voice": "Just say it",
+    "voice_hint": "For when your hands are full",
+    "manual": "Type it",
+    "manual_hint": "A few things, quickly",
+    "manual_label": "What did you get?",
+    "manual_placeholder": "milk, broccoli, 2 chicken breasts",
+    "grid_head": "Or tap the usual suspects",
+    "add_these": "Add these",
+    "take_photo": "Take the photo",
+    "auto_on": "Auto",
+    "auto_off": "Manual",
+    "voice_prompt": "Say what you bought.",
+    "done_talking": "Done",
+    "reading": "Reading that…",
+    "review_count": "{{count}} items",
+    "review_lede": "We got these. Tap anything that looks wrong later — nothing to confirm now.",
+    "about_days": "~{{count}} days",
+    "suppressed": "Left out: {{list}}",
+    "accept_all": "Keep all {{count}}",
+    "hard_to_read": "That one was hard to read.",
+    "retake": "Try again",
+    "unreadable": "That one was hard to read. Want to try again, or just tell us the fresh stuff?",
+    "no_camera": "We couldn't open the camera. You can type it instead.",
+    "no_mic": "We couldn't hear anything. You can type it instead.",
+    "shutter": {
+      "searching": "Point at the receipt or the shopping",
+      "too_dark": "A bit dark — move to the light",
+      "hold_still": "Hold still…",
+      "steady": "Got it — keep holding",
+      "captured": "Taken"
+    }
+  },
+  "memo": {
+    "title": "Shopping",
+    "placeholder": "Add something",
+    "add": "Add",
+    "dictate": "Say the list",
+    "listening": "Listening…",
+    "empty": "Nothing on the list yet.",
+    "suggested": "You usually need"
+  },
+  "kitchen": {
+    "title": "Kitchen",
+    "empty_group": "Nothing in here.",
+    "opened": "Opened it"
+  },
+  "storage": {
+    "fridge": "Fridge",
+    "freezer": "Freezer",
+    "pantry": "Cupboard"
+  },
+  "install": {
+    "title": "Add to your home screen",
+    "pitch": "Add Crisper to your home screen — it opens straight to the camera.",
+    "add": "Add to home screen",
+    "not_now": "Not now",
+    "ios_steps": "Tap Share, then \"Add to Home Screen\".",
+    "unavailable": "Your browser will offer this once you've used the app a couple of times."
+  },
+  "settings": {
+    "title": "You",
+    "fridge_name": "Fridge name",
+    "saved": "Saved",
+    "fridge_id": "Fridge ID",
+    "identity_note": "Kept in this browser and in a ten-year cookie. Clearing both loses the fridge — one receipt rebuilds it.",
+    "costs": "What the AI has cost",
+    "stub_mode": "Running offline with sample data — no API key set, so nothing has been billed.",
+    "calls": "Calls",
+    "spend": "Spend",
+    "total_spend": "Total",
+    "per_receipt": "Per receipt",
+    "job": "Job",
+    "forget": "Forget this fridge",
+    "forget_note": "Deletes everything we hold for this fridge. There is no undo.",
+    "forget_confirm": "Yes, delete it all"
+  },
+  "common": {
+    "loading": "One moment…",
+    "cancel": "Cancel",
+    "back": "Back",
+    "close": "Close",
+    "save": "Save",
+    "delete": "Delete",
+    "retry": "Try again"
+  }
+}

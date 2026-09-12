@@ -1,0 +1,212 @@
+<section class="capture">
+  @switch (mode()) {
+    @case ('choose') {
+      <header class="sheet-head">
+        <h1>{{ 'capture.title' | translate }}</h1>
+        <button type="button" class="ghost" (click)="done()">
+          {{ 'common.close' | translate }}
+        </button>
+      </header>
+
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+
+      <!-- Ordered by decreasing automation, not by developer convenience. -->
+      <button type="button" class="option primary-option" (click)="openCamera()">
+        <span class="glyph" aria-hidden="true">📷</span>
+        <span class="text">
+          <strong>{{ 'capture.camera' | translate }}</strong>
+          <small>{{ 'capture.camera_hint' | translate }}</small>
+        </span>
+      </button>
+
+      @if (speech.supported) {
+        <button type="button" class="option" (click)="startVoice()">
+          <span class="glyph" aria-hidden="true">🎙</span>
+          <span class="text">
+            <strong>{{ 'capture.voice' | translate }}</strong>
+            <small>{{ 'capture.voice_hint' | translate }}</small>
+          </span>
+        </button>
+      }
+
+      <button type="button" class="option quiet-option" (click)="mode.set('manual')">
+        <span class="glyph" aria-hidden="true">⌨️</span>
+        <span class="text">
+          <strong>{{ 'capture.manual' | translate }}</strong>
+          <small>{{ 'capture.manual_hint' | translate }}</small>
+        </span>
+      </button>
+    }
+
+    @case ('camera') {
+      <div class="viewfinder">
+        <video #video playsinline muted autoplay></video>
+
+        <div class="reticle" [attr.data-status]="shutter()">
+          <div class="progress" [style.width.%]="progress() * 100"></div>
+        </div>
+
+        <p class="hint" role="status" aria-live="polite">{{ shutterLabel() }}</p>
+
+        <div class="camera-controls">
+          <button type="button" class="ghost" (click)="back()">
+            {{ 'common.cancel' | translate }}
+          </button>
+          <button
+            type="button"
+            class="shutter"
+            [disabled]="busy()"
+            (click)="shoot()"
+            [attr.aria-label]="'capture.take_photo' | translate"
+          ></button>
+          <button
+            type="button"
+            class="ghost"
+            [class.on]="autoShutterOn()"
+            (click)="autoShutterOn.set(!autoShutterOn())"
+          >
+            {{ (autoShutterOn() ? 'capture.auto_on' : 'capture.auto_off') | translate }}
+          </button>
+        </div>
+      </div>
+    }
+
+    @case ('voice') {
+      <div class="voice">
+        <span class="pulse" [class.live]="speech.listening()" aria-hidden="true">🎙</span>
+        <p class="prompt">{{ 'capture.voice_prompt' | translate }}</p>
+        <p class="interim" role="status" aria-live="polite">
+          {{ speech.interim() || transcript() }}
+        </p>
+
+        @if (error()) {
+          <p class="error">{{ error() }}</p>
+        }
+
+        <div class="voice-controls">
+          <button type="button" class="ghost" (click)="back()">
+            {{ 'common.cancel' | translate }}
+          </button>
+          <button type="button" class="primary" [disabled]="busy()" (click)="stopVoice()">
+            {{ 'capture.done_talking' | translate }}
+          </button>
+        </div>
+      </div>
+    }
+
+    @case ('manual') {
+      <header class="sheet-head">
+        <button type="button" class="ghost" (click)="back()">
+          ← {{ 'common.back' | translate }}
+        </button>
+      </header>
+
+      <!-- One question, asked once. -->
+      <label class="field">
+        <span>{{ 'capture.manual_label' | translate }}</span>
+        <input
+          type="text"
+          autocomplete="off"
+          enterkeyhint="done"
+          [placeholder]="'capture.manual_placeholder' | translate"
+          [ngModel]="manualText()"
+          (ngModelChange)="manualText.set($event)"
+          (keyup.enter)="submitManual()"
+        />
+      </label>
+
+      <p class="grid-head">{{ 'capture.grid_head' | translate }}</p>
+      <div class="grid">
+        @for (name of tapGrid; track name) {
+          <button
+            type="button"
+            class="chip"
+            [class.picked]="picked().includes(name)"
+            [attr.aria-pressed]="picked().includes(name)"
+            (click)="toggleTap(name)"
+          >
+            {{ name }}
+          </button>
+        }
+      </div>
+
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+
+      <button
+        type="button"
+        class="primary wide"
+        [disabled]="busy() || (!manualText().trim() && picked().length === 0)"
+        (click)="submitManual()"
+      >
+        {{ 'capture.add_these' | translate: { count: picked().length } }}
+      </button>
+    }
+
+    @case ('review') {
+      @if (review(); as result) {
+        <header class="sheet-head">
+          <h1>
+            @if (result.capture.merchant) {
+              {{ result.capture.merchant }} ·
+            }
+            {{ 'capture.review_count' | translate: { count: result.items.length } }}
+          </h1>
+        </header>
+
+        @if (result.items.length === 0) {
+          <!-- Never a dead end: three ways forward (doc 4 §4.4). -->
+          <p class="lede">{{ 'capture.hard_to_read' | translate }}</p>
+          <div class="fallbacks">
+            <button type="button" (click)="retakePhoto()">
+              {{ 'capture.retake' | translate }}
+            </button>
+            @if (speech.supported) {
+              <button type="button" (click)="startVoice()">
+                {{ 'capture.voice' | translate }}
+              </button>
+            }
+            <button type="button" (click)="mode.set('manual')">
+              {{ 'capture.manual' | translate }}
+            </button>
+          </div>
+        } @else {
+          <p class="lede">{{ 'capture.review_lede' | translate }}</p>
+
+          <ul class="review-list">
+            <!-- Uncertainty floats to the top; everything else is pre-accepted. -->
+            @for (item of result.items; track item.id) {
+              <li [class.uncertain]="item.needs_review">
+                <span class="name">{{ item.display_name }}</span>
+                <span class="days">
+                  {{ 'capture.about_days' | translate: { count: item.days_left } }}
+                </span>
+                @if (item.needs_review && item.raw_text) {
+                  <small class="raw">{{ item.raw_text }}</small>
+                }
+              </li>
+            }
+          </ul>
+
+          @if (result.suppressed.length > 0) {
+            <!-- Showing what we filtered is what makes the parser trustworthy. -->
+            <p class="suppressed">
+              {{ 'capture.suppressed' | translate: { list: result.suppressed.join(', ') } }}
+            </p>
+          }
+
+          <button type="button" class="primary wide" (click)="done()">
+            {{ 'capture.accept_all' | translate: { count: result.items.length } }}
+          </button>
+        }
+      }
+    }
+  }
+
+  @if (busy()) {
+    <p class="loading">{{ 'capture.reading' | translate }}</p>
+  }
+</section>

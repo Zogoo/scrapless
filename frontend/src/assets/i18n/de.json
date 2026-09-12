@@ -1,0 +1,122 @@
+{
+  "nav": {
+    "main": "Hauptmenü",
+    "today": "Heute",
+    "kitchen": "Küche",
+    "memo": "Einkauf",
+    "settings": "Du"
+  },
+  "onboarding": {
+    "title": "Crisper",
+    "lede": "Bon abfotografieren. Wir sagen dir, was weg muss.",
+    "question": "Willst du deinem Kühlschrank einen Namen geben?",
+    "placeholder": "z. B. Küche, WG, Zuhause",
+    "name_it": "Passt so",
+    "skip": "Überspringen — einfach loslegen",
+    "footnote": "Keine E-Mail, kein Passwort. Dieser Browser bleibt zehn Jahre angemeldet."
+  },
+  "today": {
+    "use_first": "Das zuerst",
+    "used": "Verbraucht",
+    "partial": "Hälfte weg",
+    "froze": "Eingefroren",
+    "gone": "Weggeworfen",
+    "safety_date": "Nach Datum richten",
+    "fine_for_now": "Hat noch Zeit",
+    "probably_gone": "{{count}} wahrscheinlich schon weg — haben wir aufgeräumt",
+    "calm_title": "Nichts eilt.",
+    "calm_body": "Deine Küche ist gut in Schuss.",
+    "empty_title": "Hier ist noch nichts.",
+    "empty_body": "Halt beim nächsten Einkauf die Kamera auf den Bon.",
+    "add": "Essen hinzufügen"
+  },
+  "capture": {
+    "title": "Was hast du geholt?",
+    "camera": "Kamera drauf halten",
+    "camera_hint": "Bon oder Einkauf — wir erkennen, was es ist",
+    "voice": "Einfach sagen",
+    "voice_hint": "Wenn die Hände voll sind",
+    "manual": "Tippen",
+    "manual_hint": "Ein paar Sachen, schnell",
+    "manual_label": "Was hast du geholt?",
+    "manual_placeholder": "Milch, Brokkoli, 2 Hähnchenbrust",
+    "grid_head": "Oder tipp die üblichen Verdächtigen an",
+    "add_these": "Hinzufügen",
+    "take_photo": "Foto machen",
+    "auto_on": "Auto",
+    "auto_off": "Manuell",
+    "voice_prompt": "Sag, was du gekauft hast.",
+    "done_talking": "Fertig",
+    "reading": "Wird gelesen…",
+    "review_count": "{{count}} Artikel",
+    "review_lede": "Das haben wir. Was nicht stimmt, kannst du später antippen — jetzt nichts bestätigen.",
+    "about_days": "~{{count}} Tage",
+    "suppressed": "Weggelassen: {{list}}",
+    "accept_all": "Alle {{count}} übernehmen",
+    "hard_to_read": "Der Bon war schwer zu lesen.",
+    "retake": "Nochmal",
+    "unreadable": "Der Bon war schwer zu lesen. Nochmal, oder sag mir einfach das Frische.",
+    "no_camera": "Wir konnten die Kamera nicht öffnen. Tipp es einfach ein.",
+    "no_mic": "Wir haben nichts gehört. Tipp es einfach ein.",
+    "shutter": {
+      "searching": "Auf den Bon oder den Einkauf halten",
+      "too_dark": "Etwas dunkel — geh ans Licht",
+      "hold_still": "Ruhig halten…",
+      "steady": "Passt — noch kurz halten",
+      "captured": "Aufgenommen"
+    }
+  },
+  "memo": {
+    "title": "Einkauf",
+    "placeholder": "Etwas hinzufügen",
+    "add": "Hinzu",
+    "dictate": "Liste sprechen",
+    "listening": "Ich höre…",
+    "empty": "Noch nichts auf der Liste.",
+    "suggested": "Brauchst du meistens"
+  },
+  "kitchen": {
+    "title": "Küche",
+    "empty_group": "Hier ist nichts.",
+    "opened": "Geöffnet"
+  },
+  "storage": {
+    "fridge": "Kühlschrank",
+    "freezer": "Gefrierfach",
+    "pantry": "Vorrat"
+  },
+  "install": {
+    "title": "Zum Home-Bildschirm",
+    "pitch": "Leg Crisper auf den Home-Bildschirm — dann geht's direkt zur Kamera.",
+    "add": "Zum Home-Bildschirm",
+    "not_now": "Später",
+    "ios_steps": "Teilen antippen, dann „Zum Home-Bildschirm\".",
+    "unavailable": "Dein Browser bietet das an, sobald du die App ein paar Mal benutzt hast."
+  },
+  "settings": {
+    "title": "Du",
+    "fridge_name": "Name des Kühlschranks",
+    "saved": "Gespeichert",
+    "fridge_id": "Kühlschrank-ID",
+    "identity_note": "Liegt in diesem Browser und in einem Zehn-Jahres-Cookie. Beides löschen heißt Kühlschrank weg — ein Bon baut ihn wieder auf.",
+    "costs": "Was die KI gekostet hat",
+    "stub_mode": "Läuft offline mit Beispieldaten — kein API-Key gesetzt, also nichts abgerechnet.",
+    "calls": "Aufrufe",
+    "spend": "Kosten",
+    "total_spend": "Gesamt",
+    "per_receipt": "Pro Bon",
+    "job": "Aufgabe",
+    "forget": "Kühlschrank vergessen",
+    "forget_note": "Löscht alles, was wir zu diesem Kühlschrank haben. Kein Zurück.",
+    "forget_confirm": "Ja, alles löschen"
+  },
+  "common": {
+    "loading": "Einen Moment…",
+    "cancel": "Abbrechen",
+    "back": "Zurück",
+    "close": "Schließen",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "retry": "Nochmal"
+  }
+}

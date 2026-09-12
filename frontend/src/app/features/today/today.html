@@ -1,0 +1,142 @@
+<section class="today">
+  <header class="head">
+    <div>
+      <h1>{{ today()?.as_of | date: 'EEEE' }}</h1>
+      <p class="fridge-name">{{ fridge.fridge()?.name }}</p>
+    </div>
+    <a class="icon-link" routerLink="/settings" [attr.aria-label]="'nav.settings' | translate"
+      >⚙️</a
+    >
+  </header>
+
+  @if (install.shouldOffer()) {
+    <aside class="install">
+      <p>{{ 'install.pitch' | translate }}</p>
+      @if (install.available()) {
+        <button type="button" class="primary" (click)="installApp()">
+          {{ 'install.add' | translate }}
+        </button>
+      } @else {
+        <p class="ios-steps">{{ 'install.ios_steps' | translate }}</p>
+      }
+      <button type="button" class="ghost" (click)="install.dismiss()">
+        {{ 'install.not_now' | translate }}
+      </button>
+    </aside>
+  }
+
+  @if (error()) {
+    <p class="error">
+      {{ error() }}
+      <button type="button" class="ghost" (click)="load()">{{ 'common.retry' | translate }}</button>
+    </p>
+  }
+
+  @if (loading() && !today()) {
+    <p class="loading">{{ 'common.loading' | translate }}</p>
+  } @else if (isEmpty()) {
+    <!-- Never "add items to get started": an empty-state nag turns our tolerance
+         of an incomplete inventory into a lie (doc 2 §2.5). -->
+    <div class="calm">
+      <span class="mark" aria-hidden="true">🧺</span>
+      <h2>{{ 'today.empty_title' | translate }}</h2>
+      <p>{{ 'today.empty_body' | translate }}</p>
+    </div>
+  } @else {
+    @if (today()!.use_first.length > 0) {
+      <h2 class="section-head">{{ 'today.use_first' | translate }}</h2>
+
+      @for (item of today()!.use_first; track item.id) {
+        <article class="card rescue" [class.high-risk]="item.high_risk">
+          <div class="line">
+            <h3>{{ item.display_name }}</h3>
+            @if (item.high_risk) {
+              <span class="badge">{{ 'today.safety_date' | translate }}</span>
+            }
+          </div>
+
+          <p class="headline">{{ item.headline }}</p>
+
+          <!-- Length is the primary freshness channel, text is the second and the
+               icon the third. Colour only reinforces: red-green CVD is ~8% of men. -->
+          <div
+            class="bar"
+            role="img"
+            [attr.aria-label]="item.headline"
+            [attr.data-phase]="item.phase"
+          >
+            <span [style.width]="barWidth(item)"></span>
+          </div>
+
+          <div class="actions">
+            <button type="button" [disabled]="busyId() === item.id" (click)="resolve(item, 'used')">
+              ✔ {{ 'today.used' | translate }}
+            </button>
+            <button
+              type="button"
+              [disabled]="busyId() === item.id"
+              (click)="resolve(item, 'partial')"
+            >
+              ½ {{ 'today.partial' | translate }}
+            </button>
+            <button
+              type="button"
+              [disabled]="busyId() === item.id"
+              (click)="resolve(item, 'froze')"
+            >
+              ❄️ {{ 'today.froze' | translate }}
+            </button>
+            <button
+              type="button"
+              class="quiet"
+              [disabled]="busyId() === item.id"
+              (click)="resolve(item, 'wasted')"
+            >
+              🗑 {{ 'today.gone' | translate }}
+            </button>
+          </div>
+        </article>
+      }
+    } @else if (allCalm()) {
+      <div class="calm">
+        <span class="mark" aria-hidden="true">✨</span>
+        <h2>{{ 'today.calm_title' | translate }}</h2>
+        <p>{{ 'today.calm_body' | translate }}</p>
+      </div>
+    }
+
+    @if (today()!.fine_for_now.length > 0) {
+      <button type="button" class="rest-toggle" (click)="expandRest.set(!expandRest())">
+        {{ 'today.fine_for_now' | translate }}
+        <span class="count">{{ today()!.fine_for_now.length }}</span>
+        <span aria-hidden="true">{{ expandRest() ? '▾' : '▸' }}</span>
+      </button>
+
+      @if (expandRest()) {
+        <ul class="rest">
+          @for (item of today()!.fine_for_now; track item.id) {
+            <li>
+              <span class="name">{{ item.display_name }}</span>
+              <span class="bar small" [attr.data-phase]="item.phase">
+                <span [style.width]="barWidth(item)"></span>
+              </span>
+              <span class="note">{{ item.headline }}</span>
+            </li>
+          }
+        </ul>
+      }
+    }
+
+    <!-- Passive and non-actionable by design. Ghosts have already retired
+         themselves; this is a receipt for that, not a cleanup list. -->
+    @if (today()!.probably_gone.length > 0) {
+      <p class="ghosts">
+        {{ 'today.probably_gone' | translate: { count: today()!.probably_gone.length } }}
+      </p>
+    }
+  }
+</section>
+
+<button type="button" class="fab" (click)="capture()" [attr.aria-label]="'today.add' | translate">
+  +
+</button>

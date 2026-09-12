@@ -1,0 +1,23 @@
+de:
+  auth:
+    no_fridge: "Noch kein Kühlschrank — leg einen an, wir merken ihn uns."
+  record:
+    not_found: "Das haben wir nicht gefunden."
+  capture:
+    unreadable: "Der Bon war schwer zu lesen. Nochmal, oder sag mir einfach das Frische."
+    too_many: "Das sind viele Fotos auf einmal. Probier es in einer Stunde nochmal."
+  # "abgelaufen" ist genauso verboten wie "EXPIRED" (Doc 4 §4.13). MHD und
+  # Verbrauchsdatum werden nie vermischt.
+  freshness:
+    fine:
+      one: "noch ungefähr einen Tag gut"
+      other: "noch ungefähr %{count} Tage gut"
+    aging:
+      one: "noch ungefähr ein Tag"
+      other: "noch ungefähr %{count} Tage"
+    soon:
+      one: "morgen verbrauchen"
+      other: "in den nächsten %{count} Tagen verbrauchen"
+    today: "heute verbrauchen"
+    check_it: "%{name} — lohnt sich zu prüfen"
+    probably_gone: "wahrscheinlich schon weg"

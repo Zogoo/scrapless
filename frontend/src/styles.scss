@@ -1,0 +1,225 @@
+/**
+ * Design tokens from doc 4 §4.12.
+ *
+ * Two rules that are not negotiable and that the rest of the sheet is built to
+ * enforce:
+ *
+ *   1. Freshness is encoded by the LENGTH of a bar first, text second, icon
+ *      third. Colour only reinforces — roughly 8% of men have red-green CVD, and
+ *      this whole category signals freshness with a colour dot.
+ *   2. The amber and orange tokens are graphic-only. They sit at ~2.0:1 and
+ *      ~3.1:1 on white, so they may tint a bar and must never carry body text;
+ *      label text is always --ink.
+ */
+:root {
+  color-scheme: light dark;
+
+  --bg: #f6f6f4;
+  --surface: #ffffff;
+  --surface-sunken: #f0f0ee;
+  --border: #e0e0dc;
+  --ink: #1b1b1f;
+  --muted: #64646e;
+  --accent: #2e7d32;
+  --accent-ink: #ffffff;
+  --danger: #b3261e;
+
+  /* Graphic-only freshness tokens. Never behind text. */
+  --fresh: #2e7d32;
+  --aging: #f9a825;
+  --at-risk: #ef6c00;
+  --ghost: #9e9e9e;
+
+  --radius: 14px;
+  --tap: 48px;
+  --shadow: 0 1px 2px rgb(0 0 0 / 6%), 0 8px 24px rgb(0 0 0 / 4%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121214;
+    --surface: #1c1c20;
+    --surface-sunken: #232329;
+    --border: #33333a;
+    --ink: #f2f2f4;
+    --muted: #a0a0ab;
+    --accent: #6abf69;
+    --accent-ink: #10230f;
+    --danger: #f2b8b5;
+    --shadow: none;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  /* Never below 16px: this is read at arm's length on a kitchen counter. */
+  font-size: 16px;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+  /* Room for the tab bar plus the iOS home indicator. */
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+}
+
+h1 {
+  font-size: 1.75rem;
+  margin: 0;
+}
+
+h2 {
+  font-size: 1.25rem;
+}
+
+h3 {
+  font-size: 1.125rem;
+  margin: 0;
+}
+
+a {
+  color: var(--accent);
+}
+
+button {
+  font: inherit;
+  min-height: var(--tap);
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  /* Wet hands: no accidental text selection, no 300ms tap delay. */
+  user-select: none;
+  touch-action: manipulation;
+
+  &.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+
+  &.ghost {
+    border-color: transparent;
+    background: transparent;
+    color: var(--muted);
+  }
+
+  &.quiet {
+    color: var(--muted);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+input,
+textarea {
+  font: inherit;
+  /* 16px minimum, or iOS Safari zooms the whole page on focus. */
+  font-size: 16px;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+label.field {
+  display: block;
+
+  span {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+}
+
+.card {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+  color: var(--danger);
+  font-size: 0.95rem;
+}
+
+.loading {
+  padding: 2rem 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+/**
+ * The freshness bar. Length carries the meaning; the tint is reinforcement, and
+ * the phase is also stated in words next to it.
+ */
+.bar {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+
+  > span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--fresh);
+    transition: width 200ms ease;
+  }
+
+  &[data-phase='aging'] > span {
+    background: var(--aging);
+  }
+
+  &[data-phase='at_risk'] > span {
+    background: var(--at-risk);
+  }
+
+  &[data-phase='ghost'] > span {
+    background: var(--ghost);
+  }
+
+  &.small {
+    height: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "crisper-api",
+      "runtimeExecutable": "bin/rails",
+      "runtimeArgs": ["server", "-p", "3001", "-b", "0.0.0.0"],
+      "port": 3001
+    },
+    {
+      "name": "crisper",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend", "start"],
+      "port": 4200
+    }
+  ]
+}

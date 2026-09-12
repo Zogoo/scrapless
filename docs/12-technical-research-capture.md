@@ -815,6 +815,237 @@ evidence.
 **Everything above is answered inside the already-funded Phase 0.** No new budget line is created by
 this document.
 
+
+---
+
+## 12.7 Digital receipts — the retailer apps ⭐
+
+⚠️ **This was a real gap in the research, and it changes the capture model more than any other
+finding in this document.** Every German grocery chain of scale now issues a digital receipt
+through its own app or by e-mail. The plan assumed a paper Bon photographed after each shop.
+
+### What each retailer actually offers
+
+| Retailer | Digital receipt | Retention | Can it get out of their app? |
+|---|---|---|---|
+| **REWE** | **eBon** — in *Meine Einkäufe*, on rewe.de, **and sent to e-mail** (via the PAYBACK service) | **3 years** as PDF in the account | ✅ **Yes — auto-e-mail, and "der eBon kann ganz einfach aus der App heraus weitergeleitet werden"** |
+| **Lidl** | **Lidl Plus** — digital receipts since 2019 | ≥ 12 months in-app | ⚠️ **PDF download only.** The Teilen function **does not send to other apps** — it copies to clipboard |
+| **EDEKA** | EDEKA App — collection of digital receipts + mobile payment | — | ⚠️ Unverified |
+| **Netto / Penny** | PAYBACK / DeutschlandCard integrated | — | ⚠️ Unverified |
+| **dm** | Digital receipt returned to the dm app | — | ⚠️ Unverified |
+| **Aldi Nord / Süd** | No loyalty programme of comparable scale | — | ❌ Paper only |
+
+**Demand evidence:** an anybill survey found **44% of consumers want digital receipts in their
+banking or retailer app** — this is not a niche preference.
+
+### ⭐ Why this matters more than it first appears: it dissolves R10
+
+[R10 — missed captures](03-product-strategy-prd.md) is the plan's single most dangerous risk:
+compliance decaying from ~75% in week 1 to **25–35% by week 8**, because *"no UI fixes forgetting."*
+
+**That risk is specific to paper.** A paper Bon is a *perishable* opportunity: bin it, and that
+shop is lost forever. A digital receipt is not.
+
+| | Paper Bon | Digital receipt |
+|---|---|---|
+| Can be lost | ✅ constantly | ❌ retained 12 months–3 years |
+| A missed shop is | **gone permanently** | **merely deferred** |
+| Capture must happen | within hours | any time later |
+| Compliance model required | **weekly** | **eventual** |
+
+> **This is the important sentence.** With paper we need the user to act *every week, promptly*.
+> With digital receipts we only need them to act **eventually** — and eventual compliance is a
+> dramatically weaker requirement than weekly compliance. **A backlog is recoverable; a binned
+> receipt is not.**
+
+It also improves input *quality*: a screenshot or PDF of a digital receipt has no glare, no curl,
+no thermal fading and perfect contrast. **It is the best possible input to the VLM pipeline** —
+strictly better than a photograph of paper.
+
+### Is there a way to retrieve them? Three legitimate routes
+
+**1. E-mail — works today, zero integration.** REWE's eBon is *already delivered to the user's
+e-mail address*. Our forward-to-address ([L5](04-ui-screens-flows.md)) captures it with **no
+retailer relationship, no API, and no engineering beyond what is already planned.** For REWE
+shoppers — 21.9% visit share, the second-largest chain in Germany — **the zero-effort path already
+exists and we simply had not noticed.**
+
+**2. anybill Partner Platform API — the real integration play.** anybill is German digital-receipt
+infrastructure (cloud-native, hosted in Germany on Azure), and it publishes a **Partner Platform
+API** explicitly for third parties: partners receive a service account, create an anybill user,
+obtain access tokens for that user, and call a **receipt-retrieval endpoint returning that user's
+receipt list**. Its SDK is designed to be embedded in retailer *or banking* apps.
+**This is a documented, sanctioned B2B2C route** — not scraping. Its reach is bounded by which
+retailers issue through anybill (it and **refive** are described as characterising the German
+market), so it complements rather than replaces the e-mail path.
+
+**3. DSGVO Art. 20 data portability — legally guaranteed, slow.** Loyalty processing rests on
+consent or contract and is automated, so **Art. 20 applies**, and it includes the right to have
+data **transmitted directly from one controller to another where technically feasible**. Lidl's own
+privacy notice states the Lidl Plus data portability right explicitly.
+This is **an onboarding instrument, not a weekly one**: one request can return *months* of purchase
+history at once, which fills the inventory and — more valuable — **immediately personalises
+shelf-life priors and repurchase cadence** that would otherwise take a quarter to learn.
+The statutory response window (up to a month) makes it useless for the weekly loop.
+
+### ❌ What we will not do
+
+**No scraping, no reverse-engineered retailer APIs, no accessibility-service automation of another
+app.** It violates their terms, breaks without warning, and for a product whose stated position is
+*"wir verkaufen deine Einkaufsdaten nicht"* it would be reputational suicide in the most
+privacy-conscious consumer market in Europe. **The legitimate routes above are sufficient.**
+
+### The competitive fact this surfaces
+
+**epap** is a German consumer app doing precisely this aggregation — digital receipts from
+**5,000+ tills** plus paper scanning, wrapped in a *Haushaltsbuch*. It is the receipt-capture layer
+we were planning to build, already built, pointed at budgeting rather than food waste.
+**That makes it a partner, an acquisition target, or the fastest-moving competitor — and it should
+be a named line in the competitive teardown**, not a footnote here.
+
+### What this changes in the design
+
+| Change | Where |
+|---|---|
+| **Onboarding asks which shops you use, not which capture method you prefer** | [§12.7a](#127a-the-ux-that-follows) |
+| **Per-retailer route table** — the best path genuinely differs by chain | §12.7a |
+| **Catch-up prompt** replaces per-shop urgency: "3 Einkäufe fehlen — nachtragen?" | §12.7a |
+| **Screenshot import** as a universal path for any retailer app | §12.7a |
+| **Share-extension target** — a third independent reason for the native shell | [§5.7](05-technical-architecture.md) |
+| Phase 0 must record **which chains each of the 25 households actually uses** | [§11.8](11-germany-berlin-market.md) |
+| epap added to the competitive set | [§1.2](01-market-competitive-research.md) |
+
+### 12.7a The UX that follows
+
+**Principle: match the route to the retailer, and never ask for more effort than that retailer
+requires.** A generic "photograph your receipt" is wrong for a REWE shopper (who needs to do
+nothing) and wrong for an Aldi shopper (who cannot do anything else).
+
+**The ladder, by ascending effort:**
+
+| Tier | Route | Recurring effort | Works for |
+|---|---|---|---|
+| **0** | **E-mail auto-import** via forward-to-address | **zero, forever** | REWE eBon; any e-mailed order |
+| **1** | **Share from the retailer app** into Crisper | 2 taps | REWE (in-app forward) |
+| **2** | **Screenshot the in-app receipt**, import from the picker | 3 taps, best image quality of any route | **Any retailer app** — Lidl, EDEKA, dm |
+| **3** | **PDF download → attach** | ~5 taps | Lidl Plus |
+| **4** | **Photograph the paper Bon** | ~8 s | Aldi, market stalls, bakery |
+| **5** | **DSGVO Art. 20 backfill** | one request, weeks to arrive | Onboarding history, one time |
+
+**Onboarding changes from method-first to retailer-first.** Instead of *"what's the fastest way
+in?"*, ask **"Wo kaufst du meistens ein?"** with a grid of chain logos. The answer determines what
+we offer next — and for a REWE-and-dm household we can promise something close to zero recurring
+effort honestly, which is a far stronger day-one moment than a generic camera prompt.
+
+**The catch-up prompt is the second change, and it follows directly from retroactivity.** Because
+digital receipts persist for months, a missed week is a backlog rather than a loss. The weekly
+nudge becomes *"Bei REWE waren 3 Einkäufe, die wir nicht haben — nachtragen?"* with one-tap batch
+import. **This converts our worst failure mode from silent permanent data loss into a visible,
+recoverable queue** — which is exactly the kind of forgiving design the doctrine in
+[§2.4](02-ux-behavioural-research.md) calls for.
+
+### 12.7b How to actually work with them — the ingestion architecture
+
+**The single rule: never send a text-native receipt to a vision model.**
+
+[§12.1](#121-idea-1--vlm-first-receipt-reading-) established VLM-first for photographed paper, and
+that is right — for paper. **A digital receipt is not an image problem.** REWE's eBon arrives as a
+**PDF attachment** (confirmed: PDF by e-mail, not a link), and a machine-generated PDF carries an
+embedded text layer. Running it through a vision model would be slower, more expensive, and *less*
+accurate than simply reading the text that is already there.
+
+#### Three input tiers, by fidelity
+
+| Tier | Input | Extraction | Accuracy | Cost/receipt | Ship |
+|---|---|---|---|---|---|
+| **A — Structured** | anybill Partner API (JSON) | Map fields directly | **~100%** | free | v2 |
+| **B — Text-native** ⭐ | PDF attachment, HTML e-mail | **Text-layer extraction → deterministic parser** | **~99%** | **~free** | **v1** |
+| **C — Pixels** | Screenshot, photo of paper | Vision model | 85–95% | ~$0.0015 | v1 |
+
+**Tier B is the one the plan was missing, and it is the best tier we can realistically reach at
+launch.** No hallucination, no OCR error, deterministic and reproducible, and it costs nothing.
+
+#### The pipeline
+
+```
+INBOUND  e-mail to the household's private address
+         │  share-sheet / file import  │  camera
+         ▼
+CLASSIFY by MIME type and source
+         │
+         ├─ PDF ──► has a text layer?
+         │            ├─ yes → EXTRACT TEXT           ← Tier B
+         │            └─ no  → rasterise → Tier C
+         ├─ HTML e-mail ──► parse the DOM             ← Tier B
+         ├─ JSON (anybill) ──► map fields             ← Tier A
+         └─ image ──► vision model                    ← Tier C
+         ▼
+MERCHANT DETECT  → per-retailer parser if one matches
+                 → else LLM ON THE TEXT (never on the image)
+         ▼
+NORMALISE → dictionary lookup → DEDUPE → checksums → inventory
+```
+
+**Two consequences worth stating explicitly.**
+
+**1. Per-retailer parsers are cheap here, and expensive for paper.** Doc 12 assumed ~10 retailer
+templates to normalise messy thermal text — a probabilistic job, forever. A *digital* receipt is
+machine-generated with a stable layout from a known merchant, so a REWE eBon parser is roughly
+**two days of work and then ~100% accurate indefinitely**. The template moat is far cheaper on the
+digital path than on the paper one.
+
+**2. The generic fallback is an LLM on the *text*, not on the image.** It is cheaper (no image
+tokens — roughly 600 text tokens against ~1,550 image tokens), more accurate, and it cannot invent
+a line item from visual noise because there is no visual noise.
+
+#### ⭐ The reason this matters most: it bootstraps the consumption model
+
+[§5.4b](05-technical-architecture.md) identifies **repurchase-cadence consumption inference** as the
+highest-leverage missing piece in the architecture — the fix for alerts firing on food that is
+already eaten. But cadence needs *history*, and a cold-start household has none for months.
+
+**REWE keeps three years of eBons. Lidl keeps twelve months.** A user searching their mail for
+"eBon" and forwarding the results supplies **months of purchase history in about thirty seconds** —
+so repurchase cadence, per-household shelf-life priors and the "running low" signal are all
+available **on day one instead of in month three.**
+
+> **Digital receipts do not merely solve capture. They solve the cold start** — which was the more
+> dangerous of the two problems.
+
+#### Security and privacy, both of which the current design gets wrong
+
+| Issue | Current design | Fix |
+|---|---|---|
+| **Anyone can post receipts into anyone's inventory** | A single shared `shop@in.crisper.app` | **Per-household secret address** (`u7f3k9@in.crisper.app`), plus **SPF/DKIM verification** that the sender really is the retailer's domain |
+| Same shop arrives twice (auto e-mail + screenshot + catch-up) | Only the A5 duplicate screen, after the fact | **Dedupe on ingest**, composite key: merchant + timestamp + total + line-count hash. A5 becomes a rare fallback, not the mechanism |
+| Source documents accumulate | Undefined | **Delete the e-mail and PDF once parsed**, 30-day ceiling, in line with the DSGVO posture |
+
+#### Setup friction: make it progressive, not front-loaded
+
+Creating a mail-forwarding rule is genuinely fiddly, and putting it inside a 180-second onboarding
+budget would be a mistake.
+
+1. **Start manual.** "Forward your last REWE e-mail to this address." Zero setup, works instantly,
+   and it doubles as the backfill above.
+2. **Automate later.** After two or three manual forwards have proven the value, offer the
+   provider-specific rule: *"Soll das automatisch gehen?"*
+
+This follows the pattern the research already demands — **value before setup, setup before account.**
+
+#### What to build, in order
+
+| | Ship in v1 | Why |
+|---|---|---|
+| 1 | Per-household inbound address + e-mail ingest | Unlocks REWE's zero-effort path immediately |
+| 2 | PDF text extraction + REWE eBon parser | Tier B, ~2 days, ~100% accurate |
+| 3 | Screenshot/photo import via vision model | Universal fallback; covers Lidl, dm, EDEKA, paper |
+| 4 | Generic **LLM-on-text** fallback | Any unrecognised text-native receipt |
+| 5 | Ingest dedupe + backfill forwarding | Bootstraps cadence; prevents double inventory |
+| — | ❌ anybill integration | Partnership lead time. Open the conversation, do not block v1 on it |
+| — | ❌ Automated Art. 20 requests | Statutory response window makes it useless in the loop; keep it as a documented manual option |
+| — | ❌ Any form of retailer-app scraping | Fragile, against their terms, and indefensible for a privacy-positioned product |
+
+
 ---
 
 ## 12.4 What changes in the plan
@@ -842,6 +1073,18 @@ this document.
 | **The camera should read barcodes, not recognise objects** | [§12.3c-C](#c-what-the-camera-should-look-for-barcodes-not-objects) | EPIC-KITCHENS' ~49% measured the wrong task. But ML Kit's **5% EAN-13 false-positive rate** silently inserts wrong products — so **the receipt becomes the camera's answer key**, and the two paths only work as a pair |
 | **Live on-screen feedback lowers the accuracy bar from ~85% to ~70%** | [§12.3c-F](#f-live-feedback-changes-the-accuracy-bar--and-the-mount-gives-it-away) | The mounted phone faces the user, so a miss is visible while the item is still in hand. Converts silent corruption into visible friction |
 | **Design rule: never record video** | [§12.3c-D](#d-compute-thermal-and-battery--not-a-constraint-with-one-design-rule) | Frame grabs at 5–10 fps, discarded immediately. Avoids the encoder, the storage write, the heat — and keeps the German household exemption intact |
+| ⭐ **Digital receipts change the capture model** — a missed shop is *deferred*, not lost | [§12.7](#127-digital-receipts--the-retailer-apps-) | **Dissolves R10.** Weekly compliance becomes *eventual* compliance — a far weaker requirement |
+| **REWE's eBon already arrives by e-mail** — our forward-to-address captures it with zero new engineering | [§12.7](#is-there-a-way-to-retrieve-them-three-legitimate-routes) | Zero-effort capture for the #2 chain (21.9% visit share), available today |
+| **anybill Partner Platform API** is a sanctioned third-party route to a user's receipts | [§12.7](#is-there-a-way-to-retrieve-them-three-legitimate-routes) | Service account → create user → retrieve receipt list. Not scraping |
+| **DSGVO Art. 20 as an onboarding backfill** | [§12.7](#is-there-a-way-to-retrieve-them-three-legitimate-routes) | Months of history in one request → instant priors and repurchase cadence |
+| **Onboarding becomes retailer-first, not method-first** | [§12.7a](#127a-the-ux-that-follows) | "Wo kaufst du ein?" → the best route per chain. Honest zero-effort promise where it is true |
+| **Catch-up prompt replaces per-shop urgency** | [§12.7a](#127a-the-ux-that-follows) | Turns permanent data loss into a recoverable backlog |
+| ⭐ **Never send a text-native receipt to a vision model** — three input tiers by fidelity | [§12.7b](#127b-how-to-actually-work-with-them--the-ingestion-architecture) | REWE's eBon is a **PDF attachment** with a text layer: ~99% accurate and ~free, against 85–95% and $0.0015 for the pixel path |
+| ⭐ **Backfill bootstraps the consumption model** | [§12.7b](#-the-reason-this-matters-most-it-bootstraps-the-consumption-model) | Forwarding months of stored eBons gives repurchase cadence on **day one instead of month three** — solving the cold start, not just capture |
+| **Per-household secret inbound address + SPF/DKIM** | [§12.7b](#security-and-privacy-both-of-which-the-current-design-gets-wrong) | A shared `shop@` address lets anyone inject receipts into anyone's inventory |
+| **Dedupe on ingest, not in the UI** | [§12.7b](#security-and-privacy-both-of-which-the-current-design-gets-wrong) | The same shop can now arrive three ways |
+| **Screenshot import** — highest-quality input of any route | [§12.7a](#127a-the-ux-that-follows) | No glare, no curl, no thermal fade. Universal across retailer apps |
+| **epap added to the competitive set** | [§1.2](01-market-competitive-research.md) | Already aggregates 5,000+ tills — partner, target, or fastest competitor |
 | **New standing ops cost: model-version eval re-runs** | [§5.10](05-technical-architecture.md) | The OCR vendor used to absorb this |
 | ~~New Phase 0 task: verify TSE QR payloads~~ | — | **Done here — no longer needed.** The payload carries no amounts |
 | **New Phase 0 task: verify the A/B VAT-class convention across 10 chains** | the 200-receipt corpus | Desk research cannot settle it; retailer conventions vary |
@@ -911,4 +1154,19 @@ this document.
 - [Ratgeberrecht — Kamera in Wohnung: wann Überwachung verboten ist](https://www.ratgeberrecht.eu/aktuell/private-ueberwachungskameras-im-innenbereich/)
 - [Niehoff — Videoüberwachung im Privatbereich und die DSGVO-Haushaltsausnahme](https://niehoff-systemberatung.de/videoueberwachung-dsgvo/videoueberwachung-im-privatbereich)
 - [XDA — Thermal throttling: the silent killer of phone performance](https://www.xda-developers.com/silent-killer-of-your-phones-performance-thermal-throttling/)
+- [REWE — eBon: der digitale Kassenbon](https://www.rewe.de/service/ebon/)
+- [REWE Group — Elektronischer Kassenbon per Mail spart Papier ein](https://www.rewe-group.com/de/presse-und-medien/newsroom/pressemitteilungen/elektronischer-kassenbon-per-mail-spart-papier-ein/)
+- [REWE — Teilnahmebedingungen für den eBon](https://www.rewe.de/teilnahmebedingungen-ebon)
+- [Lidl Kundenservice — Was ist der Bereich „Meine Kassenbons"?](https://kundenservice.lidl.de/SelfServiceDE/s/article/Was-ist-der-Bereich-Meine-Kassenbons1)
+- [Verbraucherzentrale — Supermarkt-Apps: Rabatte und Risiken](https://www.verbraucherzentrale.de/wissen/digitale-welt/apps-und-software/supermarktapps-das-sollten-sie-ueber-rabatte-und-risiken-wissen-33057)
+- [inside digital — Lidl Plus, REWE Bonus & Co: was die Bonusprogramme bieten](https://www.inside-digital.de/news/lidl-rewe-kaufland-penny-netto-edeka-apps-prospekt)
+- [anybill — Developer documentation: Partner Platform API](https://developer.anybill.de/partner_platform_api/)
+- [anybill — Overview of APIs and integrations](https://www.anybill.de/en/solutions/person/developer)
+- [anybill — 44% wollen digitale Kassenbons in Banking- oder Retailer-App](https://www.anybill.de/blogs/digitale-kassenbons-44-wollen-banking-oder-retailer)
+- [EuroShop — Anbieter für digitale Kassenbons im Vergleich](https://www.euroshop.de/de/media-news/euroshopmag/retail-technology/anbieter-fuer-digitale-kassenbons-im-vergleich)
+- [epap — Deine App für Kassenbons und Haushaltsbuch](https://www.epap.app/)
+- [epap — Guide zu digitalen Kassenbons](https://www.epap.app/blog/digitaler-kassenbon)
+- [Art. 20 DSGVO — Recht auf Datenübertragbarkeit](https://dsgvo-gesetz.de/art-20-dsgvo/)
+- [Lidl — Datenschutzhinweise Lidl Plus (PDF)](https://www.lidl.de/static/assets/Datenschutzhinweise_Lidl_Plus-1230320.pdf)
+- [Dr. Datenschutz — Bonuskarte von Payback oder DeutschlandCard](https://www.dr-datenschutz.de/bonuskarte-von-payback-oder-deutschlandcard-was-ist-bei-einer-kundenkarte-zum-datenschutz-zu-beachten/)
 - [The Rig Wire — Phones make excellent cameras until something gets hot](https://therigwire.com/phones-as-cameras/)

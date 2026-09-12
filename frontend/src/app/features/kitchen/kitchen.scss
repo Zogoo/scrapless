@@ -1,0 +1,94 @@
+.kitchen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0;
+  max-width: 34rem;
+  margin: 0 auto;
+}
+
+.group-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  border-color: transparent;
+  background: transparent;
+  font-weight: 600;
+
+  .count {
+    margin-left: auto;
+    color: var(--muted);
+    font-weight: 400;
+  }
+}
+
+.group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.group li {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  .bar {
+    width: 5rem;
+    flex: none;
+  }
+}
+
+.name-btn {
+  flex: 1;
+  min-height: 0;
+  padding: 0.25rem 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-weight: 500;
+}
+
+.headline {
+  margin: 0.2rem 0 0.5rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+
+  button {
+    flex: 1 1 auto;
+    min-height: 2.75rem;
+    font-size: 0.9rem;
+  }
+}
+
+.edit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  input {
+    flex: 1 1 100%;
+  }
+}
+
+.lede {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+}

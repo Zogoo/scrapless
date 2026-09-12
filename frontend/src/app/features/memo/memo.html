@@ -1,0 +1,97 @@
+<section class="memo">
+  <header class="head">
+    <h1>{{ 'memo.title' | translate }}</h1>
+    @if (speech.supported) {
+      <button
+        type="button"
+        class="mic"
+        [class.live]="speech.listening()"
+        (click)="speech.listening() ? stopDictation() : startDictation()"
+        [attr.aria-label]="'memo.dictate' | translate"
+      >
+        🎙
+      </button>
+    }
+  </header>
+
+  @if (speech.listening()) {
+    <p class="interim" role="status" aria-live="polite">
+      {{ speech.interim() || ('memo.listening' | translate) }}
+    </p>
+  }
+
+  <div class="composer">
+    <input
+      type="text"
+      autocomplete="off"
+      enterkeyhint="done"
+      [placeholder]="'memo.placeholder' | translate"
+      [ngModel]="typed()"
+      (ngModelChange)="onType($event)"
+      (keyup.enter)="add(typed())"
+    />
+    <button
+      type="button"
+      class="primary"
+      [disabled]="busy() || !typed().trim()"
+      (click)="add(typed())"
+    >
+      {{ 'memo.add' | translate }}
+    </button>
+  </div>
+
+  @if (matches().length > 0 && typed().trim()) {
+    <ul class="autosuggest">
+      @for (match of matches(); track match.name) {
+        <li>
+          <button type="button" (click)="add(match.name, 'suggestion')">
+            <span class="name">{{ match.name }}</span>
+            <small>{{ match.reason }}</small>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (items().length === 0) {
+    <p class="lede">{{ 'memo.empty' | translate }}</p>
+  } @else {
+    <ul class="list">
+      @for (item of items(); track item.id) {
+        <li [class.done]="item.done">
+          <label class="tick">
+            <input type="checkbox" [checked]="item.done" (change)="toggle(item.id, !item.done)" />
+            <span>{{ item.name }}</span>
+          </label>
+          <button
+            type="button"
+            class="ghost"
+            (click)="remove(item.id)"
+            [attr.aria-label]="'common.delete' | translate"
+          >
+            ✕
+          </button>
+        </li>
+      }
+    </ul>
+  }
+
+  <!-- Not a blank list: what this household buys on a rhythm and is now out of. -->
+  @if (suggestions().length > 0 && !typed().trim()) {
+    <h2 class="section-head">{{ 'memo.suggested' | translate }}</h2>
+    <ul class="suggestions">
+      @for (suggestion of suggestions(); track suggestion.name) {
+        <li>
+          <button type="button" (click)="add(suggestion.name, 'suggestion')">
+            <span class="name">+ {{ suggestion.name }}</span>
+            <small>{{ suggestion.reason }}</small>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</section>
