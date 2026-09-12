@@ -34,6 +34,17 @@ RSpec.describe "Api::V1::Captures", type: :request do
       expect(Capture.last.image).to be_attached
     end
 
+    # Voice goes through the dictionary before it reaches a model, so a sentence
+    # made entirely of familiar words costs nothing at all.
+    it "parses a spoken sentence of known words with no model call" do
+      expect(Ai::TextReader).not_to receive(:call)
+
+      post "/api/v1/captures", params: { source: "voice", transcript: "milch und milch" },
+           headers: headers
+
+      expect(response).to have_http_status(:created)
+    end
+
     # The free path: the browser did the speech-to-text, so no audio is uploaded
     # and no transcription is billed.
     it "accepts a transcript the browser produced without touching the audio API" do
@@ -79,6 +90,67 @@ RSpec.describe "Api::V1::Captures", type: :request do
       post "/api/v1/captures", params: { source: "text", text: "milch" }, headers: headers
 
       expect(response).to have_http_status(:created)
+    end
+
+    # Observed against a real key with an empty balance: the provider returns 429
+    # and every photo fails. Telling someone to retake it is a loop that cannot
+    # terminate, so quota/auth/outage says something different from a bad photo.
+    context "when the provider refuses the call" do
+      before do
+        allow(Ai::ImageReader).to receive(:call)
+          .and_raise(Ai::Client::Unavailable, "429: insufficient_quota")
+      end
+
+      it "does not tell the user to retake a photo that can never work" do
+        post "/api/v1/captures", params: { source: "receipt", image: receipt_upload },
+             headers: headers
+
+        expect(response).to have_http_status(:service_unavailable)
+        expect(response.parsed_body["retryable"]).to be(false)
+        expect(response.parsed_body["error"]).to match(/type or say/i)
+      end
+
+      it "leaves the free paths working, because they never touch the provider" do
+        post "/api/v1/captures", params: { source: "text", text: "milch" }, headers: headers
+
+        expect(response).to have_http_status(:created)
+        expect(response.parsed_body["items"].size).to eq(1)
+      end
+
+      # Observed live: "milch, brokkoli, yuzu kosho" lost all three, because one
+      # unfamiliar word took the two free dictionary hits down with it.
+      it "keeps the words the dictionary knew when the model cannot parse the rest" do
+        allow(Ai::TextReader).to receive(:call)
+          .and_raise(Ai::Client::Unavailable, "429: insufficient_quota")
+
+        post "/api/v1/captures", params: { source: "text", text: "milch, yuzu kosho" },
+             headers: headers
+
+        expect(response).to have_http_status(:created)
+        expect(response.parsed_body["items"].map { |i| i["display_name"] }).to include(/Milch/)
+        expect(response.parsed_body["capture"]["notes"]).to include("yuzu kosho")
+      end
+
+      it "does the same for a spoken sentence" do
+        allow(Ai::TextReader).to receive(:call)
+          .and_raise(Ai::Client::Unavailable, "429: insufficient_quota")
+
+        post "/api/v1/captures", params: { source: "voice", transcript: "milch und yuzu kosho" },
+             headers: headers
+
+        expect(response).to have_http_status(:created)
+        expect(response.parsed_body["items"].size).to eq(1)
+      end
+    end
+
+    it "still offers a retake when the model read the photo and made no sense of it" do
+      allow(Ai::ImageReader).to receive(:call).and_raise(Ai::Client::Error, "empty completion")
+
+      post "/api/v1/captures", params: { source: "receipt", image: receipt_upload },
+           headers: headers
+
+      expect(response.parsed_body["retryable"]).to be(true)
+      expect(response.parsed_body["error"]).to match(/hard to read/i)
     end
 
     it "will not accept a capture without a fridge" do

@@ -22,13 +22,29 @@ class ProductAlias < ApplicationRecord
       token_match(key)
   end
 
+  # Receipts truncate. "RISPENTOMAT." is the same tomato as "rispentomaten" and
+  # "HAEHNCH.SCHENK." the same chicken as "haehnchenschenkel", so a shared *exact*
+  # token is too strict a test — it was rejecting prefix matches the LIKE had
+  # already found, and a mis-filed tomato got a 180-day pantry window.
+  MIN_PREFIX = 4
+
   def self.token_match(key)
-    tokens = key.split
+    tokens = key.split.reject { |t| t.length < MIN_PREFIX }
     return nil if tokens.empty?
 
-    candidates = where("raw_text LIKE ?", "%#{tokens.first}%").limit(50)
-    candidates.max_by { |a| (a.raw_text.split & tokens).size }&.then do |best|
-      (best.raw_text.split & tokens).any? ? best : nil
+    candidates = where(tokens.map { "raw_text LIKE ?" }.join(" OR "),
+                       *tokens.map { |t| "%#{t[0, MIN_PREFIX]}%" }).limit(50)
+
+    scored = candidates.map { |entry| [ entry, overlap(entry.raw_text.split, tokens) ] }
+                       .reject { |_, score| score.zero? }
+    scored.max_by { |_, score| score }&.first
+  end
+
+  # One point per token pair where either is a prefix of the other, so a
+  # truncation still counts as agreement.
+  def self.overlap(stored, tokens)
+    stored.sum do |s|
+      tokens.count { |t| s.start_with?(t[0, MIN_PREFIX]) || t.start_with?(s[0, MIN_PREFIX]) }
     end
   end
 

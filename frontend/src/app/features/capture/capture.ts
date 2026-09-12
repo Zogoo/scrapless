@@ -141,17 +141,7 @@ export class Capture implements OnDestroy {
     this.stopFrameLoop();
     this.busy.set(true);
 
-    const full = document.createElement('canvas');
-    // Long edge ~2048: enough for thermal print, and it keeps the image token
-    // count (and therefore the bill) down. Doc 12's pipeline step 1.
-    const scale = Math.min(1, 2048 / Math.max(element.videoWidth, element.videoHeight));
-    full.width = Math.round(element.videoWidth * scale);
-    full.height = Math.round(element.videoHeight * scale);
-    full.getContext('2d')?.drawImage(element, 0, 0, full.width, full.height);
-
-    const blob = await new Promise<Blob | null>((resolve) =>
-      full.toBlob((b) => resolve(b), 'image/jpeg', 0.8),
-    );
+    const blob = await this.downscale(element, element.videoWidth, element.videoHeight);
     if (!blob) {
       this.busy.set(false);
       this.error.set(this.translate.instant('capture.unreadable'));
@@ -160,6 +150,56 @@ export class Capture implements OnDestroy {
 
     this.stopCamera();
     this.send(this.captures.photo(blob, 'receipt'));
+  }
+
+  /**
+   * A photo the user already has.
+   *
+   * Not only a convenience: without it there is no photo path at all on a
+   * desktop, or on any phone where camera permission was refused. On mobile the
+   * `capture` attribute opens the camera straight from here, so this doubles as
+   * the fallback when getUserMedia is blocked.
+   */
+  protected async onFilePicked(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = ''; // so picking the same file twice still fires
+    if (!file || this.busy()) return;
+
+    this.busy.set(true);
+    this.error.set('');
+
+    try {
+      const bitmap = await createImageBitmap(file);
+      const blob = await this.downscale(bitmap, bitmap.width, bitmap.height);
+      bitmap.close();
+      if (!blob) throw new Error('could not read that image');
+
+      this.stopCamera();
+      this.send(this.captures.photo(blob, 'receipt'));
+    } catch {
+      this.busy.set(false);
+      this.error.set(this.translate.instant('capture.unreadable'));
+    }
+  }
+
+  /**
+   * Long edge ~2048: enough for thermal print, and it keeps the image token
+   * count — and therefore the bill — down. Doc 12's pipeline step 1, and the
+   * single biggest cost lever on the receipt path.
+   */
+  private downscale(
+    source: CanvasImageSource,
+    width: number,
+    height: number,
+  ): Promise<Blob | null> {
+    const canvas = document.createElement('canvas');
+    const scale = Math.min(1, 2048 / Math.max(width, height));
+    canvas.width = Math.round(width * scale);
+    canvas.height = Math.round(height * scale);
+    canvas.getContext('2d')?.drawImage(source, 0, 0, canvas.width, canvas.height);
+
+    return new Promise((resolve) => canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.8));
   }
 
   protected retakePhoto(): void {

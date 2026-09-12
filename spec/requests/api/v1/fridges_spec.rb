@@ -20,7 +20,7 @@ RSpec.describe "Api::V1::Fridges", type: :request do
     it "sets a ten-year cookie alongside the token it returns" do
       post "/api/v1/fridge", params: {}, as: :json
 
-      expect(response.headers["Set-Cookie"]).to include("crisper_fridge")
+      expect(response.headers["Set-Cookie"]).to include("scrapless_fridge")
     end
   end
 

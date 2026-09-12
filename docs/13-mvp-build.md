@@ -122,14 +122,54 @@ analysis in [doc 14](14-mvp-cost-model.md).
 
 ---
 
+## 13.4b What a live API key found
+
+Wiring a real `OPENAI_API_KEY` in surfaced four defects that the stub could not, all now
+fixed. Worth recording because three of them are the *same* mistake — a failure path that
+was never exercised.
+
+| Found | Fix |
+|---|---|
+| **`.env` was never loaded.** `docker compose` reads it for substitution, but a native `bin/rails server` does not — so the documented setup silently ran against the stub while appearing configured. | `dotenv-rails` in dev/test. |
+| **The test suite stopped being hermetic.** With dotenv loading `.env` in test too, `rspec` inherited a real key with `AI_MODE=auto` *and* `DATABASE_PATH` pointing at the **development** database. Unguarded it would bill every capture example and truncate real data. | Forced in `spec/rails_helper.rb` before boot. Caught by `ActiveRecord::EnvironmentMismatchError` before any write; no data lost. |
+| **"That one was hard to read" on a quota error.** The provider returned 429 for every call, and the app told the user to retake a photo that could never succeed — a loop with no exit. | `Ai::Client::Unavailable` split from `Error`; quota/auth/outage now says photo reading is off and points at the paths that still work. |
+| **One unknown word destroyed the whole capture.** `milch, brokkoli, yuzu kosho` returned *nothing*: two free dictionary hits were discarded because the third word needed a model that was refusing. Straight violation of doc 4 §4.4 rule 4. | Dictionary hits are kept and the unparsed remainder is reported. Voice now routes through the dictionary too, so a spoken sentence of familiar words costs nothing. |
+
+### And what a *funded* key found
+
+Reading one real receipt exposed three more, all fixed:
+
+| Found | Fix |
+|---|---|
+| **Reasoning tokens returned an empty answer for $0.0005.** gpt-5 spends `max_completion_tokens` on thinking before it writes; a 1,200-token budget went entirely on reasoning. | `reasoning_effort: "minimal"` on the gpt-5 family. 7.6× cheaper, 5× faster, and it works. |
+| **Bread was filed as dairy and given a 14-day fridge window.** The dairy keyword `"ei"` is a substring of `"weizenbrötchen"`. Exactly the false-expiry failure doc 3 §3.4 attributes to Fridgely. | Keywords under four characters must now match a whole word; longer ones still match inside German compounds. |
+| **A truncated line got a 180-day window.** The till printed `RISPENTOMAT.`; the dictionary held `rispentomaten`, and the candidate guard rejected the prefix match it had already found. So a tomato was filed as "other" and sent to the pantry. | Prefix-aware overlap scoring in `ProductAlias.token_match`. |
+
+Two smaller additions came out of the same session: a **file-picker fallback** for photos —
+without it there is no photo path at all on a desktop or with camera permission refused —
+and **failed-call count on the cost screen**, which otherwise read "7 calls · $0.0000" and
+looked like the AI was free when in fact every call was being refused.
+
+---
+
 ## 13.5 Verification
 
-Backend 94 examples, frontend 12, RuboCop clean. Beyond the suites, the running app was
+Backend 125 examples, frontend 12, RuboCop and Brakeman clean. Beyond the suites, the running app was
 driven end to end: fridge created and named, four items added through the tap grid with
 **zero** billed model calls, the shop rewound a week to exercise the risk model, chicken
 correctly suppressed, localStorage cleared and the fridge restored from the cookie alone, and
 a receipt image posted over real HTTP returning six items with `PFAND` suppressed and
 `parse_confidence 0.86`.
+
+**Verified against the live API, success path included.** A 12-line German Bon uploaded
+through the real UI returned 11 food items with clean German names and sensible windows,
+`PFAND` suppressed, for **$0.002453** — against a projected $0.0025. Measured numbers and two
+surprises (reasoning tokens, and 15.7s latency) are in
+[doc 14 §14.7](14-mvp-cost-model.md#147-observed--first-real-calls).
+
+**A provider chain now backs it.** `openai → gemini` by default, with fallback on any
+`Unavailable` (quota, credentials, outage, dead socket) and never on a bad answer. Every
+attempt is recorded with its provider, so a silent failover cannot become a cost surprise.
 
 **Not verified end to end: the camera auto-shutter against a live camera.** Its decision logic
 has six unit tests and the frame analysis six more, but the browser available here would not

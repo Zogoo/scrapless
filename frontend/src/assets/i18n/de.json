@@ -7,7 +7,7 @@
     "settings": "Du"
   },
   "onboarding": {
-    "title": "Crisper",
+    "title": "Scrapless",
     "lede": "Bon abfotografieren. Wir sagen dir, was weg muss.",
     "question": "Willst du deinem Kühlschrank einen Namen geben?",
     "placeholder": "z. B. Küche, WG, Zuhause",
@@ -64,7 +64,9 @@
       "hold_still": "Ruhig halten…",
       "steady": "Passt — noch kurz halten",
       "captured": "Aufgenommen"
-    }
+    },
+    "pick_photo": "Foto auswählen",
+    "pick_photo_hint": "Eins, das du schon hast"
   },
   "memo": {
     "title": "Einkauf",
@@ -87,7 +89,7 @@
   },
   "install": {
     "title": "Zum Home-Bildschirm",
-    "pitch": "Leg Crisper auf den Home-Bildschirm — dann geht's direkt zur Kamera.",
+    "pitch": "Leg Scrapless auf den Home-Bildschirm — dann geht's direkt zur Kamera.",
     "add": "Zum Home-Bildschirm",
     "not_now": "Später",
     "ios_steps": "Teilen antippen, dann „Zum Home-Bildschirm\".",
@@ -108,7 +110,8 @@
     "job": "Aufgabe",
     "forget": "Kühlschrank vergessen",
     "forget_note": "Löscht alles, was wir zu diesem Kühlschrank haben. Kein Zurück.",
-    "forget_confirm": "Ja, alles löschen"
+    "forget_confirm": "Ja, alles löschen",
+    "failures": "{{count}} Aufrufe fehlgeschlagen — prüf den API-Key und das Guthaben."
   },
   "common": {
     "loading": "Einen Moment…",

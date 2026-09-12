@@ -7,7 +7,7 @@
     "settings": "You"
   },
   "onboarding": {
-    "title": "Crisper",
+    "title": "Scrapless",
     "lede": "Snap the receipt. We'll tell you what needs eating.",
     "question": "Want to name your fridge?",
     "placeholder": "e.g. Kitchen, Flat 3, Home",
@@ -64,7 +64,9 @@
       "hold_still": "Hold still…",
       "steady": "Got it — keep holding",
       "captured": "Taken"
-    }
+    },
+    "pick_photo": "Pick a photo",
+    "pick_photo_hint": "One you already took"
   },
   "memo": {
     "title": "Shopping",
@@ -87,7 +89,7 @@
   },
   "install": {
     "title": "Add to your home screen",
-    "pitch": "Add Crisper to your home screen — it opens straight to the camera.",
+    "pitch": "Add Scrapless to your home screen — it opens straight to the camera.",
     "add": "Add to home screen",
     "not_now": "Not now",
     "ios_steps": "Tap Share, then \"Add to Home Screen\".",
@@ -108,7 +110,8 @@
     "job": "Job",
     "forget": "Forget this fridge",
     "forget_note": "Deletes everything we hold for this fridge. There is no undo.",
-    "forget_confirm": "Yes, delete it all"
+    "forget_confirm": "Yes, delete it all",
+    "failures": "{{count}} calls failed — check the API key and that the account has credit."
   },
   "common": {
     "loading": "One moment…",

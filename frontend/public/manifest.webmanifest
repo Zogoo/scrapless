@@ -1,6 +1,6 @@
 {
-  "name": "Crisper — what needs eating",
-  "short_name": "Crisper",
+  "name": "Scrapless — what needs eating",
+  "short_name": "Scrapless",
   "description": "Point the camera at your receipt. We tell you what to eat first.",
   "start_url": "/today",
   "scope": "/",

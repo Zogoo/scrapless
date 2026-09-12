@@ -926,7 +926,7 @@ nothing) and wrong for an Aldi shopper (who cannot do anything else).
 | Tier | Route | Recurring effort | Works for |
 |---|---|---|---|
 | **0** | **E-mail auto-import** via forward-to-address | **zero, forever** | REWE eBon; any e-mailed order |
-| **1** | **Share from the retailer app** into Crisper | 2 taps | REWE (in-app forward) |
+| **1** | **Share from the retailer app** into Scrapless | 2 taps | REWE (in-app forward) |
 | **2** | **Screenshot the in-app receipt**, import from the picker | 3 taps, best image quality of any route | **Any retailer app** — Lidl, EDEKA, dm |
 | **3** | **PDF download → attach** | ~5 taps | Lidl Plus |
 | **4** | **Photograph the paper Bon** | ~8 s | Aldi, market stalls, bakery |
@@ -1016,7 +1016,7 @@ available **on day one instead of in month three.**
 
 | Issue | Current design | Fix |
 |---|---|---|
-| **Anyone can post receipts into anyone's inventory** | A single shared `shop@in.crisper.app` | **Per-household secret address** (`u7f3k9@in.crisper.app`), plus **SPF/DKIM verification** that the sender really is the retailer's domain |
+| **Anyone can post receipts into anyone's inventory** | A single shared `shop@in.scrapless.app` | **Per-household secret address** (`u7f3k9@in.scrapless.app`), plus **SPF/DKIM verification** that the sender really is the retailer's domain |
 | Same shop arrives twice (auto e-mail + screenshot + catch-up) | Only the A5 duplicate screen, after the fact | **Dedupe on ingest**, composite key: merchant + timestamp + total + line-count hash. A5 becomes a rare fallback, not the mechanism |
 | Source documents accumulate | Undefined | **Delete the e-mail and PDF once parsed**, 30-day ceiling, in line with the DSGVO posture |
 

@@ -1,4 +1,4 @@
-# Crisper dev stack. Two services and a test runner.
+# Scrapless dev stack. Two services and a test runner.
 #
 # The generated stack also had Mailpit and MinIO; the MVP sends no email and
 # keeps receipt photos on the local disk, so both were removed rather than left

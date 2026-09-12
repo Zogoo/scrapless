@@ -74,7 +74,7 @@ module Ai
       return Stub.image_result(hint: @hint) unless Config.live?
 
       purpose = @hint == "shelf_photo" ? :shelf_photo_extract : :receipt_extract
-      Client.new(household: @household).json_completion(
+      Router.new(household: @household).json_completion(
         purpose: purpose, schema: SCHEMA, max_output_tokens: 3000,
         messages: [
           { role: "system", content: SYSTEM },

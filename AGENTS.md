@@ -1,4 +1,4 @@
-# AGENTS.md — Crisper
+# AGENTS.md — Scrapless
 
 **Read `docs/` before making changes.** Note there are two sets: `docs/00`–`docs/14` are the
 product research and the build record for *this* application; `docs/engineering/` is the

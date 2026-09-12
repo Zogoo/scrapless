@@ -40,7 +40,7 @@ sitting inside our own competitor table:
   all — and has not broken out. We dismissed this as "retailer-gated", which is *"a distribution
   excuse deployed to avoid asking whether zero-entry actually retains."*
 - **Samsung** put a camera inside the fridge. User effort: zero. The loop still doesn't close.
-- **Fango** *is* Crisper v1 — receipt-only, narrow, €2.99, 34 countries — and doc 1 cites it as
+- **Fango** *is* Scrapless v1 — receipt-only, narrow, €2.99, 34 countries — and doc 1 cites it as
   **supporting** evidence with no revenue, user or retention data. *"The closest existing
   analogue to the proposed product is treated as encouragement rather than as the primary
   disconfirmation."*
@@ -257,7 +257,7 @@ Three more specific bugs:
 
 - **The most expensive endpoint in the system has no authentication.** "No account wall before
   value" means receipt OCR is available with no identity. *"Free-tier abuse isn't a risk here —
-  it's the default configuration."* Anyone can use Crisper as a free receipt-OCR API.
+  it's the default configuration."* Anyone can use Scrapless as a free receipt-OCR API.
 - **Bootstrapping is backwards.** 15% LLM fallback assumes a mature dictionary; **at launch the
   dictionary is empty and fallback is ~100%.** Costs peak exactly when cash is scarcest — and
   our cost gate sat at month 9, after launch.

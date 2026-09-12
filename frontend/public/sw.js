@@ -15,7 +15,7 @@
  * from last Tuesday is worse than showing nothing: the entire product promise
  * is that the thing on screen is current.
  */
-const VERSION = 'crisper-v1';
+const VERSION = 'scrapless-v1';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {

@@ -122,7 +122,7 @@ useful, not yours."**
 
 Concretely:
 
-| Legacy model | Crisper model |
+| Legacy model | Scrapless model |
 |---|---|
 | Items are *facts* | Items are **hypotheses with a confidence score** |
 | Item exists until the user deletes it | Items **decay and auto-retire** on a probabilistic model |

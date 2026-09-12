@@ -7,7 +7,7 @@
 ## 3.1 Positioning statement
 
 > **For** households who buy fresh food and keep throwing it away,
-> **Crisper** is a responsive web app that watches what you bought and tells you what to
+> **Scrapless** is a responsive web app that watches what you bought and tells you what to
 > cook before it dies.
 > **Unlike** pantry-inventory apps, it never asks you to maintain a list — it captures from
 > receipts automatically, guesses what's left, and forgets on its own when it's unsure.
@@ -142,7 +142,7 @@ size. Cut to recover ~7–9 weeks:
 |---|---|
 | **Voice capture** | Web Speech is unusable on iOS; the record→upload→transcribe→parse path is a **second NLP pipeline with its own eval set**, and it will not hit the 8-second budget |
 | **"Photo of the shelf"** | Contradicted our own v3 placement, and doc 1 shows Samsung failing at this *with dedicated hardware*. ⚠️ *[Doc 12](12-technical-research-capture.md) closes this: fine-grained grocery recognition is 41–89% top-1 on real shelf data and 58 mAP@50 under realistic occlusion — and waving 30 items past a camera takes 60+ seconds against an 8-second receipt photo. **It fails the effort budget by 2× and is less accurate.*** |
-| **OAuth mailbox import** | `gmail.readonly` is a restricted scope requiring a **CASA Tier 2/3 assessment — $3k–15k and 4–12 weeks of calendar time**, annually re-verified. Apple Mail has no API at all. **v1 ships forward-to-address only** (`shop@in.crisper.app`), which was already the privacy-preferred path |
+| **OAuth mailbox import** | `gmail.readonly` is a restricted scope requiring a **CASA Tier 2/3 assessment — $3k–15k and 4–12 weeks of calendar time**, annually re-verified. Apple Mail has no API at all. **v1 ships forward-to-address only** (`shop@in.scrapless.app`), which was already the privacy-preferred path |
 | **Notification ranking + learned send time** | At ≤3 observations/week, learning a per-household time-of-day takes ~6 months. Ship a fixed 17:00 send plus a durable weekly counter |
 | **Per-household shelf-life learning** | Statistically broken as specified (see [§5.4c](05-technical-architecture.md)). 28 days buys something that looks right and is silently wrong. Collect the events, ship global rules |
 | **Tablet 2-column and desktop 3-pane** | Phone-first plus a readable single-column desktop |
@@ -201,7 +201,7 @@ credible PWA version worth building.
 - **AC1:** Read-only, narrowly scoped (a single label/folder, or forwarding address).
 - **AC2:** Zero marginal effort after setup — new orders appear without user action.
 - **AC3:** Explicit, revocable consent screen with plain-language data statement.
-- **AC4:** Fallback for privacy-averse users: forward-to-address (`shop@in.crisper.app`).
+- **AC4:** Fallback for privacy-averse users: forward-to-address (`shop@in.scrapless.app`).
 
 ### R3 — Quick add (P0)
 - **AC1:** Voice: "two broccoli, milk, chicken thighs" → 3 items, ≤ 8 s, hands-free.

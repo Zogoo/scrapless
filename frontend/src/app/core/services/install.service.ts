@@ -5,7 +5,7 @@ interface InstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-const DISMISSED_KEY = 'crisper_install_dismissed';
+const DISMISSED_KEY = 'scrapless_install_dismissed';
 
 /**
  * "Add to home screen".

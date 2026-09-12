@@ -44,5 +44,67 @@ RSpec.describe Ai::Config do
     it "runs against the stub when no key is configured, so the app still works" do
       expect(described_class.mode).to eq("stub")
     end
+
+    # rails_helper pins AI_MODE=stub for the whole suite, so the example above
+    # never actually exercises detection. This one does — and it has to clear the
+    # provider keys itself, because dotenv loads a developer's real .env into the
+    # test process. (That it does is exactly why the AI_MODE guard exists.)
+    it "detects live mode from a key rather than from AI_MODE alone" do
+      saved = described_class::PROVIDERS.values.to_h { |p| [ p.key_env, ENV[p.key_env] ] }
+      saved.each_key { |k| ENV.delete(k) }
+      ENV.delete("AI_MODE")
+
+      expect(described_class.mode).to eq("stub")
+
+      ENV["GEMINI_API_KEY"] = "test-key"
+      expect(described_class.mode).to eq("live")
+    ensure
+      ENV["AI_MODE"] = "stub"
+      saved&.each { |k, v| v.nil? ? ENV.delete(k) : ENV[k] = v }
+    end
+  end
+
+  describe ".chain" do
+    it "is every provider with a key, primary first" do
+      saved = described_class::PROVIDERS.values.to_h { |p| [ p.key_env, ENV[p.key_env] ] }
+      saved.each_key { |k| ENV.delete(k) }
+      ENV["OPENAI_API_KEY"] = "a"
+      ENV["GEMINI_API_KEY"] = "b"
+
+      expect(described_class.chain.map(&:name)).to eq(%w[openai gemini])
+    ensure
+      saved&.each { |k, v| v.nil? ? ENV.delete(k) : ENV[k] = v }
+    end
+
+    it "honours an explicit order" do
+      ENV["AI_PROVIDERS"] = "gemini,openai"
+
+      expect(described_class.chain.map(&:name)).to eq(%w[gemini openai])
+    ensure
+      ENV.delete("AI_PROVIDERS")
+    end
+
+    # Local has no credential to detect, so auto-detecting it would put it in
+    # every chain and make a keyless install think it was live.
+    it "never auto-detects the local runner" do
+      expect(described_class.chain.map(&:name)).not_to include("local")
+    end
+
+    it "still allows the local runner when it is asked for explicitly" do
+      ENV["AI_PROVIDERS"] = "local"
+
+      expect(described_class.chain.map(&:name)).to eq([ "local" ])
+      expect(described_class.api_key(provider: described_class::PROVIDERS["local"])).to be_present
+    ensure
+      ENV.delete("AI_PROVIDERS")
+    end
+
+    it "picks a per-provider model, so each provider gets one it actually has" do
+      openai = described_class::PROVIDERS.fetch("openai")
+      gemini = described_class::PROVIDERS.fetch("gemini")
+
+      expect(described_class.model_for(:receipt_extract, provider: openai).name).to eq("gpt-5-mini")
+      expect(described_class.model_for(:receipt_extract, provider: gemini).name).to eq("gemini-2.5-flash")
+    end
   end
 end

@@ -5,6 +5,8 @@ de:
     not_found: "Das haben wir nicht gefunden."
   capture:
     unreadable: "Der Bon war schwer zu lesen. Nochmal, oder sag mir einfach das Frische."
+    partial_parse: "Wir haben übernommen, was wir kannten. Damit kamen wir nicht klar: %{list}"
+    ai_unavailable: "Fotos lesen geht gerade nicht. Tippen oder sagen klappt aber immer."
     too_many: "Das sind viele Fotos auf einmal. Probier es in einer Stunde nochmal."
   # "abgelaufen" ist genauso verboten wie "EXPIRED" (Doc 4 §4.13). MHD und
   # Verbrauchsdatum werden nie vermischt.

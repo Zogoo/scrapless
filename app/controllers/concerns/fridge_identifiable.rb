@@ -10,7 +10,7 @@
 module FridgeIdentifiable
   extend ActiveSupport::Concern
 
-  COOKIE_NAME = :crisper_fridge
+  COOKIE_NAME = :scrapless_fridge
 
   included do
     attr_reader :current_household

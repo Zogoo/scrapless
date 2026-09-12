@@ -5,6 +5,8 @@ en:
     not_found: "We couldn't find that."
   capture:
     unreadable: "That one was hard to read. Want to try again, or just tell us the fresh stuff?"
+    partial_parse: "We added what we recognised. Couldn't make sense of: %{list}"
+    ai_unavailable: "Photo reading is off right now. You can still type or say what you got — that always works."
     too_many: "That is a lot of photos in one go. Give it an hour and try again."
   # Copy law (doc 4 §4.13): never "expired", never a precise date we did not read
   # off a label, never a guilt frame.

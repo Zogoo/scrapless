@@ -34,6 +34,14 @@
   }
 }
 
+.failures {
+  margin: 0 0 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--at-risk);
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
 .costs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));

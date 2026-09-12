@@ -1,4 +1,4 @@
-# Crisper
+# Scrapless
 
 A mobile-web app that tells a household what food it has and what is about to die,
 with as close to zero manual input as possible.

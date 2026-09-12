@@ -1,7 +1,7 @@
 # fly.toml — generated for restlify. `rake fly:setup` can rewrite app,
 # region and APP_FRONTEND_URL. See https://fly.io/docs/reference/configuration/
 
-app = 'crisper-app'
+app = 'scrapless-app'
 primary_region = 'fra'
 console_command = '/app/bin/rails console'
 swap_size_mb = 512
@@ -20,7 +20,7 @@ swap_size_mb = 512
   RAILS_SERVE_STATIC_FILES = 'true'
   WEB_CONCURRENCY = '1'
   DATABASE_PATH = '/mnt/database_storage/production.sqlite3'
-  APP_FRONTEND_URL = 'https://crisper-app.fly.dev'
+  APP_FRONTEND_URL = 'https://scrapless-app.fly.dev'
   # Switch to 'fly' after `rake fly:setup` provisions Tigris storage.
   ACTIVE_STORAGE_SERVICE = 'local'
 

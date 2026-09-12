@@ -40,6 +40,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_08_215159) do
   end
 
   create_table "ai_calls", force: :cascade do |t|
+    t.integer "attempt", default: 0, null: false
     t.float "audio_seconds", default: 0.0, null: false
     t.integer "cost_micros", default: 0, null: false
     t.datetime "created_at", null: false
@@ -49,10 +50,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_08_215159) do
     t.integer "input_tokens", default: 0, null: false
     t.string "model", null: false
     t.integer "output_tokens", default: 0, null: false
+    t.string "provider", default: "openai", null: false
     t.string "purpose", null: false
     t.boolean "success", default: true, null: false
     t.datetime "updated_at", null: false
     t.index ["household_id"], name: "index_ai_calls_on_household_id"
+    t.index ["provider", "created_at"], name: "index_ai_calls_on_provider_and_created_at"
     t.index ["purpose", "created_at"], name: "index_ai_calls_on_purpose_and_created_at"
   end
 

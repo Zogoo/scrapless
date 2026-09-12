@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Crisper — a mobile-web app that tells a household what food is about to die.
+Scrapless — a mobile-web app that tells a household what food is about to die.
 
 Start with **[docs/13-mvp-build.md](docs/13-mvp-build.md)**: what exists, what deliberately
 does not, and the one calibration constant that is load-bearing and unverified.

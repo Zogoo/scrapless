@@ -21,6 +21,21 @@
         </span>
       </button>
 
+      <label class="option file-option">
+        <span class="glyph" aria-hidden="true">🖼</span>
+        <span class="text">
+          <strong>{{ 'capture.pick_photo' | translate }}</strong>
+          <small>{{ 'capture.pick_photo_hint' | translate }}</small>
+        </span>
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment"
+          hidden
+          (change)="onFilePicked($event)"
+        />
+      </label>
+
       @if (speech.supported) {
         <button type="button" class="option" (click)="startVoice()">
           <span class="glyph" aria-hidden="true">🎙</span>
@@ -159,7 +174,7 @@
 
         @if (result.items.length === 0) {
           <!-- Never a dead end: three ways forward (doc 4 §4.4). -->
-          <p class="lede">{{ 'capture.hard_to_read' | translate }}</p>
+          <p class="lede">{{ result.capture.notes || ('capture.hard_to_read' | translate) }}</p>
           <div class="fallbacks">
             <button type="button" (click)="retakePhoto()">
               {{ 'capture.retake' | translate }}
@@ -190,6 +205,10 @@
               </li>
             }
           </ul>
+
+          @if (result.capture.notes) {
+            <p class="parse-note">{{ result.capture.notes }}</p>
+          }
 
           @if (result.suppressed.length > 0) {
             <!-- Showing what we filtered is what makes the parser trustworthy. -->

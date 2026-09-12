@@ -96,6 +96,8 @@ aliases = [
   [ "salami", "Salami", "deli", "🍖" ],
   [ "hummus", "Hummus", "deli", "🥣" ],
   # pantry and drinks
+  [ "spaetzle", "Spätzle", "pantry", "🍝" ],
+  [ "spätzle", "Spätzle", "pantry", "🍝" ],
   [ "spaghetti", "Spaghetti", "pantry", "🍝" ],
   [ "nudeln", "Nudeln", "pantry", "🍝" ],
   [ "pasta", "Pasta", "pantry", "🍝" ],

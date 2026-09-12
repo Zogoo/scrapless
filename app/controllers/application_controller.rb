@@ -7,7 +7,8 @@ class ApplicationController < ActionController::API
 
   rescue_from ActiveRecord::RecordNotFound, with: :render_not_found
   rescue_from ActiveRecord::RecordInvalid, with: :render_unprocessable
-  rescue_from Ai::Client::Error, with: :render_ai_unavailable
+  rescue_from Ai::Client::Error, with: :render_unreadable
+  rescue_from Ai::Client::Unavailable, with: :render_ai_unavailable
 
   private
 
@@ -35,10 +36,20 @@ class ApplicationController < ActionController::API
            status: :unprocessable_content
   end
 
-  # A model outage is not the user's problem to debug, so it reads as a retry
-  # prompt rather than an error code (doc 4 §4.13).
+  # The model read the photo and could not make sense of it. Retaking it is
+  # genuinely worth a try, so offer that (doc 4 §4.4's three ways forward).
+  def render_unreadable(exception)
+    Rails.logger.error("ai parse failed: #{exception.message}")
+    render json: { error: I18n.t("capture.unreadable"), retryable: true },
+           status: :service_unavailable
+  end
+
+  # The provider refused — quota, credentials, an outage. Retaking the photo
+  # cannot help, so say so and send them to the paths that cost nothing and
+  # still work. Never an error code (doc 4 §4.13).
   def render_ai_unavailable(exception)
-    Rails.logger.error("ai call failed: #{exception.message}")
-    render json: { error: I18n.t("capture.unreadable"), retryable: true }, status: :service_unavailable
+    Rails.logger.error("ai unavailable: #{exception.message}")
+    render json: { error: I18n.t("capture.ai_unavailable"), retryable: false },
+           status: :service_unavailable
   end
 end

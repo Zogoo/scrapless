@@ -12,6 +12,11 @@ drift apart without one of them being wrong.*
 
 ---
 
+> ✅ **Measured.** A 12-line German Bon has now been read end to end by `gpt-5-mini` through
+> the real UI. **$0.002453 against a projected $0.0025 — within 2%.** The per-household
+> figures in §14.3 still extrapolate from that single receipt, so they remain estimates of
+> *volume*, not of *unit cost*. See §14.7 for the observed numbers and the two surprises.
+
 ## 14.1 Prices used
 
 | Model | Job | Input $/1M | Output $/1M |
@@ -155,3 +160,52 @@ rows.
 `GET /api/v1/costs` and the `/settings` screen expose it in-product. That is deliberate: the
 claim "a capture costs a fraction of a cent" is the load-bearing one in this document, and it
 should be falsifiable by whoever is paying the invoice rather than taken on trust.
+
+---
+
+## 14.7 Observed — first real calls
+
+| | Projected | **Measured** | |
+|---|---|---|---|
+| Receipt, `gpt-5-mini` | $0.0025 | **$0.002453** | ✅ within 2% |
+| — input tokens | ~2,800 | **1,708** | image tokenised cheaper than assumed |
+| — output tokens | ~900 | **1,013** | |
+| — latency | not modelled | **15.7 s** | ⚠️ see below |
+| Text parse, `gpt-5-nano` | $0.00006 | **$0.000065** | ✅ within 8% |
+| — latency | not modelled | **1.6 s** | |
+
+**The headline number holds.** Doc 12's cost case, and every per-household figure built on
+it, survives contact with a real invoice.
+
+### Surprise 1 — reasoning tokens nearly doubled the bill, and returned nothing
+
+The first live text parse burned **1,200 output tokens, cost $0.000493, took 7.8 seconds and
+came back empty.**
+
+The gpt-5 family are reasoning models: `max_completion_tokens` covers *internal reasoning
+tokens as well as the answer*, those tokens are billed as output, and if reasoning exhausts
+the budget the visible content is an empty string. Extraction is not a reasoning task, so
+both gpt-5 models are now pinned to `reasoning_effort: "minimal"`
+([`config.rb`](../app/services/ai/config.rb)). The same call afterwards:
+
+| | Before | After |
+|---|---|---|
+| Output tokens | 1,200 | **130** |
+| Cost | $0.000493 | **$0.000065** |
+| Latency | 7.8 s | **1.6 s** |
+| Result | *empty* | correct |
+
+**7.6× cheaper, 5× faster, and it works.** Anyone repricing this table against a reasoning
+model must check `reasoning_effort`, or the figures will be wrong by an order of magnitude in
+the expensive direction.
+
+### Surprise 2 — latency, which this document never modelled
+
+**15.7 seconds** for a receipt. Nothing in doc 2's effort budget covers server time — it
+measures user effort — but the user is watching a spinner for all of it, and doc 2 §2.2 is
+emphatic that the fridge door costs three seconds. This is the strongest practical argument
+yet for evaluating `gpt-4o-mini` and Gemini Flash (§14.5): both are non-reasoning models and
+should be substantially faster, as well as cheaper.
+
+**Add latency to the corpus evaluation criteria.** Cost per receipt is already low enough that
+it is no longer the deciding variable; time-to-review may be.

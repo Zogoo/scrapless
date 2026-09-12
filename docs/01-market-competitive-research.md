@@ -189,7 +189,7 @@ transaction plus an $89/yr merchant subscription and has a real business.
    obligation at all — and has not broken out. ⚠️ *Corrected after review:* "retailer-gated" was
    a distribution excuse that let us avoid the harder question, which is **whether zero-entry
    actually retains at all**.
-2. **Fango** is receipt-only, narrow, €2.99, 34 countries — i.e. **it is approximately Crisper
+2. **Fango** is receipt-only, narrow, €2.99, 34 countries — i.e. **it is approximately Scrapless
    v1, already shipped.** ⚠️ *Corrected after review:* we originally cited this as evidence that
    focus works. We have no revenue, user or retention data for Fango. It is more honestly read as
    **the primary disconfirmation** of our thesis, and the first thing Phase 0 should investigate.
@@ -232,7 +232,7 @@ quadrantChart
     "Cooklist": [0.78, 0.35]
     "Samsung Family Hub": [0.55, 0.2]
     "Too Good To Go": [0.95, 0.85]
-    "Crisper (target)": [0.85, 0.88]
+    "Scrapless (target)": [0.85, 0.88]
 ```
 
 > ⚠️ **Read this map sceptically.** Its axes are subjective, and it is constructed such that

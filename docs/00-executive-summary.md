@@ -1,6 +1,6 @@
 # 0. Executive Summary
 
-**Product:** Crisper — a responsive PWA that tells a household what food it has and what is about
+**Product:** Scrapless — a responsive PWA that tells a household what food it has and what is about
 to die, capturing inventory from grocery receipts with near-zero manual input.
 
 **Launch market: Berlin → Germany → DACH.** Rationale: [doc 11](11-germany-berlin-market.md).
@@ -92,7 +92,7 @@ prompted.* Reviewers identified this as the real existential bet.
 
 ## What that means concretely
 
-| | Legacy category | Crisper |
+| | Legacy category | Scrapless |
 |---|---|---|
 | Items are | facts the user maintains | hypotheses with a confidence score |
 | Stale items | accumulate forever | **auto-retire silently** |

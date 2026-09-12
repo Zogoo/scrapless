@@ -1,6 +1,6 @@
-# Crisper — Product & Business Documentation
+# Scrapless — Product & Business Documentation
 
-Working name: **Crisper** — a responsive web app (PWA-first) that tells a household what food it
+Working name: **Scrapless** — a responsive web app (PWA-first) that tells a household what food it
 has and what is about to die, with as close to zero manual input as possible.
 
 **Launch market: Berlin → Germany → DACH.** German law (Belegausgabepflicht) hands every shopper a

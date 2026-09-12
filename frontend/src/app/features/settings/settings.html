@@ -48,6 +48,16 @@
         <p class="meta">{{ 'settings.stub_mode' | translate }}</p>
       }
 
+      <!-- Without this, a screen reading "7 calls · $0.0000" looks like the AI
+           is free when in fact every call is being refused. The ledger counts
+           failures; the screen has to show them, or it under-reports in the one
+           place built not to. -->
+      @if (report.totals.failures > 0) {
+        <p class="failures">
+          {{ 'settings.failures' | translate: { count: report.totals.failures } }}
+        </p>
+      }
+
       <dl class="costs">
         <div>
           <dt>{{ 'settings.calls' | translate }}</dt>

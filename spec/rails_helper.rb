@@ -1,5 +1,22 @@
 require "spec_helper"
 ENV["RAILS_ENV"] = "test"
+
+# The suite must be hermetic: it may not spend money and it may not touch a real
+# database.
+#
+# Both hazards come from the same place. dotenv-rails loads .env in the test
+# environment as well, and .env carries development values — a real
+# OPENAI_API_KEY with AI_MODE=auto, and DATABASE_PATH pointing at the
+# development SQLite file. Left alone, `bundle exec rspec` bills every example
+# that touches a capture and runs the whole suite, truncations included, against
+# the developer's own data.
+#
+# Forced here, before the app boots, because this is the one file every example
+# loads. Set AI_MODE=live on the command line if you ever genuinely want a test
+# to call out.
+ENV["AI_MODE"] = "stub" unless ENV["AI_MODE"] == "live"
+ENV["DATABASE_PATH"] = "storage/test.sqlite3"
+
 require_relative "../config/environment"
 abort("The Rails environment is running in production mode!") if Rails.env.production?
 require "rspec/rails"

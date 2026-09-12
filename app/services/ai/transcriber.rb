@@ -16,7 +16,7 @@ module Ai
     def call
       return Stub.transcript unless Config.live?
 
-      Client.new(household: @household).transcribe(
+      Router.new(household: @household).transcribe(
         io: @io, filename: @filename, content_type: @content_type,
         duration_seconds: @duration_seconds
       )

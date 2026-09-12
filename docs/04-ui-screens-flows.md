@@ -10,7 +10,7 @@ Freshness is encoded by **position + text + icon shape**, with colour only as re
 
 ```mermaid
 flowchart TD
-    ROOT([Crisper PWA]) --> HOME["🏠 Today<br/><i>the default, the product</i>"]
+    ROOT([Scrapless PWA]) --> HOME["🏠 Today<br/><i>the default, the product</i>"]
     ROOT --> KITCHEN["🧊 Kitchen<br/><i>full inventory, rarely visited</i>"]
     ROOT --> SHOP["🛒 Shop<br/><i>don't-buy list, offline</i>"]
     ROOT --> ME["⚙️ You<br/><i>household, sources, alerts</i>"]
@@ -328,7 +328,7 @@ The notification **is** the product for most weeks. Total budget: ≤3/week, def
 ```
    v1 — works everywhere              Android / native enhancement
 ┌──────────────────────────────┐   ┌──────────────────────────────────────┐
-│ Crisper                17:02 │   │ Crisper                        17:02 │
+│ Scrapless                17:02 │   │ Scrapless                        17:02 │
 │ Spinach and broccoli want    │   │ Spinach and broccoli want using      │
 │ using tonight. Stir-fry      │   │ tonight. Stir-fry takes 20 min.      │
 │ takes 20 min.                │   │ ┌───────────┐ ┌────────────────────┐ │
@@ -378,7 +378,7 @@ review on a laptop**, which some households prefer. Design mobile-first, enhance
 ```mermaid
 sequenceDiagram
     actor U as User
-    participant A as Crisper PWA
+    participant A as Scrapless PWA
     participant P as Parse service
     participant M as Freshness model
     participant N as Notifier

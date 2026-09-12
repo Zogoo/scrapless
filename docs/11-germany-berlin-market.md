@@ -315,7 +315,7 @@ is a company.
 
 ```mermaid
 gantt
-    title Crisper — Berlin → Germany → DACH
+    title Scrapless — Berlin → Germany → DACH
     dateFormat YYYY-MM-DD
     axisFormat %b '%y
 

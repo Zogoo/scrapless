@@ -80,7 +80,7 @@ module Api
         return if performed?
 
         capture.transcript = transcript
-        Ai::TextReader.call(text: transcript, household: current_household)
+        lines_from(transcript)
       end
 
       def transcribe(capture)
@@ -105,10 +105,36 @@ module Api
         return reject("no text") if text.blank?
 
         capture.transcript = text
-        known, unknown = Text::Splitter.call(text: text)
-        parsed = unknown.any? ? Ai::TextReader.call(text: unknown.join(", "), household: current_household) : { "items" => [] }
+        lines_from(text)
+      end
 
-        { "lines" => known + Array(parsed["items"]) }
+      # Shared by the typed and spoken paths, because they are the same problem:
+      # some words we already know, some we do not.
+      #
+      # Routing voice through the dictionary too is not just tidiness — "milch
+      # und brokkoli" spoken now costs nothing at all, where before every spoken
+      # sentence bought a model call whether it needed one or not.
+      def lines_from(text)
+        known, unknown = Text::Splitter.call(text: text)
+        parsed, note = parse_unknown(unknown)
+
+        { "lines" => known + parsed, "notes" => note }
+      end
+
+      # Never lose what we already understood.
+      #
+      # The dictionary hits are correct whatever the model does, and throwing
+      # them away because one unfamiliar word could not be parsed is exactly the
+      # dead end doc 4 §4.4 rule 4 forbids — observed live against a provider
+      # returning 429, where "milch, brokkoli, yuzu kosho" lost all three.
+      def parse_unknown(unknown)
+        return [ [], nil ] if unknown.empty?
+
+        result = Ai::TextReader.call(text: unknown.join(", "), household: current_household)
+        [ Array(result["items"]), nil ]
+      rescue Ai::Client::Error => e
+        Rails.logger.warn("text parse failed, keeping #{unknown.size} dictionary hits: #{e.message}")
+        [ [], I18n.t("capture.partial_parse", list: unknown.join(", ")) ]
       end
 
       def reject(message)

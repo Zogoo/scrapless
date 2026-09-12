@@ -36,7 +36,7 @@ group :development, :test do
   gem "rubocop-rails-omakase", require: false
 end
 
-# --- Crisper ---
+# --- Scrapless ---
 # json 3.0 made JSON.parse keyword-only, but ActiveSupport::JSON.decode
 # still passes its options hash positionally, so under Ruby 3.4 every
 # JSON request fails to parse and the API returns 400. Pin to 2.x until
@@ -53,6 +53,11 @@ group :development, :test do
   gem "rspec-rails"
   gem "factory_bot_rails"
   gem "faker"
+  # .env is the documented home for OPENAI_API_KEY, and docker compose reads it
+  # for variable substitution — but a native `bin/rails server` does not, so the
+  # documented setup silently ran against the stub. Loads in dev/test only;
+  # production still takes real environment variables.
+  gem "dotenv-rails"
 end
 
 group :test do

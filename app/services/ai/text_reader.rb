@@ -50,7 +50,7 @@ module Ai
       return { "items" => [] } if @text.blank?
       return Stub.text_result(@text) unless Config.live?
 
-      Client.new(household: @household).json_completion(
+      Router.new(household: @household).json_completion(
         purpose: :text_parse, schema: SCHEMA, max_output_tokens: 1200,
         messages: [
           { role: "system", content: SYSTEM },

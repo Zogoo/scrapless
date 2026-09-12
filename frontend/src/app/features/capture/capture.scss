@@ -210,6 +210,29 @@
   width: 100%;
 }
 
+/* A <label> wrapping a hidden file input has to carry the button's own hit area
+   and focus affordance, or it is a 48px target that looks like one and is not. */
+.file-option,
+.pick-fallback {
+  cursor: pointer;
+
+  &:focus-within {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+.pick-fallback {
+  display: grid;
+  place-items: center;
+  flex: 1 1 auto;
+  min-height: var(--tap);
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: center;
+}
+
 /* --- review --- */
 .review-list {
   list-style: none;
@@ -251,6 +274,16 @@
   margin: 0;
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+/* Louder than .suppressed on purpose: a suppressed Pfand line is us working
+   correctly, whereas this is us admitting we missed something. */
+.parse-note {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--at-risk);
+  border-radius: 10px;
+  font-size: 0.9rem;
 }
 
 .fallbacks {

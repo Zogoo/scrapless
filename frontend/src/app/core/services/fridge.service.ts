@@ -6,8 +6,8 @@ import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { Fridge } from '../models';
 
-const TOKEN_KEY = 'crisper_token';
-const FRIDGE_KEY = 'crisper_fridge';
+const TOKEN_KEY = 'scrapless_token';
+const FRIDGE_KEY = 'scrapless_fridge';
 
 /**
  * Identity, such as it is.
