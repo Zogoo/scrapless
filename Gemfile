@@ -47,7 +47,7 @@ gem "bcrypt", "~> 3.1"
 gem "pagy", "~> 43"
 gem "rack-cors"
 gem "csv"
-gem "aws-sdk-s3", "~> 1.220", require: false
+gem "aws-sdk-s3", "~> 1.232", require: false
 
 group :development, :test do
   gem "rspec-rails"
