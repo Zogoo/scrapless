@@ -2,8 +2,9 @@
   "nav": {
     "main": "Main",
     "today": "Today",
-    "kitchen": "Kitchen",
+    "recipes": "Recipes",
     "memo": "Shop",
+    "kitchen": "Kitchen",
     "settings": "You"
   },
   "onboarding": {
@@ -76,6 +77,16 @@
     "listening": "Listening…",
     "empty": "Nothing on the list yet.",
     "suggested": "You usually need"
+  },
+  "recipes": {
+    "title": "Recipes",
+    "lede": "A few short ideas from what's already in the kitchen.",
+    "thinking": "Looking through the kitchen…",
+    "empty_title": "Nothing to cook from yet.",
+    "empty_body": "Once there's food in here, a couple of short ideas will show up.",
+    "minutes": "{{count}} min",
+    "uses_first": "Uses what should go first",
+    "optional": "optional"
   },
   "kitchen": {
     "title": "Kitchen",

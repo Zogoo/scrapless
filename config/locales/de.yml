@@ -9,6 +9,11 @@ de:
     partial_parse: "Wir haben übernommen, was wir kannten. Damit kamen wir nicht klar: %{list}"
     ai_unavailable: "Fotos lesen geht gerade nicht. Tippen oder sagen klappt aber immer."
     too_many: "Das sind viele Fotos auf einmal. Probier es in einer Stunde nochmal."
+  recipes:
+    add_step: "%{name} dazugeben."
+    ai_unavailable: "Rezeptideen gehen gerade nicht. Deine Liste weiß trotzdem, was zuerst dran ist."
+    unusable: "Daraus ist nichts Kochbares geworden. Nochmal versuchen?"
+    too_many: "Das waren viele Rezeptideen in einer Stunde. Probier es etwas später nochmal."
   # "abgelaufen" ist genauso verboten wie "EXPIRED" (Doc 4 §4.13). MHD und
   # Verbrauchsdatum werden nie vermischt.
   freshness:

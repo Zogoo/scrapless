@@ -1,5 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -17,7 +17,7 @@ import { Outcome, ScoredItem } from '../../core/models';
  */
 @Component({
   selector: 'app-today',
-  imports: [RouterLink, DatePipe, TranslatePipe],
+  imports: [DatePipe, TranslatePipe],
   templateUrl: './today.html',
   styleUrl: './today.scss',
 })

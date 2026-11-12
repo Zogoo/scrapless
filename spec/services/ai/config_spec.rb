@@ -28,6 +28,14 @@ RSpec.describe Ai::Config do
       expect(described_class.model_for(:text_parse).name).to eq("gpt-5-nano")
     end
 
+    it "writes recipe ideas on the cheap tier for every provider in the chain" do
+      openai = described_class::PROVIDERS.fetch("openai")
+      gemini = described_class::PROVIDERS.fetch("gemini")
+
+      expect(described_class.model_for(:recipe_suggest, provider: openai).name).to eq("gpt-5-nano")
+      expect(described_class.model_for(:recipe_suggest, provider: gemini).name).to eq("gemini-2.5-flash-lite")
+    end
+
     # An unpriced model would silently under-report cost, which is the one thing
     # this table exists to prevent.
     it "refuses a model that has no price attached" do

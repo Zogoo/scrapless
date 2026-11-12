@@ -2,8 +2,9 @@
   "nav": {
     "main": "Hauptmenü",
     "today": "Heute",
-    "kitchen": "Küche",
+    "recipes": "Rezepte",
     "memo": "Einkauf",
+    "kitchen": "Küche",
     "settings": "Du"
   },
   "onboarding": {
@@ -76,6 +77,16 @@
     "listening": "Ich höre…",
     "empty": "Noch nichts auf der Liste.",
     "suggested": "Brauchst du meistens"
+  },
+  "recipes": {
+    "title": "Rezepte",
+    "lede": "Ein paar kurze Ideen aus dem, was schon in der Küche ist.",
+    "thinking": "Schau in die Küche…",
+    "empty_title": "Noch nichts zum Kochen.",
+    "empty_body": "Sobald Essen hier liegt, stehen ein paar kurze Ideen da.",
+    "minutes": "{{count}} Min.",
+    "uses_first": "Verbraucht, was zuerst dran ist",
+    "optional": "optional"
   },
   "kitchen": {
     "title": "Küche",

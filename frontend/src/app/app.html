@@ -1,26 +1,35 @@
 @if (ready()) {
+  @if (showYou()) {
+    <div class="shell-you">
+      <a routerLink="/settings">
+        <span aria-hidden="true">⚙️</span>
+        <small>{{ 'nav.settings' | translate }}</small>
+      </a>
+    </div>
+  }
+
   <main>
     <router-outlet />
   </main>
 
   @if (showTabs()) {
-    <!-- Four tabs, maximum. Today is the app; the rest is support. -->
+    <!-- Four tabs: home, recipes, the shopping list, the kitchen. -->
     <nav class="tabs" [attr.aria-label]="'nav.main' | translate">
       <a routerLink="/today" routerLinkActive="active">
         <span aria-hidden="true">🏠</span>
         <small>{{ 'nav.today' | translate }}</small>
       </a>
-      <a routerLink="/kitchen" routerLinkActive="active">
-        <span aria-hidden="true">🧊</span>
-        <small>{{ 'nav.kitchen' | translate }}</small>
+      <a routerLink="/recipes" routerLinkActive="active">
+        <span aria-hidden="true">🍳</span>
+        <small>{{ 'nav.recipes' | translate }}</small>
       </a>
       <a routerLink="/memo" routerLinkActive="active">
         <span aria-hidden="true">🛒</span>
         <small>{{ 'nav.memo' | translate }}</small>
       </a>
-      <a routerLink="/settings" routerLinkActive="active">
-        <span aria-hidden="true">⚙️</span>
-        <small>{{ 'nav.settings' | translate }}</small>
+      <a routerLink="/kitchen" routerLinkActive="active">
+        <span aria-hidden="true">🧊</span>
+        <small>{{ 'nav.kitchen' | translate }}</small>
       </a>
     </nav>
   }

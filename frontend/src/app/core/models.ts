@@ -102,6 +102,29 @@ export interface MemoPage {
   suggestions: Suggestion[];
 }
 
+export interface RecipeIngredient {
+  item_id: number | null;
+  name: string;
+  amount: string | null;
+  optional: boolean;
+  use_first: boolean;
+}
+
+/** A short idea built only from food already in this kitchen. */
+export interface Recipe {
+  title: string;
+  minutes: number | null;
+  ingredients: RecipeIngredient[];
+  steps: string[];
+  use_first_count: number;
+}
+
+export interface RecipeSuggestions {
+  recipes: Recipe[];
+  cached: boolean;
+  mode: 'live' | 'stub';
+}
+
 export interface CostReport {
   mode: 'live' | 'stub';
   models: Record<string, { name: string; input_usd_per_m: number; output_usd_per_m: number }>;

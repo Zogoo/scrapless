@@ -14,6 +14,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/today/today').then((m) => m.Today),
   },
   {
+    path: 'recipes',
+    canActivate: [fridgeGuard],
+    loadComponent: () => import('./features/recipes/recipes').then((m) => m.Recipes),
+  },
+  {
     path: 'add',
     canActivate: [fridgeGuard],
     loadComponent: () => import('./features/capture/capture').then((m) => m.Capture),

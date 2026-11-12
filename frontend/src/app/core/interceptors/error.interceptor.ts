@@ -10,14 +10,19 @@ import { catchError, throwError } from 'rxjs';
 export const errorInterceptor: HttpInterceptorFn = (req, next) =>
   next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      const body = error.error as { error?: string | string[] } | null;
-      const raw = body?.error;
+      const body = error.error as { error?: string | string[]; retryable?: boolean } | null;
+      const record = body && typeof body === 'object' ? body : null;
+      const raw = record?.error;
       const message = Array.isArray(raw) ? raw.join(', ') : raw;
+      const retryable =
+        typeof record?.retryable === 'boolean'
+          ? record.retryable
+          : error.status >= 500 || error.status === 0;
 
       return throwError(() => ({
         status: error.status,
         message: message || fallbackFor(error.status),
-        retryable: error.status >= 500 || error.status === 0,
+        retryable,
       }));
     }),
   );

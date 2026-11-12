@@ -20,6 +20,8 @@ Rails.application.routes.draw do
       end
 
       resource :costs, only: :show, controller: "costs"
+
+      post "recipes/suggest", to: "recipes#suggest"
     end
   end
 
