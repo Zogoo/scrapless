@@ -2,6 +2,8 @@ de:
   auth:
     no_fridge: "Noch kein Kühlschrank — leg einen an, wir merken ihn uns."
     too_many_fridges: "Das sind viele neue Kühlschränke. Probier es in einer Stunde nochmal."
+    unknown_kitchen: "Dieser Link öffnet keine Küche."
+    too_many_joins: "Das sind viele Versuche. Probier es in einer Stunde nochmal."
   record:
     not_found: "Das haben wir nicht gefunden."
   capture:

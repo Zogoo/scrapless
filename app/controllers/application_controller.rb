@@ -22,9 +22,23 @@ class ApplicationController < ActionController::API
       id: household.uuid,
       name: household.name,
       token: household.token,
+      join_code: household.join_code,
       locale: household.locale,
       created_at: household.created_at
     }
+  end
+
+  # The name on this phone, if it sent one. Never required: a capture or a memo
+  # line still lands when the phone has no name. Truncation lives on the model.
+  def actor_name
+    raw = request.headers["X-Actor-Name"].presence || params[:added_by].presence
+    return if raw.blank?
+
+    text = raw.to_s
+    text = URI.decode_www_form_component(text) if text.match?(/%[0-9A-Fa-f]{2}/)
+    text
+  rescue ArgumentError
+    nil
   end
 
   def render_not_found

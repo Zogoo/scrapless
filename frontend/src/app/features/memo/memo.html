@@ -20,6 +20,8 @@
     </p>
   }
 
+  <p class="lede">{{ 'memo.shared' | translate }}</p>
+
   <div class="composer">
     <input
       type="text"
@@ -65,7 +67,14 @@
         <li [class.done]="item.done">
           <label class="tick">
             <input type="checkbox" [checked]="item.done" (change)="toggle(item.id, !item.done)" />
-            <span>{{ item.name }}</span>
+            <span class="line">
+              <span>{{ item.name }}</span>
+              @if (item.added_by_name) {
+                <small class="by">{{
+                  'common.by' | translate: { name: item.added_by_name }
+                }}</small>
+              }
+            </span>
           </label>
           <button
             type="button"

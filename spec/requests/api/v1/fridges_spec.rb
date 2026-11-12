@@ -37,6 +37,14 @@ RSpec.describe "Api::V1::Fridges", type: :request do
 
       expect(response.headers["Set-Cookie"]).to include("scrapless_fridge")
     end
+
+    it "returns a join code that is not the bearer token" do
+      post "/api/v1/fridge", params: {}, as: :json
+
+      body = response.parsed_body
+      expect(body["join_code"]).to be_present
+      expect(body["join_code"]).not_to eq(body["token"])
+    end
   end
 
   describe "GET /api/v1/fridge" do
@@ -61,6 +69,65 @@ RSpec.describe "Api::V1::Fridges", type: :request do
       get "/api/v1/fridge", headers: { "Authorization" => "Bearer nonsense" }
 
       expect(response).to have_http_status(:unauthorized)
+    end
+  end
+
+  describe "POST /api/v1/fridge/join" do
+    let(:household) { create(:household, name: "Quiet Kitchen") }
+
+    it "opens the shared kitchen and sets the cookie to it" do
+      post "/api/v1/fridge/join", params: { join_code: household.join_code }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["token"]).to eq(household.token)
+      expect(response.parsed_body["name"]).to eq("Quiet Kitchen")
+      expect(response.parsed_body["join_code"]).to eq(household.join_code)
+      expect(response.headers["Set-Cookie"]).to include("scrapless_fridge")
+
+      get "/api/v1/fridge"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["id"]).to eq(household.uuid)
+    end
+
+    it "switches a phone that already had a kitchen" do
+      other = create(:household, name: "Other")
+
+      post "/api/v1/fridge/join", params: { join_code: household.join_code },
+           headers: fridge_headers(other), as: :json
+
+      expect(response.parsed_body["name"]).to eq("Quiet Kitchen")
+
+      get "/api/v1/fridge"
+
+      expect(response.parsed_body["name"]).to eq("Quiet Kitchen")
+    end
+
+    it "does not accept the bearer token as a join code" do
+      post "/api/v1/fridge/join", params: { join_code: household.token }, as: :json
+
+      expect(response).to have_http_status(:not_found)
+      expect(response.headers["Set-Cookie"].to_s).not_to include("scrapless_fridge")
+    end
+
+    it "does not treat the join code as a bearer token" do
+      get "/api/v1/fridge", headers: { "Authorization" => "Bearer #{household.join_code}" }
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "refuses an unknown code without setting a cookie" do
+      post "/api/v1/fridge/join", params: { join_code: "missing" }, as: :json
+
+      expect(response).to have_http_status(:not_found)
+      expect(response.parsed_body["error"]).to match(/doesn't open a kitchen/i)
+      expect(response.headers["Set-Cookie"].to_s).not_to include("scrapless_fridge")
+    end
+
+    it "will not let one client guess join codes without limit" do
+      31.times { post "/api/v1/fridge/join", params: { join_code: "missing" }, as: :json }
+
+      expect(response).to have_http_status(:too_many_requests)
     end
   end
 

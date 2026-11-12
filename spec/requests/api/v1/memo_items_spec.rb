@@ -21,6 +21,36 @@ RSpec.describe "Api::V1::MemoItems", type: :request do
     expect(household.memo_items.pluck(:name)).to eq([ "Kaffee" ])
   end
 
+  it "attributes a line to the name on the phone" do
+    post "/api/v1/memo", params: { name: "Kaffee" },
+         headers: headers.merge("X-Actor-Name" => "Mama"), as: :json
+
+    expect(response).to have_http_status(:created)
+    expect(response.parsed_body["added_by_name"]).to eq("Mama")
+    expect(household.memo_items.last.added_by_name).to eq("Mama")
+  end
+
+  it "leaves the name blank when the phone has not chosen one" do
+    post "/api/v1/memo", params: { name: "Kaffee" }, headers: headers, as: :json
+
+    expect(household.memo_items.last.added_by_name).to be_nil
+  end
+
+  it "attributes every line of a dictation to the same name" do
+    post "/api/v1/memo/dictate", params: { transcript: "milk and bread" },
+         headers: headers.merge("X-Actor-Name" => "Oma%20Inge"), as: :json
+
+    expect(response).to have_http_status(:created)
+    expect(household.memo_items.pluck(:added_by_name).uniq).to eq([ "Oma Inge" ])
+  end
+
+  it "keeps a very long name from failing the line" do
+    post "/api/v1/memo", params: { name: "Kaffee", added_by: "M" * 80 }, headers: headers, as: :json
+
+    expect(response).to have_http_status(:created)
+    expect(household.memo_items.last.added_by_name).to eq("M" * 40)
+  end
+
   # The memo is the one place where cost per line should be exactly zero, so
   # dictation splits locally and never reaches a model.
   it "splits a spoken sentence into lines without calling a model" do

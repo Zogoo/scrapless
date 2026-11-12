@@ -2,6 +2,8 @@
 # a spoken sentence or a typed line. Keeps the raw model response so a bad parse
 # can be audited, diffed against the user's correction and retrained on.
 class Capture < ApplicationRecord
+  include AddedBy
+
   SOURCES = %w[receipt shelf_photo voice text grid].freeze
   STATUSES = %w[pending parsed failed].freeze
 
