@@ -20,8 +20,17 @@ import { FridgeService } from '../../core/services/fridge.service';
   template: `
     <div class="onboarding">
       <div class="hero">
-        <span class="mark" aria-hidden="true">🧊</span>
-        <h1>{{ 'onboarding.title' | translate }}</h1>
+        <h1 class="logo-heading">
+          <picture>
+            <source srcset="/branding/full_logo_dark.png" media="(prefers-color-scheme: dark)" />
+            <img
+              src="/branding/full_logo_light.png"
+              [attr.alt]="'brand.name' | translate"
+              width="280"
+              height="112"
+            />
+          </picture>
+        </h1>
         <p class="lede">{{ 'onboarding.lede' | translate }}</p>
       </div>
 
