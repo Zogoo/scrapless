@@ -2,6 +2,8 @@ en:
   auth:
     no_fridge: "No fridge yet — start one and we'll remember it."
     too_many_fridges: "That is a lot of new fridges. Try again in an hour."
+    unknown_kitchen: "That link doesn't open a kitchen."
+    too_many_joins: "That is a lot of tries. Give it an hour."
   record:
     not_found: "We couldn't find that."
   capture:
@@ -9,6 +11,11 @@ en:
     partial_parse: "We added what we recognised. Couldn't make sense of: %{list}"
     ai_unavailable: "Photo reading is off right now. You can still type or say what you got — that always works."
     too_many: "That is a lot of photos in one go. Give it an hour and try again."
+  recipes:
+    add_step: "Add the %{name}."
+    ai_unavailable: "Recipe ideas are off for now. Your list still knows what to use first."
+    unusable: "That didn't come out as anything cookable. Want to try again?"
+    too_many: "That's a lot of recipe ideas for one hour. Try again a bit later."
   # Copy law (doc 4 §4.13): never "expired", never a precise date we did not read
   # off a label, never a guilt frame.
   freshness:

@@ -58,6 +58,16 @@ RSpec.describe "Api::V1::Items", type: :request do
 
       expect(response.parsed_body["fine_for_now"]).to be_empty
     end
+
+    it "shows who added the food when the phone said so" do
+      create(:item, household: household, display_name: "Milch", added_by_name: "Mama")
+
+      get "/api/v1/items", headers: headers
+
+      listed = response.parsed_body.values_at("use_first", "fine_for_now", "probably_gone").flatten
+      milch = listed.find { |item| item["display_name"] == "Milch" }
+      expect(milch["added_by_name"]).to eq("Mama")
+    end
   end
 
   describe "POST /api/v1/items/:id/resolve" do

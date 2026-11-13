@@ -5,8 +5,9 @@
   "nav": {
     "main": "Hauptmenü",
     "today": "Heute",
-    "kitchen": "Küche",
+    "recipes": "Rezepte",
     "memo": "Einkauf",
+    "kitchen": "Küche",
     "settings": "Du"
   },
   "onboarding": {
@@ -78,7 +79,18 @@
     "dictate": "Liste sprechen",
     "listening": "Ich höre…",
     "empty": "Noch nichts auf der Liste.",
-    "suggested": "Brauchst du meistens"
+    "suggested": "Brauchst du meistens",
+    "shared": "Eine Liste für diese Küche. Wer den Link geöffnet hat, sieht dieselben Zeilen."
+  },
+  "recipes": {
+    "title": "Rezepte",
+    "lede": "Ein paar kurze Ideen aus dem, was schon in der Küche ist.",
+    "thinking": "Schau in die Küche…",
+    "empty_title": "Noch nichts zum Kochen.",
+    "empty_body": "Sobald Essen hier liegt, stehen ein paar kurze Ideen da.",
+    "minutes": "{{count}} Min.",
+    "uses_first": "Verbraucht, was zuerst dran ist",
+    "optional": "optional"
   },
   "kitchen": {
     "title": "Küche",
@@ -103,7 +115,17 @@
     "fridge_name": "Name des Kühlschranks",
     "saved": "Gespeichert",
     "fridge_id": "Kühlschrank-ID",
-    "identity_note": "Liegt in diesem Browser und in einem Zehn-Jahres-Cookie. Beides löschen heißt Kühlschrank weg — ein Bon baut ihn wieder auf.",
+    "identity_note": "Liegt in diesem Browser und in einem Zehn-Jahres-Cookie. Auf jedem Handy beides löschen heißt Kühlschrank weg — ein Bon baut ihn wieder auf.",
+    "your_name": "Dein Name auf diesem Handy",
+    "your_name_note": "Freiwillig. Steht neben dem, was du hinzufügst, damit die anderen sehen, dass du es warst. Bleibt auf diesem Handy.",
+    "name_placeholder": "z. B. Mama",
+    "share_title": "Küche teilen",
+    "share_note": "Auf einem anderen Handy öffnen. Es wird dieselbe Küche — dasselbe Essen, dieselbe Einkaufsliste. Kein Konto.",
+    "share_link": "Link zum Teilen",
+    "copy_link": "Link kopieren",
+    "copied": "Kopiert",
+    "share_care": "Wer den Link hat, kann die Küche öffnen.",
+    "qr_alt": "QR-Code, der diese Küche öffnet",
     "costs": "Was die KI gekostet hat",
     "stub_mode": "Läuft offline mit Beispieldaten — kein API-Key gesetzt, also nichts abgerechnet.",
     "calls": "Aufrufe",
@@ -112,7 +134,7 @@
     "per_receipt": "Pro Bon",
     "job": "Aufgabe",
     "forget": "Kühlschrank vergessen",
-    "forget_note": "Löscht alles, was wir zu diesem Kühlschrank haben. Kein Zurück.",
+    "forget_note": "Löscht alles, was wir zu diesem Kühlschrank haben — auf diesem Handy und auf jedem, das ihn geöffnet hat. Kein Zurück.",
     "forget_confirm": "Ja, alles löschen",
     "failures": "{{count}} Aufrufe fehlgeschlagen — prüf den API-Key und das Guthaben."
   },
@@ -123,6 +145,16 @@
     "close": "Schließen",
     "save": "Speichern",
     "delete": "Löschen",
-    "retry": "Nochmal"
+    "retry": "Nochmal",
+    "by": "von {{name}}"
+  },
+  "join": {
+    "title": "Diese Küche öffnen",
+    "lede": "Dieses Handy nutzt dann die geteilte Küche. Dasselbe Essen, dieselbe Einkaufsliste.",
+    "switch": "Dieses Handy hat schon eine Küche. Diese hier ersetzt sie. Die andere bleibt bei allen, die ihren Link noch haben.",
+    "open": "Küche öffnen",
+    "opening": "Wird geöffnet…",
+    "invalid": "Dieser Link öffnet keine Küche.",
+    "too_many": "Das sind viele Versuche. Probier es in einer Stunde nochmal."
   }
 }

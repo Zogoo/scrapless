@@ -34,8 +34,21 @@ optional question and a Skip. The token lives in localStorage **and** in a signe
 cookie, re-stamped on every request; either one alone restores the fridge, verified by
 clearing localStorage entirely and reloading.
 
-**The trade, stated plainly:** clear both and the fridge is gone. For a product whose entire
-inventory is rebuilt by one photo of the next shop, that is a better deal than a sign-up form.
+**The trade, stated plainly:** clear both, on every phone that has opened the kitchen,
+and the fridge is gone. For a product whose entire inventory is rebuilt by one photo of
+the next shop, that is a better deal than a sign-up form.
+
+### A second phone joins with a code, not with the token
+
+`token` is the bearer secret, so the share link does not carry it. Each fridge also has
+a `join_code`. Settings shows a link and a QR code for `/join#<code>` — the code is in
+the fragment, so loading the page does not send it to the server. The page posts it to
+`POST /api/v1/fridge/join`, which sets the same ten-year cookie and returns the token
+for localStorage. The join code is not accepted as a bearer. Revoking a share is not
+built. The shopping memo was already per fridge, so a joined phone sees the same list;
+the screen says so, and there is no second list. A name typed on the phone lives in
+localStorage only and is stored on the capture, its items, and memo lines as
+`added_by_name`. There is still no account and no user row.
 
 ### Spoilage never fires an alert on its own
 
@@ -101,7 +114,6 @@ analysis in [doc 14](14-mvp-cost-model.md).
 | **Email/digital receipt import** | Doc 2 §2.4b promotes it to v1 P0 as the only capture path immune to forgetting. Significant work — retailer accounts, an ingest address, parsing. |
 | **The two German checksums** | Doc 12 §12.1's `Summe` reconciliation and VAT-class subtotals are the confidence score that replaces the vendor's. `RECEIPT_LINE.vat_class` is captured in the prompt but not reconciled, so `parse_confidence` is currently just the share of lines that resolved. **This is the largest accuracy gap.** |
 | **The second-pass tier** | ~15% of receipts should escalate to a stronger model. Not implemented: cheaper than doc 12's design and less accurate. |
-| **Household sharing** | Doc 3 R9, v1 P1. One token, one fridge, no members. |
 | **The 60-second sweep** | `sweep_count` is computed and returned; no screen consumes it. |
 | **Printed-date reading** | The estimator handles `Verbrauchsdatum` vs `MHD` correctly and clamps safety dates, but nothing populates `date_label_value` — no screen sets it and the prompt does not ask for it. **The safety carve-out is therefore code without an input.** |
 | **`rule_id`/`rule_version` snapshots** | Doc 5 calls this the biggest migration hazard: recategorising a product silently re-dates live food in every household. Not modelled. |

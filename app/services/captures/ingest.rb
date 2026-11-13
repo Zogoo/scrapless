@@ -71,7 +71,8 @@ module Captures
         window_start: window.window_start,
         window_end: window.window_end,
         confidence: resolved.source == "dictionary" ? window.confidence : [ window.confidence - 0.1, 0.2 ].max,
-        date_label_type: window.high_risk ? "verbrauchsdatum" : "none"
+        date_label_type: window.high_risk ? "verbrauchsdatum" : "none",
+        added_by_name: @capture.added_by_name
       )
     rescue StandardError => e
       Rails.logger.warn("skipped line #{line.inspect}: #{e.message}")

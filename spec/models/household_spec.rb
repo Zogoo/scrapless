@@ -22,4 +22,11 @@ RSpec.describe Household do
   it "issues a different token to every fridge" do
     expect(described_class.create!.token).not_to eq(described_class.create!.token)
   end
+
+  it "issues a join code that is not the bearer token" do
+    household = described_class.create!
+
+    expect(household.join_code).to be_present
+    expect(household.join_code).not_to eq(household.token)
+  end
 end

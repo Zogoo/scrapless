@@ -22,6 +22,44 @@
     <p class="meta">{{ 'settings.identity_note' | translate }}</p>
   }
 
+  <section class="block">
+    <h2>{{ 'settings.your_name' | translate }}</h2>
+    <p class="meta">{{ 'settings.your_name_note' | translate }}</p>
+    <input
+      type="text"
+      maxlength="40"
+      autocomplete="nickname"
+      [attr.aria-label]="'settings.your_name' | translate"
+      [placeholder]="'settings.name_placeholder' | translate"
+      [ngModel]="actorName()"
+      (ngModelChange)="actorName.set($event)"
+      (keyup.enter)="saveActor()"
+    />
+    <button type="button" class="primary wide" (click)="saveActor()">
+      {{ (actorSaved() ? 'settings.saved' : 'common.save') | translate }}
+    </button>
+  </section>
+
+  @if (shareLink(); as link) {
+    <section class="block share">
+      <h2>{{ 'settings.share_title' | translate }}</h2>
+      <p class="meta">{{ 'settings.share_note' | translate }}</p>
+      <img class="qr" [src]="qrSrc()" [alt]="'settings.qr_alt' | translate" />
+      <input
+        class="share-link"
+        type="text"
+        readonly
+        [value]="link"
+        (focus)="selectLink($event)"
+        [attr.aria-label]="'settings.share_link' | translate"
+      />
+      <button type="button" class="primary wide" (click)="copyLink(link)">
+        {{ (copied() ? 'settings.copied' : 'settings.copy_link') | translate }}
+      </button>
+      <p class="meta">{{ 'settings.share_care' | translate }}</p>
+    </section>
+  }
+
   @if (!install.installed()) {
     <section class="block">
       <h2>{{ 'install.title' | translate }}</h2>

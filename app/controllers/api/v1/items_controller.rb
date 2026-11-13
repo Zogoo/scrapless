@@ -151,7 +151,8 @@ module Api
           state: item.state,
           opened_on: item.opened_on,
           snoozed_until: item.snoozed_until,
-          high_risk: item.high_risk?
+          high_risk: item.high_risk?,
+          added_by_name: item.added_by_name
         }
       end
     end

@@ -48,6 +48,9 @@
                       </span>
                     </div>
                     <p class="headline">{{ item.headline }}</p>
+                    @if (item.added_by_name) {
+                      <p class="by">{{ 'common.by' | translate: { name: item.added_by_name } }}</p>
+                    }
                     <div class="row-actions">
                       <button type="button" (click)="resolve(item, 'used')">
                         ✔ {{ 'today.used' | translate }}

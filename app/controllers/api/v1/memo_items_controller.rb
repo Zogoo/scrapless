@@ -12,7 +12,8 @@ module Api
 
       def create
         item = current_household.memo_items.create!(
-          name: params[:name], note: params[:note].presence, source: source_param
+          name: params[:name], note: params[:note].presence, source: source_param,
+          added_by_name: actor_name
         )
         render json: memo_json(item), status: :created
       end
@@ -26,7 +27,7 @@ module Api
 
         names = extract_names(transcript)
         created = names.map do |name|
-          current_household.memo_items.create!(name: name, source: params[:transcript].present? ? "voice" : "voice")
+          current_household.memo_items.create!(name: name, source: "voice", added_by_name: actor_name)
         end
 
         render json: { transcript: transcript, items: created.map { |m| memo_json(m) } }, status: :created
@@ -90,7 +91,8 @@ module Api
       def memo_json(item)
         {
           id: item.id, name: item.name, note: item.note, done: item.done,
-          source: item.source, position: item.position, created_at: item.created_at
+          source: item.source, position: item.position, created_at: item.created_at,
+          added_by_name: item.added_by_name
         }
       end
     end
