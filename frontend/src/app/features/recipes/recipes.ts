@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { RecipesService } from '../../core/services/recipes.service';
@@ -7,9 +7,8 @@ import { Recipe } from '../../core/models';
 /**
  * A few short dinners from what is already in the kitchen.
  *
- * The request happens when this screen opens, not when the app does. The
- * server answers from cache until the food changes, and refuses a fridge that
- * asks too often.
+ * Nothing is asked until the button is pressed. The server answers from
+ * cache until the food changes, and refuses a fridge that asks too often.
  */
 @Component({
   selector: 'app-recipes',
@@ -17,19 +16,17 @@ import { Recipe } from '../../core/models';
   templateUrl: './recipes.html',
   styleUrl: './recipes.scss',
 })
-export class Recipes implements OnInit {
+export class Recipes {
   private readonly recipesApi = inject(RecipesService);
 
   protected readonly recipes = signal<Recipe[]>([]);
-  protected readonly loading = signal(true);
+  protected readonly asked = signal(false);
+  protected readonly loading = signal(false);
   protected readonly error = signal('');
   protected readonly retryable = signal(false);
 
-  ngOnInit(): void {
-    this.load();
-  }
-
-  protected load(): void {
+  protected ask(): void {
+    this.asked.set(true);
     this.loading.set(true);
     this.error.set('');
     this.retryable.set(false);
