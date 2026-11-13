@@ -10,17 +10,21 @@
   "theme_color": "#1B5E20",
   "categories": ["food", "lifestyle", "utilities"],
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     {
-      "src": "/icons/icon-maskable-192.png",
-      "sizes": "192x192",
+      "src": "/branding/app_icon_light.png",
+      "sizes": "1254x1254",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any"
     },
     {
-      "src": "/icons/icon-maskable.png",
-      "sizes": "512x512",
+      "src": "/branding/app_icon_dark.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/branding/app_icon_light.png",
+      "sizes": "1254x1254",
       "type": "image/png",
       "purpose": "maskable"
     }

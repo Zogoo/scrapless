@@ -4,8 +4,8 @@
     <header class="app-bar">
       <div class="inner">
         <picture class="mark">
-          <source srcset="/branding/favicon_dark.png" media="(prefers-color-scheme: dark)" />
-          <img src="/branding/favicon_light.png" alt="" width="36" height="36" />
+          <source srcset="/branding/favicon_dark_opaque.png" media="(prefers-color-scheme: dark)" />
+          <img src="/branding/favicon_light_opaque.png" alt="" width="36" height="36" />
         </picture>
         <div class="brand">
           <p class="wordmark">{{ 'brand.name' | translate }}</p>
@@ -38,8 +38,11 @@
       <a routerLink="/today" routerLinkActive="active">
         <span class="glyph" aria-hidden="true">
           <picture>
-            <source srcset="/branding/favicon_dark.png" media="(prefers-color-scheme: dark)" />
-            <img src="/branding/favicon_light.png" alt="" width="24" height="24" />
+            <source
+              srcset="/branding/favicon_dark_opaque.png"
+              media="(prefers-color-scheme: dark)"
+            />
+            <img src="/branding/favicon_light_opaque.png" alt="" width="24" height="24" />
           </picture>
         </span>
         <small>{{ 'nav.today' | translate }}</small>
