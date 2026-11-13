@@ -85,6 +85,7 @@
   "recipes": {
     "title": "Recipes",
     "lede": "A few short ideas from what's already in the kitchen.",
+    "ask": "Cook with these",
     "thinking": "Looking through the kitchen…",
     "empty_title": "Nothing to cook from yet.",
     "empty_body": "Once there's food in here, a couple of short ideas will show up.",

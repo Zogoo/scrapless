@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { ItemsService } from '../../core/services/items.service';
@@ -17,6 +18,7 @@ import { Outcome, ScoredItem, Storage } from '../../core/models';
 })
 export class Kitchen implements OnInit {
   private readonly items = inject(ItemsService);
+  private readonly router = inject(Router);
 
   protected readonly loading = signal(true);
   protected readonly error = signal('');
@@ -36,6 +38,10 @@ export class Kitchen implements OnInit {
   });
 
   protected readonly storages: Storage[] = ['fridge', 'freezer', 'pantry'];
+
+  protected capture(): void {
+    void this.router.navigate(['/add']);
+  }
 
   ngOnInit(): void {
     this.load();

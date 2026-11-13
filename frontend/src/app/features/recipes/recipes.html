@@ -6,14 +6,16 @@
     <p class="error">
       {{ error() }}
       @if (retryable()) {
-        <button type="button" class="ghost" (click)="load()">
+        <button type="button" class="ghost" (click)="ask()">
           {{ 'common.retry' | translate }}
         </button>
       }
     </p>
   }
 
-  @if (loading()) {
+  @if (!asked()) {
+    <button type="button" class="primary" (click)="ask()">{{ 'recipes.ask' | translate }}</button>
+  } @else if (loading()) {
     <p class="loading">{{ 'recipes.thinking' | translate }}</p>
   } @else if (!error() && recipes().length === 0) {
     <div class="calm">
@@ -21,6 +23,7 @@
       <h2>{{ 'recipes.empty_title' | translate }}</h2>
       <p>{{ 'recipes.empty_body' | translate }}</p>
     </div>
+    <button type="button" class="primary" (click)="ask()">{{ 'recipes.ask' | translate }}</button>
   } @else if (recipes().length > 0) {
     @for (recipe of recipes(); track recipe.title) {
       <article class="card">
