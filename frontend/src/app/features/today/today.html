@@ -33,8 +33,8 @@
          of an incomplete inventory into a lie (doc 2 §2.5). -->
     <div class="calm">
       <picture class="mark">
-        <source srcset="/branding/app_icon_dark.png" media="(prefers-color-scheme: dark)" />
-        <img src="/branding/app_icon_light.png" alt="" width="56" height="56" />
+        <source srcset="/branding/transparent/dark_mode.png" media="(prefers-color-scheme: dark)" />
+        <img src="/branding/transparent/light_mode.png" alt="" width="56" height="56" />
       </picture>
       <h2>{{ 'today.empty_title' | translate }}</h2>
       <p>{{ 'today.empty_body' | translate }}</p>
@@ -100,8 +100,11 @@
     } @else if (allCalm()) {
       <div class="calm">
         <picture class="mark">
-          <source srcset="/branding/app_icon_dark.png" media="(prefers-color-scheme: dark)" />
-          <img src="/branding/app_icon_light.png" alt="" width="56" height="56" />
+          <source
+            srcset="/branding/transparent/dark_mode.png"
+            media="(prefers-color-scheme: dark)"
+          />
+          <img src="/branding/transparent/light_mode.png" alt="" width="56" height="56" />
         </picture>
         <h2>{{ 'today.calm_title' | translate }}</h2>
         <p>{{ 'today.calm_body' | translate }}</p>
