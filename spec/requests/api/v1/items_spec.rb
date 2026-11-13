@@ -142,7 +142,9 @@ RSpec.describe "Api::V1::Items", type: :request do
       post "/api/v1/items/level", params: { ids: [ old.id, fresh.id ], level: 1.25 }, headers: headers
 
       expect(response).to have_http_status(:ok)
-      expect(response.parsed_body["items"].map { |i| i["amount_left"] }).to eq([ 0.25, 1.0 ])
+      body = response.parsed_body["items"]
+      expect(body.map { |i| i["id"] }).to eq([ old.id, fresh.id ])
+      expect(body.map { |i| i["amount_left"] }).to eq([ 1.0, 0.25 ])
     end
 
     it "requires a level" do

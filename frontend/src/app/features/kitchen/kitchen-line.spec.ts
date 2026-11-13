@@ -39,13 +39,24 @@ const old = pack({ id: 1, window_end: '2026-11-14', phase: 'at_risk', amount_lef
 const fresh = pack({ id: 2, window_end: '2026-11-20', phase: 'fresh' });
 
 describe('toLines', () => {
-  it('folds two packs of the same food into one line, soonest-dying first', () => {
-    const lines = toLines([fresh, old, pack({ id: 3, canonical_name: 'eggs' })]);
+  it('folds two packs into one line, oldest added first, actions on the soonest-dying', () => {
+    const addedLaterButSooner = pack({
+      id: 2,
+      window_end: '2026-11-14',
+      phase: 'at_risk',
+      amount_left: 0.5,
+    });
+    const addedFirstButLater = pack({ id: 1, window_end: '2026-11-20', phase: 'fresh' });
+    const lines = toLines([
+      addedLaterButSooner,
+      addedFirstButLater,
+      pack({ id: 3, canonical_name: 'eggs' }),
+    ]);
 
     expect(lines).toHaveLength(2);
     const milk = lines.find((l) => l.key === 'fridge:milk')!;
     expect(milk.packs.map((p) => p.id)).toEqual([1, 2]);
-    expect(milk.first.id).toBe(1);
+    expect(milk.first.id).toBe(2);
     expect(milk.level).toBe(1.5);
   });
 
@@ -55,12 +66,24 @@ describe('toLines', () => {
 });
 
 describe('segments', () => {
-  it('lays packs out fresh on the left, old on the right, and drains the right first', () => {
+  it('keeps the earlier pack and drains the most recently added one on the right', () => {
     const [line] = toLines([old, fresh]);
 
     expect(segments(line, 1.25).map((s) => [s.id, s.amount])).toEqual([
-      [2, 1],
-      [1, 0.25],
+      [1, 1],
+      [2, 0.25],
+    ]);
+  });
+
+  it('refills the newest drained pack before the older one', () => {
+    const [line] = toLines([
+      pack({ id: 1, amount_left: 1, phase: 'at_risk' }),
+      pack({ id: 2, amount_left: 0.25, phase: 'fresh' }),
+    ]);
+
+    expect(segments(line, 1.75).map((s) => [s.id, s.amount])).toEqual([
+      [1, 1],
+      [2, 0.75],
     ]);
   });
 });
@@ -70,7 +93,7 @@ describe('trackBackground', () => {
     const [line] = toLines([old, fresh]);
 
     expect(trackBackground(line)).toBe(
-      'linear-gradient(to right, var(--fresh) 0% 50%, var(--at-risk) 50% 75%, var(--surface-sunken) 75% 100%)',
+      'linear-gradient(to right, var(--at-risk) 0% 50%, var(--fresh) 50% 75%, var(--surface-sunken) 75% 100%)',
     );
   });
 });

@@ -6,9 +6,10 @@ module Inventory
   # those separate acquired_on dates. The Kitchen shows them as one line, and this
   # turns that line's single level (0..packs) back into per-pack amounts.
   #
-  # The level is always filled freshest-first, so lowering it drains whatever
-  # dies soonest — you finish the old milk before opening the new one. A pack
-  # drained to nothing is resolved as used, the same as tapping Used.
+  # The level fills oldest-added first (lowest id). Lowering it therefore
+  # drains the most recently added pack, and raising it refills that same pack
+  # before any older one. A pack drained to nothing is resolved as used, the
+  # same as tapping Used, and does not come back onto the line.
   #
   # Display only: amount_left does not feed Freshness::PresenceModel. Halving
   # presence is still the job of the partial_use event.
@@ -22,13 +23,13 @@ module Inventory
     end
 
     def call
-      packs = @household.items.active.where(id: @ids).by_urgency.to_a
+      packs = @household.items.active.where(id: @ids).order(:id).to_a
       return packs if packs.empty?
 
       remaining = (@level.clamp(0, packs.size) / STEP).round * STEP
 
       Item.transaction do
-        packs.reverse_each do |pack|
+        packs.each do |pack|
           amount = [ remaining, 1.0 ].min.round(2)
           remaining -= amount
           apply(pack, amount)

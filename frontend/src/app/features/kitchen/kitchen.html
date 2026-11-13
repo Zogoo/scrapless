@@ -45,8 +45,9 @@
                       </button>
                       <span class="amount">{{ amount(line) }}</span>
                     </div>
-                    <!-- One slider, no units. Fresh packs sit left, old ones right,
-                         and sliding down eats the right-hand end first. -->
+                    <!-- One slider, no units. The pack added first sits left, the one
+                         just added sits right, and sliding down drains that right end.
+                         Each band keeps its freshness colour. -->
                     <input
                       type="range"
                       class="level"

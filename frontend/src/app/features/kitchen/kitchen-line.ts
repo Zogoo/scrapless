@@ -9,9 +9,9 @@ import { ScoredItem } from '../../core/models';
  */
 export interface KitchenLine {
   key: string;
-  /** Soonest-dying first: the one to finish next, and the one actions act on. */
+  /** Oldest added first (lowest id). The slider fills this order, left to right. */
   packs: ScoredItem[];
-  /** The pack whose headline and buttons the line shows. */
+  /** Soonest-dying pack: the headline and the Used / Froze / Opened buttons. */
   first: ScoredItem;
   /** Total left across packs, 0..packs.length. */
   level: number;
@@ -36,11 +36,12 @@ export function toLines(items: ScoredItem[]): KitchenLine[] {
 
   return [...byKey.entries()]
     .map(([key, group]) => {
-      const packs = [...group].sort(
+      const packs = [...group].sort((a, b) => a.id - b.id);
+      const first = [...group].sort(
         (a, b) => a.window_end.localeCompare(b.window_end) || a.id - b.id,
-      );
+      )[0];
       const level = packs.reduce((sum, pack) => sum + pack.amount_left, 0);
-      return { key, packs, first: packs[0], level };
+      return { key, packs, first, level };
     })
     .sort(
       (a, b) => a.first.window_end.localeCompare(b.first.window_end) || a.first.id - b.first.id,
@@ -48,13 +49,13 @@ export function toLines(items: ScoredItem[]): KitchenLine[] {
 }
 
 /**
- * How a level spreads over the packs — freshest filled first, so the oldest
- * drains first. Mirrors Inventory::SetLevel so dragging previews exactly what
- * the server will store. Returned freshest → oldest, i.e. left → right.
+ * How a level spreads over the packs. Oldest added is filled first, so lowering
+ * drains the most recently added pack and raising refills that pack before any
+ * older one. Mirrors Inventory::SetLevel. Returned oldest → newest, left → right.
  */
 export function segments(line: KitchenLine, level = line.level): Segment[] {
   let remaining = Math.max(0, Math.min(level, line.packs.length));
-  return [...line.packs].reverse().map((pack) => {
+  return line.packs.map((pack) => {
     const amount = Math.min(remaining, 1);
     remaining -= amount;
     return { id: pack.id, phase: pack.phase, amount };
@@ -69,9 +70,9 @@ const PHASE_TOKEN: Record<ScoredItem['phase'], string> = {
 };
 
 /**
- * The slider track: one coloured band per pack, its length the amount left,
- * fresh (green) on the left and old (orange) on the right, then empty.
- * Length carries the meaning; colour only reinforces it (see styles.scss).
+ * The slider track: one coloured band per pack. Left is the pack added first,
+ * right is the one just added (the end lowering drains), then empty. Colour is
+ * that pack's freshness, not its age. Length carries the meaning (see styles.scss).
  */
 export function trackBackground(line: KitchenLine, level = line.level): string {
   const total = line.packs.length;
