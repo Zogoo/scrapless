@@ -4,7 +4,6 @@ import { DatePipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { ItemsService } from '../../core/services/items.service';
-import { FridgeService } from '../../core/services/fridge.service';
 import { InstallService } from '../../core/services/install.service';
 import { Outcome, ScoredItem } from '../../core/models';
 
@@ -25,7 +24,6 @@ export class Today implements OnInit {
   private readonly items = inject(ItemsService);
   private readonly router = inject(Router);
   protected readonly install = inject(InstallService);
-  protected readonly fridge = inject(FridgeService);
 
   protected readonly today = this.items.today;
   protected readonly loading = signal(true);

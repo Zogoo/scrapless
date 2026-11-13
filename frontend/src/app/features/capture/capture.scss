@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding: 1rem 1rem 0;
+  padding: calc(1rem + env(safe-area-inset-top)) 1rem 0;
   max-width: 34rem;
   margin: 0 auto;
 }
@@ -229,7 +229,7 @@
   min-height: var(--tap);
   padding: 0.6rem 1rem;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   text-align: center;
 }
 
@@ -247,7 +247,7 @@
     grid-template-columns: 1fr auto;
     gap: 0.15rem 0.75rem;
     padding: 0.6rem 0.75rem;
-    border-radius: 10px;
+    border-radius: var(--radius);
     background: var(--surface);
     border: 1px solid var(--border);
   }
@@ -286,7 +286,7 @@
   margin: 0;
   padding: 0.6rem 0.75rem;
   border: 1px solid var(--at-risk);
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   font-size: 0.9rem;
 }
 

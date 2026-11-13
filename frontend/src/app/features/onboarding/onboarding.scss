@@ -4,20 +4,22 @@
   gap: 1.5rem;
   max-width: 26rem;
   margin: 0 auto;
-  padding: 3rem 1.25rem 2rem;
+  padding: calc(3rem + env(safe-area-inset-top)) 1.25rem 2rem;
 }
 
 .hero {
   text-align: center;
 
-  .mark {
-    font-size: 3rem;
-    line-height: 1;
-  }
+  .logo-heading {
+    margin: 0 0 0.5rem;
 
-  h1 {
-    margin: 0.75rem 0 0.5rem;
-    font-size: 1.75rem;
+    img {
+      display: block;
+      width: min(280px, 100%);
+      height: auto;
+      margin: 0 auto;
+      object-fit: contain;
+    }
   }
 }
 
