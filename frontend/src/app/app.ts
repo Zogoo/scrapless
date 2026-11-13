@@ -19,15 +19,19 @@ export class App implements OnInit {
 
   protected readonly ready = signal(false);
   protected readonly showTabs = signal(false);
+  protected readonly showYou = signal(false);
 
   ngOnInit(): void {
     this.translate.use(this.preferredLocale());
 
     // The tab bar is noise on the one screen that exists to have nothing on it.
-    this.showTabs.set(this.tabsFor(this.router.url));
-    this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
-      this.showTabs.set(this.tabsFor(this.router.url));
-    });
+    // "You" sits on the four main screens, in the corner of the shell.
+    this.syncChrome(this.router.url);
+    this.router.events
+      .pipe(filter((event) => event instanceof NavigationEnd))
+      .subscribe((event) => {
+        this.syncChrome(event.urlAfterRedirects);
+      });
 
     // Resolve the fridge before the first paint so a returning user lands on
     // Today rather than flashing the onboarding question at them.
@@ -37,9 +41,10 @@ export class App implements OnInit {
     });
   }
 
-  private tabsFor(url: string): boolean {
-    const path = url.split('?')[0];
-    return !path.startsWith('/welcome') && !path.startsWith('/join');
+  private syncChrome(url: string): void {
+    const path = url.split(/[?#]/)[0];
+    this.showTabs.set(!path.startsWith('/welcome'));
+    this.showYou.set(['/today', '/recipes', '/memo', '/kitchen'].includes(path));
   }
 
   private preferredLocale(): string {

@@ -60,6 +60,30 @@ module Ai
 
     def transcript = "milk, broccoli and six eggs"
 
+    # Built from the household's real list, so the stub goes through exactly the
+    # same grounding as a live answer and the screen shows food they actually have.
+    def recipe_result(pantry)
+      recipes = pantry.each_slice(3).first(2).each_with_index.map do |group, index|
+        names = group.map { |entry| entry[:name] }
+        {
+          "title" => index.zero? ? "Quick pan of #{names.to_sentence}" : "Oven tray with #{names.to_sentence}",
+          "minutes" => index.zero? ? 15 : 30,
+          "ingredients" => group.map { |entry| stub_ingredient(entry) } +
+                           [ { "item_id" => nil, "name" => "Salt", "amount" => "a pinch", "optional" => true } ],
+          "steps" => [
+            "Chop the #{names.to_sentence}.",
+            index.zero? ? "Cook everything in a hot pan with a little oil for about 10 minutes." : "Roast on a tray at 200°C for about 25 minutes.",
+            "Season with salt and serve."
+          ]
+        }
+      end
+      { "recipes" => recipes }
+    end
+
+    def stub_ingredient(entry)
+      { "item_id" => entry[:id], "name" => entry[:name], "amount" => nil, "optional" => false }
+    end
+
     def line(raw, name, quantity, unit, price, vat, food: true)
       { "raw_text" => raw, "name" => name, "quantity" => quantity, "unit" => unit,
         "price" => price, "vat_class" => vat, "food" => food }

@@ -1,0 +1,96 @@
+.recipes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0;
+  max-width: 34rem;
+  margin: 0 auto;
+}
+
+.lede {
+  margin: 0;
+  color: var(--muted);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.line {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.15rem;
+  }
+}
+
+.badge {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  color: var(--ink);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.use-first {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.ingredients {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem;
+  }
+
+  small {
+    color: var(--muted);
+  }
+
+  .use-first-item .name {
+    font-weight: 600;
+  }
+}
+
+ol {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.calm {
+  padding: 2.5rem 1rem;
+  text-align: center;
+
+  .mark {
+    font-size: 2.5rem;
+  }
+
+  h2 {
+    margin: 0.75rem 0 0.35rem;
+  }
+
+  p {
+    margin: 0;
+    color: var(--muted);
+  }
+}

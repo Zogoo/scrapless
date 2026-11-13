@@ -1,0 +1,62 @@
+<section class="recipes">
+  <h1>{{ 'recipes.title' | translate }}</h1>
+  <p class="lede">{{ 'recipes.lede' | translate }}</p>
+
+  @if (error()) {
+    <p class="error">
+      {{ error() }}
+      @if (retryable()) {
+        <button type="button" class="ghost" (click)="load()">
+          {{ 'common.retry' | translate }}
+        </button>
+      }
+    </p>
+  }
+
+  @if (loading()) {
+    <p class="loading">{{ 'recipes.thinking' | translate }}</p>
+  } @else if (!error() && recipes().length === 0) {
+    <div class="calm">
+      <span class="mark" aria-hidden="true">🍲</span>
+      <h2>{{ 'recipes.empty_title' | translate }}</h2>
+      <p>{{ 'recipes.empty_body' | translate }}</p>
+    </div>
+  } @else if (recipes().length > 0) {
+    @for (recipe of recipes(); track recipe.title) {
+      <article class="card">
+        <div class="line">
+          <h2>{{ recipe.title }}</h2>
+          @if (recipe.minutes) {
+            <span class="badge">{{
+              'recipes.minutes' | translate: { count: recipe.minutes }
+            }}</span>
+          }
+        </div>
+
+        @if (recipe.use_first_count > 0) {
+          <p class="use-first">{{ 'recipes.uses_first' | translate }}</p>
+        }
+
+        <ul class="ingredients">
+          @for (ingredient of recipe.ingredients; track $index) {
+            <li [class.use-first-item]="ingredient.use_first">
+              <span class="name">{{ ingredient.name }}</span>
+              @if (ingredient.amount) {
+                <small>{{ ingredient.amount }}</small>
+              }
+              @if (ingredient.optional) {
+                <small>{{ 'recipes.optional' | translate }}</small>
+              }
+            </li>
+          }
+        </ul>
+
+        <ol>
+          @for (step of recipe.steps; track $index) {
+            <li>{{ step }}</li>
+          }
+        </ol>
+      </article>
+    }
+  }
+</section>

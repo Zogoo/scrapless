@@ -4,9 +4,6 @@
       <h1>{{ today()?.as_of | date: 'EEEE' }}</h1>
       <p class="fridge-name">{{ fridge.fridge()?.name }}</p>
     </div>
-    <a class="icon-link" routerLink="/settings" [attr.aria-label]="'nav.settings' | translate"
-      >⚙️</a
-    >
   </header>
 
   @if (install.shouldOffer()) {

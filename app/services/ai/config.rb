@@ -103,15 +103,20 @@ module Ai
 
     TRANSCRIBE_USD_PER_MINUTE = 0.003
 
+    # recipe_suggest sits on the text tier: it writes from a list the server
+    # already grounded, and anything it invents is thrown away afterwards
+    # (Recipes::GroundInInventory), so a bigger model buys nothing it can keep.
     DEFAULT_MODELS = {
       "openai" => { receipt_extract: "gpt-5-mini", shelf_photo_extract: "gpt-5-mini",
-                    text_parse: "gpt-5-nano", memo_parse: "gpt-5-nano" },
+                    text_parse: "gpt-5-nano", memo_parse: "gpt-5-nano", recipe_suggest: "gpt-5-nano" },
       "gemini" => { receipt_extract: "gemini-2.5-flash", shelf_photo_extract: "gemini-2.5-flash",
-                    text_parse: "gemini-2.5-flash-lite", memo_parse: "gemini-2.5-flash-lite" },
+                    text_parse: "gemini-2.5-flash-lite", memo_parse: "gemini-2.5-flash-lite",
+                    recipe_suggest: "gemini-2.5-flash-lite" },
       "groq" => { receipt_extract: "gemini-2.5-flash", shelf_photo_extract: "gemini-2.5-flash",
-                  text_parse: "gemini-2.5-flash-lite", memo_parse: "gemini-2.5-flash-lite" },
+                  text_parse: "gemini-2.5-flash-lite", memo_parse: "gemini-2.5-flash-lite",
+                  recipe_suggest: "gemini-2.5-flash-lite" },
       "local" => { receipt_extract: "qwen2.5vl:7b", shelf_photo_extract: "qwen2.5vl:7b",
-                   text_parse: "qwen2.5vl:7b", memo_parse: "qwen2.5vl:7b" }
+                   text_parse: "qwen2.5vl:7b", memo_parse: "qwen2.5vl:7b", recipe_suggest: "qwen2.5vl:7b" }
     }.freeze
 
     DEFAULT_TRANSCRIBE = { "openai" => "gpt-4o-mini-transcribe", "groq" => "whisper-large-v3-turbo" }.freeze

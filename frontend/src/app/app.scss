@@ -2,6 +2,29 @@ main {
   min-height: 60vh;
 }
 
+/* Settings left the tab bar. Same "You" label, top right of the shell. */
+.shell-you {
+  display: flex;
+  justify-content: flex-end;
+  padding: calc(0.15rem + env(safe-area-inset-top)) 0.5rem 0;
+  padding-right: max(0.5rem, env(safe-area-inset-right));
+
+  a {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-height: var(--tap);
+    padding: 0 0.35rem;
+    text-decoration: none;
+    color: var(--muted);
+
+    small {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+  }
+}
+
 /* Bottom bar, thumb-reachable, clear of the iOS home indicator. */
 .tabs {
   position: fixed;
