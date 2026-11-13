@@ -41,7 +41,7 @@ end
 # still passes its options hash positionally, so under Ruby 3.4 every
 # JSON request fails to parse and the API returns 400. Pin to 2.x until
 # ActiveSupport catches up.
-gem "json", "~> 2.7"
+gem "json", "~> 3.0"
 gem "jwt"
 gem "bcrypt", "~> 3.1"
 gem "pagy", "~> 43"
