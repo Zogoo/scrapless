@@ -53,6 +53,9 @@
           </div>
 
           <p class="headline">{{ item.headline }}</p>
+          @if (item.added_by_name) {
+            <p class="by">{{ 'common.by' | translate: { name: item.added_by_name } }}</p>
+          }
 
           <!-- Length is the primary freshness channel, text is the second and the
                icon the third. Colour only reinforces: red-green CVD is ~8% of men. -->
@@ -117,7 +120,14 @@
               <span class="bar small" [attr.data-phase]="item.phase">
                 <span [style.width]="barWidth(item)"></span>
               </span>
-              <span class="note">{{ item.headline }}</span>
+              <span class="note">
+                {{ item.headline }}
+                @if (item.added_by_name) {
+                  <small class="by">{{
+                    'common.by' | translate: { name: item.added_by_name }
+                  }}</small>
+                }
+              </span>
             </li>
           }
         </ul>

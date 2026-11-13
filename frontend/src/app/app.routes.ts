@@ -38,6 +38,10 @@ export const routes: Routes = [
     canActivate: [fridgeGuard],
     loadComponent: () => import('./features/settings/settings').then((m) => m.Settings),
   },
+  {
+    path: 'join',
+    loadComponent: () => import('./features/join/join').then((m) => m.Join),
+  },
   { path: '', pathMatch: 'full', redirectTo: 'today' },
   { path: '**', redirectTo: 'today' },
 ];

@@ -2,6 +2,7 @@ export interface Fridge {
   id: string;
   name: string;
   token: string;
+  join_code: string;
   locale: string;
   created_at: string;
   stats?: { items: number; captures: number; memo_open: number };
@@ -29,6 +30,7 @@ export interface Item {
   opened_on: string | null;
   snoozed_until: string | null;
   high_risk: boolean;
+  added_by_name: string | null;
 }
 
 /** An item with the risk model's read on it, as returned by the Today screen. */
@@ -62,6 +64,7 @@ export interface CapturedItem {
   days_left: number;
   confidence: number;
   needs_review: boolean;
+  added_by_name: string | null;
 }
 
 export interface CaptureReview {
@@ -89,6 +92,7 @@ export interface MemoItem {
   source: string;
   position: number;
   created_at: string;
+  added_by_name: string | null;
 }
 
 export interface Suggestion {

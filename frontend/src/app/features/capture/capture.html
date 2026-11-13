@@ -202,6 +202,11 @@
                 @if (item.needs_review && item.raw_text) {
                   <small class="raw">{{ item.raw_text }}</small>
                 }
+                @if (item.added_by_name) {
+                  <small class="by">{{
+                    'common.by' | translate: { name: item.added_by_name }
+                  }}</small>
+                }
               </li>
             }
           </ul>

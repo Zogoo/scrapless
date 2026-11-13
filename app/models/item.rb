@@ -3,6 +3,8 @@
 # The window (start..end) rather than a single `expires_on` is deliberate: it is
 # structurally impossible for the UI to render a precision we do not have.
 class Item < ApplicationRecord
+  include AddedBy
+
   STORAGES = %w[fridge freezer pantry].freeze
   STATES = %w[active rescued wasted retired].freeze
   DATE_LABEL_TYPES = %w[none mhd verbrauchsdatum].freeze

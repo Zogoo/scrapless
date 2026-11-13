@@ -34,3 +34,4 @@
 
 # The example env file is documentation, not a secret.
 !/.env.example
+.DS_Store

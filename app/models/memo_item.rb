@@ -2,6 +2,8 @@
 # intend to buy and a thing that is rotting are different objects with different
 # lifecycles, and conflating them is how "running low" lists become inventory.
 class MemoItem < ApplicationRecord
+  include AddedBy
+
   SOURCES = %w[voice text suggestion auto].freeze
 
   belongs_to :household

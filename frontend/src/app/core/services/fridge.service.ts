@@ -10,6 +10,27 @@ const TOKEN_KEY = 'scrapless_token';
 const FRIDGE_KEY = 'scrapless_fridge';
 
 /**
+ * The join code sits in the fragment so opening the link does not send it to
+ * the server. The bearer token is not in the link at all.
+ */
+export function kitchenShareUrl(origin: string, joinCode: string): string {
+  const base = origin.replace(/\/$/, '');
+  return `${base}/join#${encodeURIComponent(joinCode)}`;
+}
+
+/** The code from a share link, whether Angular kept the fragment or not. */
+export function joinCodeFromLocation(fragment: string | null, hash = ''): string {
+  const raw = (fragment || hash.replace(/^#/, '')).trim();
+  if (!raw) return '';
+
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
+/**
  * Identity, such as it is.
  *
  * There is no account. A fridge is a token, held in two independent places so
@@ -58,6 +79,17 @@ export class FridgeService {
   rename(name: string): Observable<Fridge> {
     return this.http
       .patch<Fridge>(`${environment.apiUrl}/fridge`, { name })
+      .pipe(tap((fridge) => this.accept(fridge)));
+  }
+
+  /**
+   * Opens a kitchen someone shared. The server trades the join code for the
+   * bearer token, sets the ten-year cookie, and we store the token here. A
+   * phone that already had a kitchen switches to this one.
+   */
+  join(code: string): Observable<Fridge> {
+    return this.http
+      .post<Fridge>(`${environment.apiUrl}/fridge/join`, { join_code: code })
       .pipe(tap((fridge) => this.accept(fridge)));
   }
 

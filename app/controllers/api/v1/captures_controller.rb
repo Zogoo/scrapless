@@ -17,7 +17,7 @@ module Api
       before_action :enforce_capture_budget, only: :create
 
       def create
-        capture = current_household.captures.new(source: source_param)
+        capture = current_household.captures.new(source: source_param, added_by_name: actor_name)
 
         payload =
           case capture.source
@@ -157,7 +157,8 @@ module Api
               raw_text: item.raw_text, quantity: item.quantity&.to_f, unit: item.unit,
               storage: item.storage, window_end: item.window_end,
               days_left: item.days_left, confidence: item.confidence,
-              needs_review: item.confidence < 0.5
+              needs_review: item.confidence < 0.5,
+              added_by_name: item.added_by_name
             }
           end,
           suppressed: result[:suppressed]

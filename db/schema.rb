@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_08_215159) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_215253) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -60,6 +60,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_08_215159) do
   end
 
   create_table "captures", force: :cascade do |t|
+    t.string "added_by_name"
     t.datetime "created_at", null: false
     t.string "error_message"
     t.integer "household_id", null: false
@@ -78,6 +79,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_08_215159) do
 
   create_table "households", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.string "join_code", null: false
     t.datetime "last_seen_at"
     t.string "locale", default: "en", null: false
     t.string "name", null: false
@@ -85,6 +87,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_08_215159) do
     t.string "token", null: false
     t.datetime "updated_at", null: false
     t.string "uuid", null: false
+    t.index ["join_code"], name: "index_households_on_join_code", unique: true
     t.index ["token"], name: "index_households_on_token", unique: true
     t.index ["uuid"], name: "index_households_on_uuid", unique: true
   end
@@ -104,6 +107,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_08_215159) do
 
   create_table "items", force: :cascade do |t|
     t.date "acquired_on", null: false
+    t.string "added_by_name"
     t.string "canonical_name", null: false
     t.integer "capture_id"
     t.string "category", default: "unknown", null: false
@@ -134,6 +138,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_08_215159) do
   end
 
   create_table "memo_items", force: :cascade do |t|
+    t.string "added_by_name"
     t.string "canonical_name"
     t.datetime "created_at", null: false
     t.boolean "done", default: false, null: false
