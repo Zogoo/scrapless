@@ -22,9 +22,12 @@ import { FridgeService } from '../../core/services/fridge.service';
       <div class="hero">
         <h1 class="logo-heading">
           <picture>
-            <source srcset="/branding/full_logo_dark.png" media="(prefers-color-scheme: dark)" />
+            <source
+              srcset="/branding/full_logo_dark_opaque.png"
+              media="(prefers-color-scheme: dark)"
+            />
             <img
-              src="/branding/full_logo_light.png"
+              src="/branding/full_logo_light_opaque.png"
               [attr.alt]="'brand.name' | translate"
               width="280"
               height="112"
