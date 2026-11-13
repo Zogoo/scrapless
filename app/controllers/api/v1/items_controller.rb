@@ -67,6 +67,15 @@ module Api
         render json: item_json(item.reload)
       end
 
+      # One slider per name in the Kitchen. The client sends the ids it grouped
+      # under that line; scoping through current_household makes a foreign id a
+      # no-op rather than a leak.
+      def level
+        packs = Inventory::SetLevel.call(household: current_household,
+                                         ids: params.require(:ids), level: params.require(:level))
+        render json: { items: packs.map { |item| item_json(item) } }
+      end
+
       private
 
       def item_params
@@ -86,7 +95,8 @@ module Api
       # window is left alone. What changed is how much is left — which the
       # presence model reads back off this event.
       def partial_use(item)
-        item.update!(quantity: item.quantity ? (item.quantity / 2) : nil)
+        item.update!(quantity: item.quantity ? (item.quantity / 2) : nil,
+                     amount_left: (item.amount_left / 2).round(2))
         log_event(item, "partial_use")
       end
 
@@ -141,6 +151,7 @@ module Api
           category: item.category,
           raw_text: item.raw_text,
           quantity: item.quantity&.to_f,
+          amount_left: item.amount_left,
           unit: item.unit,
           storage: item.storage,
           acquired_on: item.acquired_on,

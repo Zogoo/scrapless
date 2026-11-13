@@ -2,7 +2,7 @@
 # this is explicitly not a projection (doc 5 §5.3), which keeps erasure a plain
 # row delete rather than crypto-shredding an immutable log.
 class ItemEvent < ApplicationRecord
-  KINDS = %w[captured used partial_use wasted frozen opened snoozed corrected retired].freeze
+  KINDS = %w[captured used partial_use wasted frozen opened snoozed corrected retired level_set].freeze
 
   belongs_to :item
   belongs_to :household

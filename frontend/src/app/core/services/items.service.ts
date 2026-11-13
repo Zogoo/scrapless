@@ -21,6 +21,11 @@ export class ItemsService {
     return this.http.post<Item>(`${this.url}/${id}/resolve`, { outcome, days });
   }
 
+  /** One slider per Kitchen line: `level` runs 0..ids.length, oldest drained first. */
+  level(ids: number[], level: number): Observable<{ items: Item[] }> {
+    return this.http.post<{ items: Item[] }>(`${this.url}/level`, { ids, level });
+  }
+
   correct(id: number, changes: Partial<Item>): Observable<Item> {
     return this.http.patch<Item>(`${this.url}/${id}`, { item: changes });
   }

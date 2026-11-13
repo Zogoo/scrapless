@@ -55,6 +55,7 @@
     "review_count": "{{count}} Artikel",
     "review_lede": "Das haben wir. Was nicht stimmt, kannst du später antippen — jetzt nichts bestätigen.",
     "about_days": "~{{count}} Tage",
+    "in_kitchen": "jetzt {{count}} in der Küche",
     "suppressed": "Weggelassen: {{list}}",
     "accept_all": "Alle {{count}} übernehmen",
     "hard_to_read": "Der Bon war schwer zu lesen.",
@@ -96,7 +97,8 @@
   "kitchen": {
     "title": "Küche",
     "empty_group": "Hier ist nichts.",
-    "opened": "Geöffnet"
+    "opened": "Geöffnet",
+    "how_much": "Wie viel {{name}} noch da ist"
   },
   "storage": {
     "fridge": "Kühlschrank",

@@ -20,6 +20,8 @@ export interface Item {
   raw_text: string | null;
   quantity: number | null;
   unit: string | null;
+  /** How much of this pack is left, 0..1. No units: the Kitchen slider reads it. */
+  amount_left: number;
   storage: Storage;
   acquired_on: string;
   window_start: string;
@@ -64,6 +66,8 @@ export interface CapturedItem {
   days_left: number;
   confidence: number;
   needs_review: boolean;
+  /** Active packs of this food in the same place, counting this one. */
+  in_kitchen: number;
   added_by_name: string | null;
 }
 

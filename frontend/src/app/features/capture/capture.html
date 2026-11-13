@@ -199,6 +199,12 @@
                 <span class="days">
                   {{ 'capture.about_days' | translate: { count: item.days_left } }}
                 </span>
+                @if (item.in_kitchen > 1) {
+                  <!-- Not a silent duplicate: it joined the line that was already there. -->
+                  <small class="stacked">{{
+                    'capture.in_kitchen' | translate: { count: item.in_kitchen }
+                  }}</small>
+                }
                 @if (item.needs_review && item.raw_text) {
                   <small class="raw">{{ item.raw_text }}</small>
                 }

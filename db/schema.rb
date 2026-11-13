@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_215253) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_13_204159) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -131,6 +131,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_215253) do
     t.datetime "updated_at", null: false
     t.date "window_end", null: false
     t.date "window_start", null: false
+    t.float "amount_left", default: 1.0, null: false
     t.index ["capture_id"], name: "index_items_on_capture_id"
     t.index ["household_id", "canonical_name"], name: "index_items_on_household_id_and_canonical_name"
     t.index ["household_id", "state", "window_end"], name: "index_items_on_household_id_and_state_and_window_end"
