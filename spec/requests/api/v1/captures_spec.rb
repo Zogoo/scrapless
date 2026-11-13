@@ -74,6 +74,14 @@ RSpec.describe "Api::V1::Captures", type: :request do
       expect(household.items.last.added_by_name).to eq("Mama")
     end
 
+    it "says when a new pack joins one already in the kitchen" do
+      post "/api/v1/captures", params: { source: "text", text: "milch" }, headers: headers
+      expect(response.parsed_body["items"].first["in_kitchen"]).to eq(1)
+
+      post "/api/v1/captures", params: { source: "text", text: "milch" }, headers: headers
+      expect(response.parsed_body["items"].first["in_kitchen"]).to eq(2)
+    end
+
     it "still captures when the phone has no name" do
       post "/api/v1/captures", params: { source: "text", text: "milch" }, headers: headers
 

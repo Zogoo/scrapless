@@ -158,11 +158,18 @@ module Api
               storage: item.storage, window_end: item.window_end,
               days_left: item.days_left, confidence: item.confidence,
               needs_review: item.confidence < 0.5,
+              in_kitchen: in_kitchen(item),
               added_by_name: item.added_by_name
             }
           end,
           suppressed: result[:suppressed]
         }
+      end
+
+      # Adding milk when there is already milk joins the same Kitchen line rather
+      # than silently becoming an unrelated second row; the review says so.
+      def in_kitchen(item)
+        current_household.items.active.where(canonical_name: item.canonical_name, storage: item.storage).count
       end
     end
   end

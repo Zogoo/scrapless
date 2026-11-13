@@ -108,6 +108,7 @@ RSpec.describe "Api::V1::Items", type: :request do
       item.reload
       expect(item.state).to eq("active")
       expect(item.quantity).to eq(1)
+      expect(item.amount_left).to eq(0.5)
       expect(Freshness::PresenceModel.call(item: item)).to be_within(0.01).of(before / 2)
     end
 
@@ -130,6 +131,24 @@ RSpec.describe "Api::V1::Items", type: :request do
       post "/api/v1/items/#{item.id}/resolve", params: { outcome: "eaten-ish" }, headers: headers
 
       expect(response).to have_http_status(:unprocessable_content)
+    end
+  end
+
+  describe "POST /api/v1/items/level" do
+    it "sets how much is left across every pack on one Kitchen line" do
+      old = create(:item, :at_risk, household: household)
+      fresh = create(:item, household: household)
+
+      post "/api/v1/items/level", params: { ids: [ old.id, fresh.id ], level: 1.25 }, headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["items"].map { |i| i["amount_left"] }).to eq([ 0.25, 1.0 ])
+    end
+
+    it "requires a level" do
+      post "/api/v1/items/level", params: { ids: [ 1 ] }, headers: headers
+
+      expect(response).to have_http_status(:bad_request)
     end
   end
 

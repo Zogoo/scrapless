@@ -10,6 +10,7 @@ Rails.application.routes.draw do
 
       resources :items, only: %i[index show update destroy] do
         post :resolve, on: :member
+        post :level, on: :collection
       end
 
       resources :captures, only: %i[create show]

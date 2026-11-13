@@ -17,6 +17,7 @@ class Item < ApplicationRecord
   validates :storage, inclusion: { in: STORAGES }
   validates :state, inclusion: { in: STATES }
   validates :date_label_type, inclusion: { in: DATE_LABEL_TYPES }
+  validates :amount_left, numericality: { in: 0.0..1.0 }
   validate :window_ordered
 
   scope :active, -> { where(state: "active") }

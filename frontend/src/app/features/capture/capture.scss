@@ -263,8 +263,14 @@
   }
 
   .raw,
-  .by {
+  .by,
+  .stacked {
     grid-column: 1 / -1;
+  }
+
+  .stacked {
+    color: var(--muted);
+    font-size: 0.85rem;
   }
 
   .raw {

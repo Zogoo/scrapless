@@ -55,6 +55,7 @@
     "review_count": "{{count}} items",
     "review_lede": "We got these. Tap anything that looks wrong later — nothing to confirm now.",
     "about_days": "~{{count}} days",
+    "in_kitchen": "now {{count}} in your kitchen",
     "suppressed": "Left out: {{list}}",
     "accept_all": "Keep all {{count}}",
     "hard_to_read": "That one was hard to read.",
@@ -96,7 +97,8 @@
   "kitchen": {
     "title": "Kitchen",
     "empty_group": "Nothing in here.",
-    "opened": "Opened it"
+    "opened": "Opened it",
+    "how_much": "How much {{name}} is left"
   },
   "storage": {
     "fridge": "Fridge",

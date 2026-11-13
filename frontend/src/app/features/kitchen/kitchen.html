@@ -21,47 +21,64 @@
             <p class="lede">{{ 'kitchen.empty_group' | translate }}</p>
           } @else {
             <ul>
-              @for (item of groups()[storage]; track item.id) {
+              @for (line of groups()[storage]; track line.key) {
                 <li>
-                  @if (editingId() === item.id) {
+                  @if (editingKey() === line.key) {
                     <div class="edit">
                       <input
                         type="text"
                         [value]="draftName()"
                         (input)="draftName.set($any($event.target).value)"
-                        (keyup.enter)="saveEdit(item)"
+                        (keyup.enter)="saveEdit(line)"
                       />
-                      <button type="button" class="primary" (click)="saveEdit(item)">
+                      <button type="button" class="primary" (click)="saveEdit(line)">
                         {{ 'common.save' | translate }}
                       </button>
-                      <button type="button" class="ghost" (click)="editingId.set(null)">
+                      <button type="button" class="ghost" (click)="editingKey.set(null)">
                         {{ 'common.cancel' | translate }}
                       </button>
                     </div>
                   } @else {
                     <div class="row">
-                      <button type="button" class="name-btn" (click)="startEdit(item)">
-                        {{ item.display_name }}
+                      <button type="button" class="name-btn" (click)="startEdit(line)">
+                        {{ line.first.display_name }}
                       </button>
-                      <span class="bar small" [attr.data-phase]="item.phase">
-                        <span [style.width]="barWidth(item)"></span>
-                      </span>
+                      <span class="amount">{{ amount(line) }}</span>
                     </div>
-                    <p class="headline">{{ item.headline }}</p>
-                    @if (item.added_by_name) {
-                      <p class="by">{{ 'common.by' | translate: { name: item.added_by_name } }}</p>
+                    <!-- One slider, no units. Fresh packs sit left, old ones right,
+                         and sliding down eats the right-hand end first. -->
+                    <input
+                      type="range"
+                      class="level"
+                      min="0"
+                      [max]="line.packs.length"
+                      step="0.25"
+                      [value]="level(line)"
+                      [style.background]="track(line)"
+                      [attr.aria-label]="
+                        'kitchen.how_much' | translate: { name: line.first.display_name }
+                      "
+                      [attr.aria-valuetext]="amount(line)"
+                      (input)="slide(line, $event)"
+                      (change)="commitLevel(line, $event)"
+                    />
+                    <p class="headline">{{ line.first.headline }}</p>
+                    @if (line.first.added_by_name) {
+                      <p class="by">
+                        {{ 'common.by' | translate: { name: line.first.added_by_name } }}
+                      </p>
                     }
                     <div class="row-actions">
-                      <button type="button" (click)="resolve(item, 'used')">
+                      <button type="button" (click)="resolve(line.first, 'used')">
                         ✔ {{ 'today.used' | translate }}
                       </button>
-                      @if (item.storage !== 'freezer') {
-                        <button type="button" (click)="resolve(item, 'froze')">
+                      @if (line.first.storage !== 'freezer') {
+                        <button type="button" (click)="resolve(line.first, 'froze')">
                           ❄️ {{ 'today.froze' | translate }}
                         </button>
                       }
-                      @if (!item.opened_on) {
-                        <button type="button" (click)="resolve(item, 'opened')">
+                      @if (!line.first.opened_on) {
+                        <button type="button" (click)="resolve(line.first, 'opened')">
                           {{ 'kitchen.opened' | translate }}
                         </button>
                       }
