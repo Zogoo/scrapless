@@ -24,8 +24,9 @@ export class App implements OnInit {
     this.translate.use(this.preferredLocale());
 
     // The tab bar is noise on the one screen that exists to have nothing on it.
+    this.showTabs.set(this.tabsFor(this.router.url));
     this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
-      this.showTabs.set(!this.router.url.startsWith('/welcome'));
+      this.showTabs.set(this.tabsFor(this.router.url));
     });
 
     // Resolve the fridge before the first paint so a returning user lands on
@@ -34,6 +35,11 @@ export class App implements OnInit {
       next: () => this.ready.set(true),
       error: () => this.ready.set(true),
     });
+  }
+
+  private tabsFor(url: string): boolean {
+    const path = url.split('?')[0];
+    return !path.startsWith('/welcome') && !path.startsWith('/join');
   }
 
   private preferredLocale(): string {

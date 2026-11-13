@@ -90,6 +90,12 @@
   min-height: var(--tap);
   cursor: pointer;
 
+  .line {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
   input {
     width: 1.4rem;
     height: 1.4rem;

@@ -75,7 +75,8 @@
     "dictate": "Say the list",
     "listening": "Listening…",
     "empty": "Nothing on the list yet.",
-    "suggested": "You usually need"
+    "suggested": "You usually need",
+    "shared": "One list for this kitchen. Everyone who opened the share link sees the same lines."
   },
   "kitchen": {
     "title": "Kitchen",
@@ -100,7 +101,17 @@
     "fridge_name": "Fridge name",
     "saved": "Saved",
     "fridge_id": "Fridge ID",
-    "identity_note": "Kept in this browser and in a ten-year cookie. Clearing both loses the fridge — one receipt rebuilds it.",
+    "identity_note": "Kept in this browser and in a ten-year cookie. Clear both on every phone that has the kitchen and it's gone — one receipt rebuilds it.",
+    "your_name": "Your name on this phone",
+    "your_name_note": "Optional. It shows next to what you add, so the others can see it was you. It stays on this phone.",
+    "name_placeholder": "e.g. Mama",
+    "share_title": "Share this kitchen",
+    "share_note": "Open this on another phone. It becomes the same kitchen — the same food and the same shopping list. No account.",
+    "share_link": "Share link",
+    "copy_link": "Copy link",
+    "copied": "Copied",
+    "share_care": "Anyone with this link can open the kitchen.",
+    "qr_alt": "QR code that opens this kitchen",
     "costs": "What the AI has cost",
     "stub_mode": "Running offline with sample data — no API key set, so nothing has been billed.",
     "calls": "Calls",
@@ -109,7 +120,7 @@
     "per_receipt": "Per receipt",
     "job": "Job",
     "forget": "Forget this fridge",
-    "forget_note": "Deletes everything we hold for this fridge. There is no undo.",
+    "forget_note": "Deletes everything we hold for this fridge, on this phone and on every phone that opened it. There is no undo.",
     "forget_confirm": "Yes, delete it all",
     "failures": "{{count}} calls failed — check the API key and that the account has credit."
   },
@@ -120,6 +131,16 @@
     "close": "Close",
     "save": "Save",
     "delete": "Delete",
-    "retry": "Try again"
+    "retry": "Try again",
+    "by": "by {{name}}"
+  },
+  "join": {
+    "title": "Open this kitchen",
+    "lede": "This phone will use the shared kitchen. Same food, same shopping list.",
+    "switch": "This phone already has a kitchen. Opening this one switches it. The other kitchen stays with anyone who still has its link.",
+    "open": "Open this kitchen",
+    "opening": "Opening…",
+    "invalid": "That link doesn't open a kitchen.",
+    "too_many": "That is a lot of tries. Give it an hour."
   }
 }

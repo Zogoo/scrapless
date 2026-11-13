@@ -64,6 +64,23 @@ RSpec.describe "Api::V1::Captures", type: :request do
       expect(response.parsed_body["items"].size).to eq(2)
     end
 
+    it "stamps the name on this phone onto the capture and each item" do
+      post "/api/v1/captures", params: { source: "text", text: "milch" },
+           headers: headers.merge("X-Actor-Name" => "Mama")
+
+      expect(response).to have_http_status(:created)
+      expect(response.parsed_body["items"].first["added_by_name"]).to eq("Mama")
+      expect(household.captures.last.added_by_name).to eq("Mama")
+      expect(household.items.last.added_by_name).to eq("Mama")
+    end
+
+    it "still captures when the phone has no name" do
+      post "/api/v1/captures", params: { source: "text", text: "milch" }, headers: headers
+
+      expect(response).to have_http_status(:created)
+      expect(household.items.last.added_by_name).to be_nil
+    end
+
     it "rejects an empty manual entry without creating a capture" do
       expect {
         post "/api/v1/captures", params: { source: "text", text: "" }, headers: headers

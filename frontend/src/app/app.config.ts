@@ -6,6 +6,7 @@ import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 
 import { routes } from './app.routes';
 import { fridgeInterceptor } from './core/interceptors/fridge.interceptor';
+import { actorInterceptor } from './core/interceptors/actor.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { environment } from '../environments/environment';
 
@@ -13,7 +14,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withInMemoryScrolling({ scrollPositionRestoration: 'top' })),
-    provideHttpClient(withInterceptors([fridgeInterceptor, errorInterceptor])),
+    provideHttpClient(withInterceptors([fridgeInterceptor, actorInterceptor, errorInterceptor])),
     provideTranslateService({
       loader: provideTranslateHttpLoader({ prefix: '/assets/i18n/', suffix: '.json' }),
       fallbackLang: environment.defaultLocale,

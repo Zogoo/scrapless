@@ -262,8 +262,12 @@
     white-space: nowrap;
   }
 
-  .raw {
+  .raw,
+  .by {
     grid-column: 1 / -1;
+  }
+
+  .raw {
     color: var(--muted);
     font-family: ui-monospace, monospace;
     font-size: 0.8rem;
