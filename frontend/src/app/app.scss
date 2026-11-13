@@ -55,6 +55,28 @@ main {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  .you {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex: none;
+    min-height: var(--tap);
+    padding: 0 0.15rem;
+    text-decoration: none;
+    color: var(--muted);
+
+    small {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
 }
 
 /* Bottom bar, thumb-reachable, clear of the iOS home indicator.

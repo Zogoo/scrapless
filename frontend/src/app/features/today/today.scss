@@ -19,20 +19,6 @@
   }
 }
 
-.icon-link {
-  min-width: var(--tap);
-  min-height: var(--tap);
-  display: grid;
-  place-items: center;
-  color: var(--muted);
-  text-decoration: none;
-
-  svg {
-    width: 24px;
-    height: 24px;
-  }
-}
-
 .install {
   display: flex;
   flex-direction: column;

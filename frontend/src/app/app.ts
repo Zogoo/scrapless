@@ -19,6 +19,7 @@ export class App implements OnInit {
 
   protected readonly ready = signal(false);
   protected readonly showTabs = signal(false);
+  protected readonly showYou = signal(false);
   /** Brand bar matches the restlos shell. Capture keeps the camera full-bleed. */
   protected readonly showBrand = signal(false);
 
@@ -43,6 +44,7 @@ export class App implements OnInit {
     const path = url.split('?')[0];
     this.showTabs.set(!path.startsWith('/welcome'));
     this.showBrand.set(this.showTabs() && !path.startsWith('/add'));
+    this.showYou.set(['/today', '/recipes', '/memo', '/kitchen'].includes(path));
   }
 
   private preferredLocale(): string {
