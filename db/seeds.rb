@@ -115,7 +115,7 @@ aliases = [
 ]
 
 aliases.each do |raw, canonical, category, emoji|
-  entry = ProductAlias.find_or_initialize_by(raw_text: ProductAlias.normalize_key(raw), merchant: nil)
+  entry = ProductAlias.shared.find_or_initialize_by(raw_text: ProductAlias.normalize_key(raw), merchant: nil)
   entry.update!(canonical_name: canonical, category: category, emoji: emoji, seeded: true)
 end
 

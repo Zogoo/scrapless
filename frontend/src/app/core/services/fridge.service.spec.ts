@@ -75,6 +75,34 @@ describe('FridgeService', () => {
     expect(service.token).toBe('bearer-secret');
     expect(service.fridge()?.name).toBe('Quiet Kitchen');
   });
+
+  it('forgets the token when the server does not know the fridge', () => {
+    localStorage.setItem('scrapless_token', 'stale-token');
+    let result: Fridge | null | undefined;
+
+    service.restore().subscribe((found) => (result = found));
+    http
+      .expectOne(`${environment.apiUrl}/fridge`)
+      .flush({ error: 'no fridge' }, { status: 401, statusText: 'Unauthorized' });
+
+    expect(result).toBeNull();
+    expect(service.token).toBeNull();
+  });
+
+  // Offline, a 5xx or a machine still waking must not cost the phone its kitchen.
+  it.each([
+    [0, 'Unknown Error'],
+    [503, 'Service Unavailable'],
+  ])('keeps the token when the boot request fails with %s', (status, statusText) => {
+    localStorage.setItem('scrapless_token', 'bearer-secret');
+    let failed = false;
+
+    service.restore().subscribe({ error: () => (failed = true) });
+    http.expectOne(`${environment.apiUrl}/fridge`).flush(null, { status, statusText });
+
+    expect(failed).toBe(true);
+    expect(service.token).toBe('bearer-secret');
+  });
 });
 
 describe('actor name on adds', () => {

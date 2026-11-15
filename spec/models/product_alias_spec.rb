@@ -33,5 +33,54 @@ RSpec.describe ProductAlias do
     it "does not match on a fragment too short to mean anything" do
       expect(described_class.lookup("RI")).to be_nil
     end
+
+    context "with a kitchen's own corrections" do
+      let(:household) { create(:household) }
+
+      it "prefers the kitchen's correction over the shared entry" do
+        create(:product_alias, household: household, raw_text: "rispentomaten",
+                               canonical_name: "Cherry tomatoes", category: "produce")
+
+        expect(described_class.lookup("RISPENTOMATEN", household: household).canonical_name)
+          .to eq("Cherry tomatoes")
+      end
+
+      it "never shows one kitchen's correction to another" do
+        create(:product_alias, household: household, raw_text: "yuzu kosho",
+                               canonical_name: "Yuzu kosho", category: "pantry")
+
+        expect(described_class.lookup("YUZU KOSHO", household: create(:household))).to be_nil
+        expect(described_class.lookup("YUZU KOSHO")).to be_nil
+      end
+
+      # A fuzzy guess from the kitchen layer must not beat an exact shared hit.
+      it "still takes an exact shared hit before a fuzzy household one" do
+        create(:product_alias, household: household, raw_text: "haehnchenbrust",
+                               canonical_name: "Hähnchenbrust", category: "meat_fish")
+
+        expect(described_class.lookup("HAEHNCHENSCHENKEL", household: household).canonical_name)
+          .to eq("Hähnchenschenkel")
+      end
+    end
+  end
+
+  describe ".record_correction!" do
+    it "writes to the correcting kitchen and leaves the shared row alone" do
+      household = create(:household)
+      shared = described_class.find_by!(raw_text: "rispentomaten")
+
+      described_class.record_correction!(household: household, raw_text: "RISPENTOMATEN",
+                                         canonical_name: "tomatoes", category: "produce")
+
+      expect(shared.reload.canonical_name).to eq("Rispentomaten")
+      expect(household.product_aliases.find_by(raw_text: "rispentomaten").canonical_name).to eq("tomatoes")
+    end
+
+    it "does nothing without a kitchen to write to" do
+      expect do
+        described_class.record_correction!(household: nil, raw_text: "x y z",
+                                           canonical_name: "xyz", category: "other")
+      end.not_to change(described_class, :count)
+    end
   end
 end

@@ -44,27 +44,16 @@ module Ai
 
       started = monotonic_ms
       response = post_json("#{Config.base_url(provider: @provider)}/chat/completions", body)
-      usage = response.fetch("usage", {})
+      billed = billing(model, response, started)
+      result = parse_content(response)
 
-      record_call(
-        purpose: purpose, model: model.name,
-        input_tokens: usage["prompt_tokens"].to_i, output_tokens: usage["completion_tokens"].to_i,
-        cost_micros: Config.cost_micros(model.name, usage["prompt_tokens"].to_i, usage["completion_tokens"].to_i),
-        duration_ms: monotonic_ms - started, success: true
-      )
-
-      content = response.dig("choices", 0, "message", "content")
-      if content.blank?
-        # Say which kind of empty. "empty completion" alone cost a diagnostic
-        # round trip once already; finish_reason names the cause immediately.
-        reason = response.dig("choices", 0, "finish_reason").presence || "unknown"
-        raise Error, "empty completion (finish_reason=#{reason})"
-      end
-
-      JSON.parse(content)
-    rescue Error, JSON::ParserError => e
-      record_call(purpose: purpose, model: Config.model_for(purpose, provider: @provider).name,
-                  success: false, error_message: e.message.truncate(200))
+      record_call(purpose: purpose, model: model.name, success: true, **billed)
+      result
+    rescue Error => e
+      # One row per call. A billed answer we could not use still cost money,
+      # and the daily budget is counted from these rows.
+      record_call(purpose: purpose, model: model.name, success: false,
+                  error_message: e.message.truncate(200), **billed.to_h)
       raise
     end
 
@@ -96,6 +85,27 @@ module Ai
     end
 
     private
+
+    def billing(model, response, started)
+      usage = response.fetch("usage", nil) || {}
+      input = usage["prompt_tokens"].to_i
+      output = usage["completion_tokens"].to_i
+      { input_tokens: input, output_tokens: output, cost_micros: Config.cost_micros(model.name, input, output),
+        duration_ms: monotonic_ms - started }
+    end
+
+    # The model answered and the answer is unusable: retaking the photo may
+    # help, so this is an Error, not Unavailable. A token budget that ran out
+    # mid-object is the usual cause, and finish_reason names it.
+    def parse_content(response)
+      content = response.dig("choices", 0, "message", "content")
+      reason = response.dig("choices", 0, "finish_reason").presence || "unknown"
+      raise Error, "empty completion (finish_reason=#{reason})" if content.blank?
+
+      JSON.parse(content)
+    rescue JSON::ParserError
+      raise Error, "unparseable completion (finish_reason=#{reason})"
+    end
 
     # Providers disagree about structured output, and this is the whole of the
     # disagreement.
@@ -176,7 +186,13 @@ module Ai
       end
 
       JSON.parse(response.body)
-    rescue Net::OpenTimeout, Net::ReadTimeout, SocketError, Errno::ECONNREFUSED => e
+    rescue JSON::ParserError
+      # A 200 that is not JSON is a proxy or an outage page, not an answer.
+      raise Unavailable, "non-JSON response body"
+    # Every way the wire can fail, by family rather than by the four classes
+    # first seen: a connect timeout on Ruby 3.4 is IO::TimeoutError, and a reset
+    # is Errno::ECONNRESET. Missing one escaped as a 500 and skipped the fallback.
+    rescue Timeout::Error, IOError, SocketError, SystemCallError, OpenSSL::SSL::SSLError => e
       raise Unavailable, "transport: #{e.class}"
     end
 

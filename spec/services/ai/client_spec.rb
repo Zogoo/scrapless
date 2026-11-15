@@ -84,12 +84,56 @@ RSpec.describe Ai::Client do
       }.to raise_error(described_class::Error, /empty completion/)
     end
 
-    it "turns a network failure into its own error class, not a raw socket error" do
-      allow(Net::HTTP).to receive(:start).and_raise(Errno::ECONNREFUSED)
+    # A reply cut off by the token budget is not JSON. It must surface as a
+    # readable failure ("try again"), not escape every rescue as a 500.
+    it "treats a truncated answer as unreadable, and bills it once" do
+      stub_response(body: {
+        "choices" => [ { "message" => { "content" => '{"kind":"receipt","lines":[{"raw' },
+                         "finish_reason" => "length" } ],
+        "usage" => { "prompt_tokens" => 2500, "completion_tokens" => 900 }
+      })
+
+      expect {
+        described_class.new(household: household).json_completion(
+          purpose: :receipt_extract, messages: [], schema: {}
+        )
+      }.to raise_error(described_class::Error, /unparseable completion \(finish_reason=length\)/)
+        .and change(AiCall, :count).by(1)
+
+      expect(AiCall.last).to have_attributes(success: false, output_tokens: 900)
+      expect(AiCall.last.cost_micros).to be_positive
+    end
+
+    it "writes one row, not two, for an empty answer" do
+      stub_response(body: { "choices" => [ { "message" => { "content" => "" } } ], "usage" => {} })
 
       expect {
         described_class.new.json_completion(purpose: :text_parse, messages: [], schema: {})
-      }.to raise_error(described_class::Error, /transport/)
+      }.to raise_error(described_class::Error).and change(AiCall, :count).by(1)
+    end
+
+    # A 200 with an HTML outage page is the provider failing, so the router
+    # should move on to the next one.
+    it "treats a non-JSON response body as the provider being unavailable" do
+      response = instance_double(Net::HTTPResponse, code: "200", body: "<html>bad gateway</html>")
+      allow(response).to receive(:is_a?).with(Net::HTTPSuccess).and_return(true)
+      allow(Net::HTTP).to receive(:start).and_return(response)
+
+      expect {
+        described_class.new.json_completion(purpose: :text_parse, messages: [], schema: {})
+      }.to raise_error(described_class::Unavailable, /non-JSON/)
+    end
+
+    # Each of these is the provider, not the photo, so the router must move on.
+    [ Errno::ECONNREFUSED, Errno::ECONNRESET, IO::TimeoutError, Net::OpenTimeout, Net::ReadTimeout,
+      EOFError, SocketError, OpenSSL::SSL::SSLError ].each do |failure|
+      it "turns #{failure} into Unavailable, not a raw socket error" do
+        allow(Net::HTTP).to receive(:start).and_raise(failure)
+
+        expect {
+          described_class.new.json_completion(purpose: :text_parse, messages: [], schema: {})
+        }.to raise_error(described_class::Unavailable, /transport/)
+      end
     end
   end
 

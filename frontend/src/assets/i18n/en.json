@@ -53,7 +53,7 @@
     "done_talking": "Done",
     "reading": "Reading that…",
     "review_count": "{{count}} items",
-    "review_lede": "We got these. Tap anything that looks wrong later — nothing to confirm now.",
+    "review_lede": "We got these. Remove anything that is not right — nothing to confirm.",
     "about_days": "~{{count}} days",
     "in_kitchen": "now {{count}} in your kitchen",
     "suppressed": "Left out: {{list}}",
@@ -71,7 +71,8 @@
       "captured": "Taken"
     },
     "pick_photo": "Pick a photo",
-    "pick_photo_hint": "One you already took"
+    "pick_photo_hint": "One you already took",
+    "remove_line": "Remove {{name}}"
   },
   "memo": {
     "title": "Shopping",

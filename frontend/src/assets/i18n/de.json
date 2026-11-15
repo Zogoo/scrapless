@@ -53,7 +53,7 @@
     "done_talking": "Fertig",
     "reading": "Wird gelesen…",
     "review_count": "{{count}} Artikel",
-    "review_lede": "Das haben wir. Was nicht stimmt, kannst du später antippen — jetzt nichts bestätigen.",
+    "review_lede": "Das haben wir. Entferne, was nicht stimmt — nichts zu bestätigen.",
     "about_days": "~{{count}} Tage",
     "in_kitchen": "jetzt {{count}} in der Küche",
     "suppressed": "Weggelassen: {{list}}",
@@ -71,7 +71,8 @@
       "captured": "Aufgenommen"
     },
     "pick_photo": "Foto auswählen",
-    "pick_photo_hint": "Eins, das du schon hast"
+    "pick_photo_hint": "Eins, das du schon hast",
+    "remove_line": "{{name}} entfernen"
   },
   "memo": {
     "title": "Einkauf",

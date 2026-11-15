@@ -162,6 +162,22 @@ without it there is no photo path at all on a desktop or with camera permission 
 and **failed-call count on the cost screen**, which otherwise read "7 calls · $0.0000" and
 looked like the AI was free when in fact every call was being refused.
 
+### And what a code review found
+
+A read of the whole codebase against docs 0–12, then each finding driven in a local
+browser, found five defects worth fixing first, and two more surfaced while testing
+the fixes. All seven are fixed and covered by specs.
+
+| Found | Fix |
+|---|---|
+| **One anonymous fridge could rename a word for every kitchen.** `ProductAlias` was global and a rename overwrote the shared row, seeded ones included. Doc 7 B6 names this exact risk. | Corrections carry a `household_id` and are read before the shared dictionary only in that kitchen. The shared layer is written by seeds. **Promotion at k≥5 households (doc 5 §5.6) is still not built.** |
+| **A failed boot request could lose the kitchen.** Offline, a 5xx or a waking machine wiped the token; the phone landed on the welcome screen, and Skip minted a new fridge over the cookie. | The client forgets the token only on a 401. `POST /fridge` returns the fridge a browser already holds instead of minting another. |
+| **A correction fixed the label and kept the harm.** Bread filed as dairy, renamed in the Kitchen, kept dairy's 14-day window, and the dictionary learned the new name with the old category. | `Items::Correct`: a rename re-reads the category, a changed category, storage or printed date re-dates the item, and the dictionary learns the corrected pair. |
+| **No way to remove a misread line.** Doc 4 §4.4 makes subtracting the user's one job on the review sheet, and there was no delete anywhere in the UI. | A 48px remove button per review line, calling the household-scoped `DELETE /items/:id`. |
+| **A truncated model answer was a 500.** `JSON::ParserError` is not an `Ai::Client::Error`, so it escaped every handler and lost the dictionary hits. An empty answer also wrote two ledger rows. | Unparseable content is an `Error` ("hard to read"); a non-JSON body is `Unavailable`; one ledger row per call, carrying its cost. |
+| **Groq's defaults named Gemini's models**, so every Groq call 404'd and fell through. | Groq uses `llama-4-scout` (price ⚠️ unverified). Models carry their provider, and a spec holds each provider to its own. |
+| **A connect timeout skipped the fallback.** On Ruby 3.4 it is `IO::TimeoutError`, which the client did not rescue. Found while testing the above. | Every transport failure family is `Unavailable`. |
+
 ---
 
 ## 13.4c Deployment
@@ -202,7 +218,7 @@ fly deploy --remote-only -a scrapless-app
 
 ## 13.5 Verification
 
-Backend 133 examples, frontend 12, RuboCop and Brakeman clean. Beyond the suites, the running app was
+Backend 221 examples, frontend 34, RuboCop and Brakeman clean. Beyond the suites, the running app was
 driven end to end: fridge created and named, four items added through the tap grid with
 **zero** billed model calls, the shop rewound a week to exercise the risk model, chicken
 correctly suppressed, localStorage cleared and the fridge restored from the cookie alone, and

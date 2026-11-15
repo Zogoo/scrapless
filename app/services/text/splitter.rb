@@ -8,8 +8,9 @@ module Text
     SEPARATORS = /,|;|\n|\band\b|\bund\b|\bplus\b/i
     QUANTITY = /\A(\d+(?:[.,]\d+)?)\s*(kg|g|ml|l|x)?\s*(?:x\s*)?(.+)\z/i
 
-    def initialize(text:)
+    def initialize(text:, household: nil)
       @text = text.to_s
+      @household = household
     end
 
     def call
@@ -18,7 +19,7 @@ module Text
 
       @text.split(SEPARATORS).map { |part| part.strip.squeeze(" ") }.reject(&:blank?).each do |part|
         quantity, unit, name = decompose(part)
-        entry = ProductAlias.lookup(name)
+        entry = ProductAlias.lookup(name, household: @household)
 
         if entry
           known << { "raw_text" => part, "name" => entry.canonical_name.titleize, "quantity" => quantity,

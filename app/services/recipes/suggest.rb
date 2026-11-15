@@ -45,7 +45,8 @@ module Recipes
 
       raw = Ai::RecipeWriter.call(pantry: pantry, household: @household, locale: @locale)
       Array(raw["recipes"])
-        .filter_map { |recipe| GroundInInventory.call(recipe: recipe, items: items, use_first_ids: use_first_ids) }
+        .filter_map { |recipe| GroundInInventory.call(recipe: recipe, items: items, use_first_ids: use_first_ids,
+                                              household: @household) }
         .uniq { |recipe| recipe[:title].downcase }
         .sort_by.with_index { |recipe, index| [ -recipe[:use_first_count], index ] }
         .first(MAX_RECIPES)

@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { CaptureService } from '../../core/services/capture.service';
+import { ItemsService } from '../../core/services/items.service';
 import { SpeechService, speechTag } from '../../core/services/speech.service';
 import { CaptureReview } from '../../core/models';
 import { AutoShutter, ShutterStatus } from '../../core/vision/auto-shutter';
@@ -43,6 +44,7 @@ const TAP_GRID = [
 })
 export class Capture implements OnDestroy {
   private readonly captures = inject(CaptureService);
+  private readonly items = inject(ItemsService);
   private readonly router = inject(Router);
   private readonly translate = inject(TranslateService);
   protected readonly speech = inject(SpeechService);
@@ -59,6 +61,7 @@ export class Capture implements OnDestroy {
   protected readonly transcript = signal('');
   protected readonly manualText = signal('');
   protected readonly picked = signal<string[]>([]);
+  protected readonly removingId = signal<number | null>(null);
   protected readonly tapGrid = TAP_GRID;
 
   private stream: MediaStream | null = null;
@@ -294,6 +297,34 @@ export class Capture implements OnDestroy {
       error: (err: { message?: string }) => {
         this.error.set(err.message ?? this.translate.instant('capture.unreadable'));
         this.busy.set(false);
+      },
+    });
+  }
+
+  /**
+   * The review is confirm-by-default, so the user's one job is to subtract
+   * (doc 4 §4.4 rule 1). A line the model invented reads as correct and would
+   * otherwise sit in the kitchen until it retired itself. Removing it is not
+   * waste, so this deletes rather than resolving it as Gone.
+   */
+  protected reject(id: number): void {
+    if (this.removingId() !== null) return;
+
+    this.removingId.set(id);
+    this.error.set('');
+    this.items.remove(id).subscribe({
+      next: () => {
+        this.removingId.set(null);
+        const current = this.review();
+        if (!current) return;
+
+        const items = current.items.filter((item) => item.id !== id);
+        if (items.length === 0) return this.done();
+        this.review.set({ ...current, items });
+      },
+      error: (err: { message?: string }) => {
+        this.error.set(err.message ?? this.translate.instant('capture.unreadable'));
+        this.removingId.set(null);
       },
     });
   }

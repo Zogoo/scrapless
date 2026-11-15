@@ -115,7 +115,7 @@ module Api
       # und brokkoli" spoken now costs nothing at all, where before every spoken
       # sentence bought a model call whether it needed one or not.
       def lines_from(text)
-        known, unknown = Text::Splitter.call(text: text)
+        known, unknown = Text::Splitter.call(text: text, household: current_household)
         parsed, note = parse_unknown(unknown)
 
         { "lines" => known + parsed, "notes" => note }

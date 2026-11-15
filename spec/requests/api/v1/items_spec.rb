@@ -165,7 +165,22 @@ RSpec.describe "Api::V1::Items", type: :request do
             headers: headers, as: :json
 
       expect(response).to have_http_status(:ok)
-      expect(ProductAlias.lookup("GURK.SAL.STCK")&.canonical_name).to eq("salatgurke")
+      expect(ProductAlias.lookup("GURK.SAL.STCK", household: household)&.canonical_name).to eq("salatgurke")
+    end
+
+    # Fridges are free and anonymous, so one of them renaming a line must not
+    # rename it for every kitchen (doc 5 §5.6, doc 7 B6).
+    it "keeps the correction inside the kitchen that made it" do
+      create(:product_alias, raw_text: "milch", canonical_name: "Milch", category: "dairy", seeded: true)
+      item = create(:item, household: household, raw_text: "MILCH", display_name: "Milch")
+
+      patch "/api/v1/items/#{item.id}",
+            params: { item: { display_name: "Something rude", canonical_name: "something rude" } },
+            headers: headers, as: :json
+
+      expect(ProductAlias.lookup("MILCH", household: household).canonical_name).to eq("something rude")
+      expect(ProductAlias.lookup("MILCH", household: create(:household)).canonical_name).to eq("Milch")
+      expect(ProductAlias.shared.find_by(raw_text: "milch").canonical_name).to eq("Milch")
     end
   end
 end

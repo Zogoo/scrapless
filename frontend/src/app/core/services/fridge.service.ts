@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, tap } from 'rxjs';
+import { Observable, of, tap, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 import { environment } from '../../../environments/environment';
@@ -58,11 +58,19 @@ export class FridgeService {
     }
   }
 
-  /** Resolves to null when this browser has never seen a fridge. */
+  /**
+   * Resolves to null only when the server says it does not know this fridge.
+   *
+   * Any other failure — offline, a 5xx, a machine still waking — rethrows and
+   * keeps the token. Forgetting it there sent a returning phone to the welcome
+   * screen, where Skip made a new kitchen over the real one.
+   */
   restore(): Observable<Fridge | null> {
     return this.http.get<Fridge>(`${environment.apiUrl}/fridge`).pipe(
       tap((fridge) => this.accept(fridge)),
-      catchError(() => {
+      catchError((error: { status?: number }) => {
+        if (error?.status !== 401) return throwError(() => error);
+
         this.forgetLocal();
         return of(null);
       }),
