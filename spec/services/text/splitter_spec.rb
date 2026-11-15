@@ -15,6 +15,19 @@ RSpec.describe Text::Splitter do
     expect(unknown).to eq([ "yuzu kosho" ])
   end
 
+  # A word this kitchen taught it is free here, and only here.
+  it "uses the kitchen's own corrections, and no one else's" do
+    household = create(:household)
+    create(:product_alias, household: household, raw_text: "yuzu kosho", canonical_name: "Yuzu kosho",
+                           category: "pantry")
+
+    _, unknown_here = described_class.call(text: "yuzu kosho", household: household)
+    _, unknown_elsewhere = described_class.call(text: "yuzu kosho", household: create(:household))
+
+    expect(unknown_here).to be_empty
+    expect(unknown_elsewhere).to eq([ "yuzu kosho" ])
+  end
+
   it "pulls the quantity off the front of a line" do
     known, = described_class.call(text: "2 milch")
 

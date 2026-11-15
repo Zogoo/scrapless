@@ -1,6 +1,15 @@
 # Receipt jargon -> a name a human recognises. Every confirmed mapping makes the
 # next parse cheaper, because a hit here skips the model call entirely.
+#
+# Two layers. Rows with no household are the shared dictionary — seeded, and
+# never written by a request. Rows with a household are that kitchen's own
+# corrections, and they win inside that kitchen only. Doc 5 §5.6 and doc 7 B6:
+# a free, anonymous fridge must not be able to rename "milch" for everyone.
 class ProductAlias < ApplicationRecord
+  belongs_to :household, optional: true
+
+  scope :shared, -> { where(household_id: nil) }
+
   validates :raw_text, :canonical_name, :category, presence: true
 
   normalizes :raw_text, with: ->(t) { ProductAlias.normalize_key(t) }
@@ -11,15 +20,28 @@ class ProductAlias < ApplicationRecord
 
   # Exact match first, then the same words in any order — enough to catch
   # "BROKKOLI 500G" against a stored "brokkoli" without a fuzzy-match library.
-  def self.lookup(raw_text, merchant: nil)
+  #
+  # The kitchen's own corrections are tried before the shared dictionary at
+  # each step, but an exact shared hit still beats a fuzzy household one.
+  def self.lookup(raw_text, merchant: nil, household: nil)
     key = normalize_key(raw_text)
     return nil if key.blank?
 
+    layers = [ household && where(household: household), shared ].compact
+    layers.each do |layer|
+      hit = layer.exact_match(key, merchant)
+      return hit if hit
+    end
+    layers.each do |layer|
+      hit = layer.token_match(key)
+      return hit if hit
+    end
+    nil
+  end
+
+  def self.exact_match(key, merchant)
     scope = where(raw_text: key)
-    scope.where(merchant: merchant).first ||
-      scope.where(merchant: nil).first ||
-      scope.first ||
-      token_match(key)
+    scope.where(merchant: merchant).first || scope.where(merchant: nil).first || scope.first
   end
 
   # Receipts truncate. "RISPENTOMAT." is the same tomato as "rispentomaten" and
@@ -48,11 +70,13 @@ class ProductAlias < ApplicationRecord
     end
   end
 
-  def self.record_correction!(raw_text:, canonical_name:, category:, merchant: nil, emoji: nil)
+  # Writes to the correcting kitchen's layer only. The shared dictionary is
+  # changed by a seed or a reviewed promotion, never by a request.
+  def self.record_correction!(household:, raw_text:, canonical_name:, category:, merchant: nil, emoji: nil)
     key = normalize_key(raw_text)
-    return if key.blank?
+    return if key.blank? || household.nil?
 
-    entry = find_or_initialize_by(raw_text: key, merchant: merchant)
+    entry = find_or_initialize_by(household: household, raw_text: key, merchant: merchant)
     entry.canonical_name = canonical_name
     entry.category = category
     entry.emoji ||= emoji

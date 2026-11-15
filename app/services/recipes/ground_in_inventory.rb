@@ -15,11 +15,12 @@ module Recipes
     MIN_STEM = 4
     MAX_STEPS = 8
 
-    def initialize(recipe:, items:, use_first_ids: [])
+    def initialize(recipe:, items:, use_first_ids: [], household: nil)
       @recipe = recipe.is_a?(Hash) ? recipe : {}
       @items = items
       @use_first_ids = use_first_ids.to_set
       @used_ids = Set.new
+      @household = household
     end
 
     def call
@@ -71,7 +72,7 @@ module Recipes
     # The receipt dictionary already knows that "Rispentomaten" are tomatoes;
     # reuse it before falling back to raw token overlap.
     def by_alias(name)
-      entry = ProductAlias.lookup(name)
+      entry = ProductAlias.lookup(name, household: @household)
       return nil if entry.nil?
 
       canonical = entry.canonical_name.downcase

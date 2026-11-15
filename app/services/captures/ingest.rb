@@ -50,7 +50,7 @@ module Captures
       resolved = Items::Resolver.call(
         raw_text: line["raw_text"], name: line["name"],
         category: line["category"], merchant: @payload["merchant"],
-        storage: line["storage"]
+        storage: line["storage"], household: @household
       )
 
       window = Freshness::Estimator.call(

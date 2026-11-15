@@ -34,7 +34,7 @@ module Api
 
         if item.raw_text.present? && item.saved_change_to_attribute?(:display_name)
           ProductAlias.record_correction!(
-            raw_text: item.raw_text, canonical_name: item.canonical_name,
+            household: current_household, raw_text: item.raw_text, canonical_name: item.canonical_name,
             category: item.category, merchant: item.capture&.merchant
           )
         end

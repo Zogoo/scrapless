@@ -13,12 +13,13 @@ module Items
       "drinks" => "🧃", "other" => "🍽️"
     }.freeze
 
-    def initialize(raw_text:, name: nil, category: nil, merchant: nil, storage: nil)
+    def initialize(raw_text:, name: nil, category: nil, merchant: nil, storage: nil, household: nil)
       @raw_text = raw_text.to_s
       @name = name.presence
       @category = category.presence
       @merchant = merchant.presence
       @storage = storage.presence
+      @household = household
     end
 
     def call
@@ -28,8 +29,8 @@ module Items
     private
 
     def from_dictionary
-      entry = ProductAlias.lookup(@raw_text, merchant: @merchant)
-      entry ||= ProductAlias.lookup(@name, merchant: @merchant) if @name
+      entry = ProductAlias.lookup(@raw_text, merchant: @merchant, household: @household)
+      entry ||= ProductAlias.lookup(@name, merchant: @merchant, household: @household) if @name
       return nil if entry.nil?
 
       build(display: entry.canonical_name.titleize, canonical: entry.canonical_name,
