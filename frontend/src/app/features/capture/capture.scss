@@ -244,7 +244,8 @@
 
   li {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
     gap: 0.15rem 0.75rem;
     padding: 0.6rem 0.75rem;
     border-radius: var(--radius);
@@ -266,6 +267,13 @@
   .by,
   .stacked {
     grid-column: 1 / -1;
+  }
+
+  /* A full 48px target, but quiet: removing is the exception, not the task. */
+  .reject {
+    min-width: var(--tap);
+    padding: 0;
+    margin: -0.4rem -0.5rem -0.4rem 0;
   }
 
   .stacked {

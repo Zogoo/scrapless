@@ -199,6 +199,15 @@
                 <span class="days">
                   {{ 'capture.about_days' | translate: { count: item.days_left } }}
                 </span>
+                <button
+                  type="button"
+                  class="ghost reject"
+                  [disabled]="removingId() !== null"
+                  [attr.aria-label]="'capture.remove_line' | translate: { name: item.display_name }"
+                  (click)="reject(item.id)"
+                >
+                  ✕
+                </button>
                 @if (item.in_kitchen > 1) {
                   <!-- Not a silent duplicate: it joined the line that was already there. -->
                   <small class="stacked">{{
@@ -216,6 +225,10 @@
               </li>
             }
           </ul>
+
+          @if (error()) {
+            <p class="error">{{ error() }}</p>
+          }
 
           @if (result.capture.notes) {
             <p class="parse-note">{{ result.capture.notes }}</p>
