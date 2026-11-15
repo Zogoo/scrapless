@@ -74,4 +74,12 @@ RSpec.describe Memo::Suggester do
       expect(names).to include("Milch")
     end
   end
+
+  # Observed in the second QA pass: "Milk" suggested beside a carton of Milch.
+  it "does not offer a staple the kitchen holds under its receipt name" do
+    create(:item, household: household, canonical_name: "milch", display_name: "🥛 Milch",
+                  window_end: Date.current + 10)
+
+    expect(described_class.call(household: household).map(&:name)).not_to include("Milk")
+  end
 end

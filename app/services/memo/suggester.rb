@@ -11,14 +11,22 @@ module Memo
   class Suggester < ApplicationService
     LIMIT = 12
 
+    # [label key, category, the word a receipt (and the tap grid) uses]. The
+    # label follows the UI's language; the word is how the kitchen holds it, so
+    # "Milk" is not suggested beside a carton of Milch.
     STAPLES = [
-      %w[milk dairy], %w[bread bakery], %w[eggs dairy], %w[butter dairy],
-      %w[cheese dairy], %w[onions produce], %w[potatoes produce], %w[tomatoes produce],
-      %w[bananas produce], %w[apples produce], %w[chicken meat_fish], %w[coffee drinks],
-      %w[rice pantry], %w[pasta pantry], %w[yoghurt dairy], %w[salad produce]
+      %w[milk dairy Milch], %w[bread bakery Brot], %w[eggs dairy Eier], %w[butter dairy Butter],
+      %w[cheese dairy Käse], %w[onions produce Zwiebeln], %w[potatoes produce Kartoffeln],
+      %w[tomatoes produce Tomaten], %w[bananas produce Bananen], %w[apples produce Äpfel],
+      %w[chicken meat_fish Hähnchen], %w[coffee drinks Kaffee], %w[rice pantry Reis],
+      %w[pasta pantry Nudeln], %w[yoghurt dairy Joghurt], %w[salad produce Salat]
     ].freeze
 
-    Suggestion = Struct.new(:name, :category, :reason, :score, keyword_init: true)
+    # `key` is what "already at home" is checked against; it is the name
+    # itself except for staples.
+    Suggestion = Struct.new(:name, :category, :reason, :score, :key, keyword_init: true) do
+      def at_home_key = (key || name).downcase
+    end
 
     def initialize(household:, query: nil, limit: LIMIT)
       @household = household
@@ -30,7 +38,7 @@ module Memo
     # those are not held back by the at-home rule; history and staples are.
     def call
       candidates = (due_to_run_out.reject { |s| hidden?(s) } +
-                    (previously_bought + staples).reject { |s| hidden?(s) || at_home.include?(s.name.downcase) })
+                    (previously_bought + staples).reject { |s| hidden?(s) || at_home.include?(s.at_home_key) })
                    .uniq { |s| s.name.downcase }
 
       candidates = matching(candidates) if @query.present?
@@ -50,7 +58,7 @@ module Memo
     end
 
     def boost(suggestion)
-      Suggestion.new(name: suggestion.name, category: suggestion.category,
+      Suggestion.new(name: suggestion.name, category: suggestion.category, key: suggestion.key,
                      reason: suggestion.reason, score: suggestion.score + 1000)
     end
 
@@ -84,8 +92,8 @@ module Memo
     end
 
     def staples
-      STAPLES.map.with_index do |(key, category), index|
-        Suggestion.new(name: I18n.t("memo.staples.#{key}"), category: category,
+      STAPLES.map.with_index do |(label, category, word), index|
+        Suggestion.new(name: I18n.t("memo.staples.#{label}"), category: category, key: word,
                        reason: I18n.t("memo.reason.common"), score: 20 - index * 0.1)
       end
     end

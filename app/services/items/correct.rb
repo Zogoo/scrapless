@@ -43,11 +43,20 @@ module Items
       @item.category = guess unless guess == "other"
     end
 
-    # People type a name, not an emoji; the list shows one on every line.
+    # People type a name, not an emoji; the list shows one on every line. The
+    # food keeps its own (🧀 stays 🧀) unless its category changed, in which
+    # case the new category's stands in.
     def keep_emoji
       return if Copy.bare_name(@item) != @item.display_name
 
-      @item.display_name = "#{Resolver::EMOJI.fetch(@item.category, Resolver::EMOJI['other'])} #{@item.display_name}"
+      @item.display_name = "#{emoji} #{@item.display_name}"
+    end
+
+    def emoji
+      own = @item.display_name_was.to_s[Copy::LEADING_EMOJI]&.strip
+      return own if own.present? && !@item.category_changed?
+
+      Resolver::EMOJI.fetch(@item.category, Resolver::EMOJI["other"])
     end
 
     def rewindow

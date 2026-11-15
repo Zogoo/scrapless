@@ -1,11 +1,11 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { DatePipe } from '@angular/common';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { ItemsService } from '../../core/services/items.service';
 import { InstallService } from '../../core/services/install.service';
 import { UndoService } from '../../core/services/undo.service';
+import { LocaleService } from '../../core/services/locale.service';
 import { Outcome, ScoredItem } from '../../core/models';
 
 /**
@@ -17,7 +17,7 @@ import { Outcome, ScoredItem } from '../../core/models';
  */
 @Component({
   selector: 'app-today',
-  imports: [DatePipe, TranslatePipe],
+  imports: [TranslatePipe],
   templateUrl: './today.html',
   styleUrl: './today.scss',
 })
@@ -26,10 +26,18 @@ export class Today implements OnInit {
   private readonly router = inject(Router);
   private readonly undo = inject(UndoService);
   private readonly translate = inject(TranslateService);
+  private readonly locale = inject(LocaleService);
   protected readonly install = inject(InstallService);
 
   protected readonly today = this.items.today;
   protected readonly loading = signal(true);
+  /** "Sonntag", not "Sunday": DatePipe only knows the build's locale, not the app's. */
+  protected readonly weekday = computed(() => {
+    const day = this.today()?.as_of;
+    return day
+      ? new Date(`${day}T12:00:00`).toLocaleDateString(this.locale.current(), { weekday: 'long' })
+      : '';
+  });
   protected readonly error = signal('');
   protected readonly expandRest = signal(false);
   protected readonly busyId = signal<number | null>(null);

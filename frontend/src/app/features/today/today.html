@@ -1,6 +1,6 @@
 <section class="today">
   <header class="head">
-    <h1>{{ today()?.as_of | date: 'EEEE' }}</h1>
+    <h1>{{ weekday() }}</h1>
   </header>
 
   @if (install.shouldOffer()) {
