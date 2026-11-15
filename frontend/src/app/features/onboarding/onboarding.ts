@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -17,6 +17,7 @@ import { FridgeService } from '../../core/services/fridge.service';
   selector: 'app-onboarding',
   imports: [FormsModule, TranslatePipe],
   styleUrl: './onboarding.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="onboarding">
       <div class="hero">

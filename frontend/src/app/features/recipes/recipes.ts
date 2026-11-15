@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { RecipesService } from '../../core/services/recipes.service';
@@ -14,6 +14,7 @@ import { Recipe } from '../../core/models';
   selector: 'app-recipes',
   imports: [TranslatePipe],
   templateUrl: './recipes.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './recipes.scss',
 })
 export class Recipes {
