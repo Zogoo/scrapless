@@ -29,11 +29,10 @@ module Items
     private
 
     def from_dictionary
-      entry = ProductAlias.lookup(@raw_text, merchant: @merchant, household: @household)
-      entry ||= ProductAlias.lookup(@name, merchant: @merchant, household: @household) if @name
+      entry = ProductAlias.lookup([ @raw_text, @name ], merchant: @merchant, household: @household)
       return nil if entry.nil?
 
-      build(display: entry.canonical_name.titleize, canonical: entry.canonical_name,
+      build(display: entry.display_name, canonical: entry.canonical_name,
             category: entry.category, emoji: entry.emoji, source: "dictionary")
     end
 

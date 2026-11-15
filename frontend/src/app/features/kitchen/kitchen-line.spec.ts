@@ -23,6 +23,7 @@ function pack(overrides: Partial<ScoredItem>): ScoredItem {
     opened_on: null,
     snoozed_until: null,
     high_risk: false,
+    safety_date: false,
     added_by_name: null,
     presence: 0.5,
     spoilage: 0,

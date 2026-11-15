@@ -22,7 +22,7 @@ module Text
         entry = ProductAlias.lookup(name, household: @household)
 
         if entry
-          known << { "raw_text" => part, "name" => entry.canonical_name.titleize, "quantity" => quantity,
+          known << { "raw_text" => part, "name" => entry.display_name, "quantity" => quantity,
                      "unit" => unit, "category" => entry.category, "food" => true }
         else
           unknown << part

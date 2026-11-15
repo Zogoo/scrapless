@@ -32,6 +32,8 @@ export interface Item {
   opened_on: string | null;
   snoozed_until: string | null;
   high_risk: boolean;
+  /** A Verbrauchsdatum was read off the label. Only then may the UI say "go by the date". */
+  safety_date: boolean;
   added_by_name: string | null;
 }
 

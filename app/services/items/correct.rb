@@ -22,7 +22,10 @@ module Items
 
     def call
       @item.assign_attributes(@changes)
-      recategorise if @item.display_name_changed? && !@changes.key?("category")
+      if @item.display_name_changed?
+        recategorise unless @changes.key?("category")
+        keep_emoji
+      end
       rewindow if @item.changed.intersect?(WINDOW_INPUTS)
 
       Item.transaction do
@@ -38,6 +41,13 @@ module Items
     def recategorise
       guess = Resolver.call(raw_text: "", name: @item.display_name, household: @item.household).category
       @item.category = guess unless guess == "other"
+    end
+
+    # People type a name, not an emoji; the list shows one on every line.
+    def keep_emoji
+      return if Copy.bare_name(@item) != @item.display_name
+
+      @item.display_name = "#{Resolver::EMOJI.fetch(@item.category, Resolver::EMOJI['other'])} #{@item.display_name}"
     end
 
     def rewindow

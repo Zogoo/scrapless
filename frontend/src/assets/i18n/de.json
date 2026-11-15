@@ -72,7 +72,29 @@
     },
     "pick_photo": "Foto auswählen",
     "pick_photo_hint": "Eins, das du schon hast",
-    "remove_line": "{{name}} entfernen"
+    "remove_line": "{{name}} entfernen",
+    "grid": {
+      "milk": "Milch",
+      "bread": "Brot",
+      "eggs": "Eier",
+      "butter": "Butter",
+      "cheese": "Käse",
+      "broccoli": "Brokkoli",
+      "spinach": "Spinat",
+      "carrots": "Karotten",
+      "tomatoes": "Tomaten",
+      "potatoes": "Kartoffeln",
+      "onions": "Zwiebeln",
+      "bananas": "Bananen",
+      "apples": "Äpfel",
+      "chicken": "Hähnchen",
+      "mince": "Hackfleisch",
+      "fish": "Fisch",
+      "yoghurt": "Joghurt",
+      "salad": "Salat",
+      "pasta": "Nudeln",
+      "coffee": "Kaffee"
+    }
   },
   "memo": {
     "title": "Einkauf",

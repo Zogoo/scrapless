@@ -34,6 +34,22 @@ RSpec.describe ProductAlias do
       expect(described_class.lookup("RI")).to be_nil
     end
 
+    # Observed in QA: "2 milch" came back as H-Milch, because a fuzzy hit on the
+    # raw text was taken before the exact hit on the name.
+    it "takes an exact match on any spelling before a fuzzy one" do
+      create(:product_alias, raw_text: "h milch", canonical_name: "H-Milch", category: "dairy")
+      create(:product_alias, raw_text: "milch", canonical_name: "Milch", category: "dairy")
+
+      expect(described_class.lookup([ "2 milch", "Milch" ]).canonical_name).to eq("Milch")
+    end
+
+    it "breaks a fuzzy tie by length, not by row order" do
+      create(:product_alias, raw_text: "h milch", canonical_name: "H-Milch", category: "dairy")
+      create(:product_alias, raw_text: "milch", canonical_name: "Milch", category: "dairy")
+
+      expect(described_class.lookup("milch 1l").canonical_name).to eq("Milch")
+    end
+
     context "with a kitchen's own corrections" do
       let(:household) { create(:household) }
 
@@ -61,6 +77,13 @@ RSpec.describe ProductAlias do
         expect(described_class.lookup("HAEHNCHENSCHENKEL", household: household).canonical_name)
           .to eq("Hähnchenschenkel")
       end
+    end
+  end
+
+  describe "#display_name" do
+    it "keeps the spelling it was stored with" do
+      expect(build(:product_alias, canonical_name: "H-Milch").display_name).to eq("H-Milch")
+      expect(build(:product_alias, canonical_name: "bread rolls").display_name).to eq("Bread rolls")
     end
   end
 

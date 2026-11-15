@@ -89,4 +89,15 @@ RSpec.describe Captures::Ingest do
     expect(result[:items].first.acquired_on).to eq(Date.current - 3)
     expect(result[:items].first.window_end).to eq(Date.current + 6)
   end
+
+  it "does not record a printed date it never read" do
+    capture = create(:capture, household: household, source: "text")
+    payload = { "lines" => [ { "raw_text" => "HAEHNCHENSCHENKEL", "name" => "Chicken legs",
+                               "category" => "meat_fish" } ] }
+
+    item = described_class.call(capture: capture, payload: payload)[:items].first
+
+    expect(item.date_label_type).to eq("none")
+    expect(item.high_risk?).to be(true)
+  end
 end

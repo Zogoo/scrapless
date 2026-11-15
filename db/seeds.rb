@@ -111,7 +111,16 @@ aliases = [
   [ "mineralwasser", "Mineralwasser", "drinks", "💧" ],
   # frozen
   [ "tk erbsen", "TK-Erbsen", "frozen", "🧊" ],
-  [ "tiefkuehlpizza", "Tiefkühlpizza", "frozen", "🍕" ]
+  [ "tiefkuehlpizza", "Tiefkühlpizza", "frozen", "🍕" ],
+  # The tap grid sends these words (capture.ts TAP_GRID), so every one must
+  # resolve for free — including the umlaut spellings people type.
+  [ "käse", "Käse", "dairy", "🧀" ],
+  [ "kaese", "Käse", "dairy", "🧀" ],
+  [ "äpfel", "Äpfel", "produce", "🍎" ],
+  [ "hähnchen", "Hähnchen", "meat_fish", "🍗" ],
+  [ "haehnchen", "Hähnchen", "meat_fish", "🍗" ],
+  [ "fisch", "Fisch", "meat_fish", "🐟" ],
+  [ "salat", "Salat", "produce", "🥗" ]
 ]
 
 aliases.each do |raw, canonical, category, emoji|

@@ -133,15 +133,16 @@
 
       <p class="grid-head">{{ 'capture.grid_head' | translate }}</p>
       <div class="grid">
-        @for (name of tapGrid; track name) {
+        @for (cell of tapGrid; track cell.key) {
           <button
             type="button"
             class="chip"
-            [class.picked]="picked().includes(name)"
-            [attr.aria-pressed]="picked().includes(name)"
-            (click)="toggleTap(name)"
+            [class.picked]="picked().includes(cell.word)"
+            [attr.aria-pressed]="picked().includes(cell.word)"
+            (click)="toggleTap(cell.word)"
           >
-            {{ name }}
+            <span aria-hidden="true">{{ cell.emoji }}</span>
+            {{ 'capture.grid.' + cell.key | translate }}
           </button>
         }
       </div>

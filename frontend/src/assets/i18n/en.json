@@ -72,7 +72,29 @@
     },
     "pick_photo": "Pick a photo",
     "pick_photo_hint": "One you already took",
-    "remove_line": "Remove {{name}}"
+    "remove_line": "Remove {{name}}",
+    "grid": {
+      "milk": "Milk",
+      "bread": "Bread",
+      "eggs": "Eggs",
+      "butter": "Butter",
+      "cheese": "Cheese",
+      "broccoli": "Broccoli",
+      "spinach": "Spinach",
+      "carrots": "Carrots",
+      "tomatoes": "Tomatoes",
+      "potatoes": "Potatoes",
+      "onions": "Onions",
+      "bananas": "Bananas",
+      "apples": "Apples",
+      "chicken": "Chicken",
+      "mince": "Mince",
+      "fish": "Fish",
+      "yoghurt": "Yoghurt",
+      "salad": "Salad",
+      "pasta": "Pasta",
+      "coffee": "Coffee"
+    }
   },
   "memo": {
     "title": "Shopping",

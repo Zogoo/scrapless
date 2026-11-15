@@ -14,6 +14,27 @@ RSpec.describe Item do
   # The decay bar measures the whole life, not the position inside the
   # uncertainty band — a bar that reads empty for the first 70% of a broccoli's
   # life tells the user nothing.
+  describe "#high_risk? and #safety_date?" do
+    # Observed in QA: chicken said "Go by the date" although no date was read,
+    # because a risky category was stored as if a Verbrauchsdatum had been.
+    it "treats a risky category as high risk without claiming a printed date" do
+      chicken = build(:item, category: "meat_fish")
+
+      expect(chicken.high_risk?).to be(true)
+      expect(chicken.safety_date?).to be(false)
+    end
+
+    it "claims a safety date only when one was read" do
+      item = build(:item, date_label_type: "verbrauchsdatum", date_label_value: Date.current + 2)
+
+      expect(item.safety_date?).to be(true)
+    end
+
+    it "does not treat frozen chicken as a safety risk" do
+      expect(build(:item, category: "meat_fish", storage: "freezer").high_risk?).to be(false)
+    end
+  end
+
   describe "#life_fraction" do
     let(:item) { build(:item, acquired_on: Date.current, window_end: Date.current + 10) }
 

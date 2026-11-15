@@ -25,7 +25,14 @@ class Item < ApplicationRecord
 
   normalizes :canonical_name, with: ->(n) { n.to_s.strip.downcase.presence }
 
-  def high_risk? = date_label_type == "verbrauchsdatum"
+  # Never told "probably fine" (doc 3 §3.4): a food with a printed safety date,
+  # or one whose category is a safety risk (poultry, fish, prepared, deli) —
+  # unless it is frozen.
+  def high_risk? = safety_date? || (Categories.high_risk?(category) && !frozen_storage?)
+
+  # A Verbrauchsdatum that was actually read off the packet. "Go by the date"
+  # means nothing without one, so only this may say it.
+  def safety_date? = date_label_type == "verbrauchsdatum" && date_label_value.present?
 
   # How far through its life the food is, measured from the day it came home to
   # the far end of the uncertainty band. This is what the decay bar draws, and it

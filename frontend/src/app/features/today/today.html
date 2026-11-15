@@ -47,7 +47,7 @@
         <article class="card rescue" [class.high-risk]="item.high_risk">
           <div class="line">
             <h3 [id]="'item-' + item.id">{{ item.display_name }}</h3>
-            @if (item.high_risk) {
+            @if (item.safety_date) {
               <span class="badge">{{ 'today.safety_date' | translate }}</span>
             }
           </div>

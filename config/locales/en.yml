@@ -26,6 +26,12 @@ en:
     fine:
       one: "fine for about another day"
       other: "fine for about %{count} more days"
+    fine_weeks:
+      one: "fine for about a week"
+      other: "fine for about %{count} weeks"
+    fine_months:
+      one: "fine for about a month"
+      other: "fine for about %{count} months"
     aging:
       one: "about a day left"
       other: "about %{count} days left"

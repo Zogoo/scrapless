@@ -108,6 +108,7 @@ module Api
           opened_on: item.opened_on,
           snoozed_until: item.snoozed_until,
           high_risk: item.high_risk?,
+          safety_date: item.safety_date?,
           added_by_name: item.added_by_name
         }
       end

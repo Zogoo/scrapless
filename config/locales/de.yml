@@ -26,6 +26,12 @@ de:
     fine:
       one: "noch ungefähr einen Tag gut"
       other: "noch ungefähr %{count} Tage gut"
+    fine_weeks:
+      one: "noch ungefähr eine Woche gut"
+      other: "noch ungefähr %{count} Wochen gut"
+    fine_months:
+      one: "noch ungefähr einen Monat gut"
+      other: "noch ungefähr %{count} Monate gut"
     aging:
       one: "noch ungefähr ein Tag"
       other: "noch ungefähr %{count} Tage"
