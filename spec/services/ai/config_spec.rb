@@ -38,6 +38,16 @@ RSpec.describe Ai::Config do
 
     # An unpriced model would silently under-report cost, which is the one thing
     # this table exists to prevent.
+    # Groq was once pointed at Gemini's model names, so every Groq call 404'd
+    # and silently fell through to the next provider.
+    it "only ever defaults a provider to its own models" do
+      described_class::DEFAULT_MODELS.each do |provider, jobs|
+        jobs.each_value do |name|
+          expect(described_class::MODELS.fetch(name).provider).to eq(provider), "#{provider} -> #{name}"
+        end
+      end
+    end
+
     it "refuses a model that has no price attached" do
       ENV["AI_MODEL_RECEIPT_EXTRACT"] = "mystery-model"
 

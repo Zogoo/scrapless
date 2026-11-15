@@ -17,7 +17,10 @@ module Ai
     # tokens reasoning and returned nothing, for $0.0005 and 7.7 seconds.
     #
     # Extraction is not a reasoning task, so these are pinned to minimal effort.
-    Model = Struct.new(:name, :input_per_m, :output_per_m, :temperature, :token_param, :reasoning,
+    # `provider` is who serves the model. A provider's defaults must only name
+    # its own models — Groq was once pointed at Gemini's, so every Groq call
+    # 404'd and silently fell through to the next provider.
+    Model = Struct.new(:name, :provider, :input_per_m, :output_per_m, :temperature, :token_param, :reasoning,
                        keyword_init: true)
 
     Provider = Struct.new(:name, :base_url, :key_env, :structured_output, :transcription, keyword_init: true)
@@ -75,30 +78,40 @@ module Ai
       # --- OpenAI ---
       # Reads a receipt end to end. Doc 12 measures ~$0.0024 for a 30-line German
       # Bon: enough headroom over the nano tier on faded thermal paper.
-      "gpt-5-mini" => Model.new(name: "gpt-5-mini", input_per_m: 0.25, output_per_m: 2.00,
-                                temperature: nil, token_param: "max_completion_tokens",
-                                reasoning: "minimal"),
-      "gpt-5-nano" => Model.new(name: "gpt-5-nano", input_per_m: 0.05, output_per_m: 0.40,
-                                temperature: nil, token_param: "max_completion_tokens",
-                                reasoning: "minimal"),
-      "gpt-4o-mini" => Model.new(name: "gpt-4o-mini", input_per_m: 0.15, output_per_m: 0.60,
+      "gpt-5-mini" => Model.new(name: "gpt-5-mini", provider: "openai", input_per_m: 0.25, output_per_m: 2.00,
+                                temperature: nil, token_param: "max_completion_tokens", reasoning: "minimal"),
+      "gpt-5-nano" => Model.new(name: "gpt-5-nano", provider: "openai", input_per_m: 0.05, output_per_m: 0.40,
+                                temperature: nil, token_param: "max_completion_tokens", reasoning: "minimal"),
+      "gpt-4o-mini" => Model.new(name: "gpt-4o-mini", provider: "openai", input_per_m: 0.15, output_per_m: 0.60,
                                  temperature: 0, token_param: "max_tokens"),
 
       # --- Gemini ---
       # ⚠️ Prices follow doc 12's table. Google has repriced this tier before;
       # verify against current pricing before quoting these figures anywhere.
-      "gemini-2.5-flash" => Model.new(name: "gemini-2.5-flash", input_per_m: 0.15, output_per_m: 0.60,
+      "gemini-2.5-flash" => Model.new(name: "gemini-2.5-flash", provider: "gemini",
+                                      input_per_m: 0.15, output_per_m: 0.60,
                                       temperature: 0, token_param: "max_tokens"),
-      "gemini-2.5-flash-lite" => Model.new(name: "gemini-2.5-flash-lite", input_per_m: 0.10,
-                                           output_per_m: 0.40, temperature: 0, token_param: "max_tokens"),
-      "gemini-2.0-flash" => Model.new(name: "gemini-2.0-flash", input_per_m: 0.10, output_per_m: 0.40,
+      "gemini-2.5-flash-lite" => Model.new(name: "gemini-2.5-flash-lite", provider: "gemini",
+                                           input_per_m: 0.10, output_per_m: 0.40,
+                                           temperature: 0, token_param: "max_tokens"),
+      "gemini-2.0-flash" => Model.new(name: "gemini-2.0-flash", provider: "gemini",
+                                      input_per_m: 0.10, output_per_m: 0.40,
                                       temperature: 0, token_param: "max_tokens"),
 
+      # --- Groq ---
+      # Vision-capable, so one model covers every job here.
+      # ⚠️ Price from third-party trackers, not Groq's own page; verify before
+      # quoting it anywhere.
+      "meta-llama/llama-4-scout-17b-16e-instruct" => Model.new(
+        name: "meta-llama/llama-4-scout-17b-16e-instruct", provider: "groq",
+        input_per_m: 0.11, output_per_m: 0.34, temperature: 0, token_param: "max_tokens"
+      ),
+
       # --- Local / open weight. Marginal cost is zero; the GPU is the cost. ---
-      "qwen2.5vl:7b" => Model.new(name: "qwen2.5vl:7b", input_per_m: 0.0, output_per_m: 0.0,
+      "qwen2.5vl:7b" => Model.new(name: "qwen2.5vl:7b", provider: "local", input_per_m: 0.0, output_per_m: 0.0,
                                   temperature: 0, token_param: "max_tokens"),
-      "llama3.2-vision" => Model.new(name: "llama3.2-vision", input_per_m: 0.0, output_per_m: 0.0,
-                                     temperature: 0, token_param: "max_tokens")
+      "llama3.2-vision" => Model.new(name: "llama3.2-vision", provider: "local", input_per_m: 0.0,
+                                     output_per_m: 0.0, temperature: 0, token_param: "max_tokens")
     }.freeze
 
     TRANSCRIBE_USD_PER_MINUTE = 0.003
@@ -112,9 +125,8 @@ module Ai
       "gemini" => { receipt_extract: "gemini-2.5-flash", shelf_photo_extract: "gemini-2.5-flash",
                     text_parse: "gemini-2.5-flash-lite", memo_parse: "gemini-2.5-flash-lite",
                     recipe_suggest: "gemini-2.5-flash-lite" },
-      "groq" => { receipt_extract: "gemini-2.5-flash", shelf_photo_extract: "gemini-2.5-flash",
-                  text_parse: "gemini-2.5-flash-lite", memo_parse: "gemini-2.5-flash-lite",
-                  recipe_suggest: "gemini-2.5-flash-lite" },
+      "groq" => %i[receipt_extract shelf_photo_extract text_parse memo_parse recipe_suggest]
+                  .index_with("meta-llama/llama-4-scout-17b-16e-instruct"),
       "local" => { receipt_extract: "qwen2.5vl:7b", shelf_photo_extract: "qwen2.5vl:7b",
                    text_parse: "qwen2.5vl:7b", memo_parse: "qwen2.5vl:7b", recipe_suggest: "qwen2.5vl:7b" }
     }.freeze
