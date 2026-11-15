@@ -158,7 +158,7 @@
     "share_care": "Wer den Link hat, kann die Küche öffnen.",
     "qr_alt": "QR-Code, der diese Küche öffnet",
     "costs": "Was die KI gekostet hat",
-    "stub_mode": "Läuft offline mit Beispieldaten — kein API-Key gesetzt, also nichts abgerechnet.",
+    "stub_mode": "Beispielmodus: Fotos und Sprache nutzen Beispielantworten, es wird nichts Neues berechnet.",
     "calls": "Aufrufe",
     "spend": "Kosten",
     "total_spend": "Gesamt",
@@ -167,7 +167,16 @@
     "forget": "Kühlschrank vergessen",
     "forget_note": "Löscht alles, was wir zu diesem Kühlschrank haben — auf diesem Handy und auf jedem, das ihn geöffnet hat. Kein Zurück.",
     "forget_confirm": "Ja, alles löschen",
-    "failures": "{{count}} Aufrufe fehlgeschlagen — prüf den API-Key und das Guthaben."
+    "failures": "{{count}} Lesevorgänge haben nicht geklappt. Du kannst jederzeit tippen oder sagen, was du gekauft hast.",
+    "language": "Sprache",
+    "jobs": {
+      "receipt_extract": "Fotos lesen",
+      "shelf_photo_extract": "Lebensmittelfotos lesen",
+      "text_parse": "Neue Wörter verstehen",
+      "memo_parse": "Einkaufsliste",
+      "recipe_suggest": "Rezeptideen",
+      "transcribe": "Sprache"
+    }
   },
   "common": {
     "loading": "Einen Moment…",
@@ -197,5 +206,11 @@
     "froze": "{{name}} ist im Gefrierfach",
     "opened": "{{name}}: geöffnet",
     "snooze": "{{name}}: später nochmal"
+  },
+  "errors": {
+    "offline": "Du bist offline. Sobald du wieder online bist, geht es weiter.",
+    "too_big": "Das Foto war etwas groß. Versuch es noch einmal.",
+    "server": "Bei uns hat es kurz gehakt. Noch einmal?",
+    "generic": "Das hat nicht geklappt."
   }
 }

@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { DatePipe } from '@angular/common';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { ItemsService } from '../../core/services/items.service';
 import { InstallService } from '../../core/services/install.service';
@@ -25,6 +25,7 @@ export class Today implements OnInit {
   private readonly items = inject(ItemsService);
   private readonly router = inject(Router);
   private readonly undo = inject(UndoService);
+  private readonly translate = inject(TranslateService);
   protected readonly install = inject(InstallService);
 
   protected readonly today = this.items.today;
@@ -59,7 +60,7 @@ export class Today implements OnInit {
     this.items.load().subscribe({
       next: () => this.loading.set(false),
       error: (err: { message?: string }) => {
-        this.error.set(err.message ?? 'Could not load your kitchen.');
+        this.error.set(err.message ?? this.translate.instant('errors.generic'));
         this.loading.set(false);
       },
     });
@@ -74,7 +75,7 @@ export class Today implements OnInit {
         this.load();
       },
       error: (err: { message?: string }) => {
-        this.error.set(err.message ?? 'That did not save.');
+        this.error.set(err.message ?? this.translate.instant('errors.generic'));
         this.busyId.set(null);
       },
     });

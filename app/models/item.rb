@@ -13,7 +13,11 @@ class Item < ApplicationRecord
   belongs_to :capture, optional: true
   has_many :item_events, dependent: :destroy
 
-  validates :display_name, :canonical_name, presence: true
+  # Bounded like memo lines: a name is a few words, and an unbounded one breaks
+  # every list it appears in and is written into the dictionary on rename.
+  validates :display_name, :canonical_name, presence: true, length: { maximum: 120 }
+  validates :category, inclusion: { in: Categories::NAMES + %w[unknown] }
+  validates :quantity, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validates :storage, inclusion: { in: STORAGES }
   validates :state, inclusion: { in: STATES }
   validates :date_label_type, inclusion: { in: DATE_LABEL_TYPES }

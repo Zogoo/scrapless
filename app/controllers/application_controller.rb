@@ -46,9 +46,12 @@ class ApplicationController < ActionController::API
     render json: { error: I18n.t("record.not_found") }, status: :not_found
   end
 
+  # Validation text names columns ("Window end must not be before
+  # window_start") and is English whatever the locale. The person gets one
+  # plain sentence; the details go to the log for us.
   def render_unprocessable(exception)
-    render json: { error: exception.record&.errors&.full_messages || [ exception.message ] },
-           status: :unprocessable_content
+    Rails.logger.info("unprocessable: #{exception.record&.errors&.full_messages&.join('; ') || exception.message}")
+    render json: { error: I18n.t("record.invalid") }, status: :unprocessable_content
   end
 
   # Two phones changed the same food at once (lock_version). Nothing is lost:

@@ -5,12 +5,19 @@ de:
     unknown_kitchen: "Dieser Link öffnet keine Küche."
     too_many_joins: "Das sind viele Versuche. Probier es in einer Stunde nochmal."
   record:
+    invalid: "Das sah nicht richtig aus. Bitte prüfen und noch einmal versuchen."
     not_found: "Das haben wir nicht gefunden."
     conflict: "Jemand anderes hat das gerade geändert. Hier ist der neue Stand."
   items:
     unknown_outcome: "Das können wir mit Lebensmitteln nicht machen."
     not_undoable: "Das lässt sich nicht mehr rückgängig machen."
   capture:
+    rejected:
+      no_image: "Da war kein Foto dabei."
+      no_audio: "Wir haben nichts gehört."
+      no_text: "Schreib erst, was du gekauft hast."
+      too_large: "Die Datei ist zu groß. Versuch ein kleineres Foto."
+      too_long: "Das ist viel auf einmal. Versuch eine kürzere Liste."
     unreadable: "Der Bon war schwer zu lesen. Nochmal, oder sag mir einfach das Frische."
     partial_parse: "Wir haben übernommen, was wir kannten. Damit kamen wir nicht klar: %{list}"
     ai_unavailable: "Fotos lesen geht gerade nicht. Tippen oder sagen klappt aber immer."
@@ -42,6 +49,7 @@ de:
     check_it: "%{name} — lohnt sich zu prüfen"
     probably_gone: "wahrscheinlich schon weg"
   memo:
+    nothing_heard: "Wir haben nichts verstanden. Noch einmal?"
     reason:
       due: "meist alle %{cadence} Tage, zuletzt vor %{elapsed} Tagen gekauft"
       bought:

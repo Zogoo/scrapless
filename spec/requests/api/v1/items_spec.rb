@@ -190,6 +190,25 @@ RSpec.describe "Api::V1::Items", type: :request do
     end
   end
 
+  describe "PATCH /api/v1/items/:id input limits" do
+    let(:item) { create(:item, household: household) }
+
+    # Observed in QA: a 5,000-character name, category "weapons" and quantity
+    # -5 were all stored.
+    [
+      [ "an endless name", { display_name: "x" * 121 } ],
+      [ "a made-up category", { category: "weapons" } ],
+      [ "a negative quantity", { quantity: -5 } ]
+    ].each do |label, change|
+      it "refuses #{label}, in a plain sentence" do
+        patch "/api/v1/items/#{item.id}", params: { item: change }, headers: headers, as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["error"]).to eq(I18n.t("record.invalid"))
+      end
+    end
+  end
+
   describe "PATCH /api/v1/items/:id" do
     # Correction has to be cheaper than capture, and it has to pay for itself.
     it "teaches the dictionary so the same receipt line parses free next time" do

@@ -137,7 +137,6 @@ export interface RecipeSuggestions {
 
 export interface CostReport {
   mode: 'live' | 'stub';
-  models: Record<string, { name: string; input_usd_per_m: number; output_usd_per_m: number }>;
   transcribe_usd_per_minute: number;
   totals: {
     calls: number;
@@ -153,5 +152,4 @@ export interface CostReport {
     avg_ms: number;
     usd_per_call: number;
   }[];
-  this_fridge: { calls: number; failures: number; usd: number };
 }

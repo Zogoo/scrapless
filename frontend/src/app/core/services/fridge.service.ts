@@ -90,6 +90,13 @@ export class FridgeService {
       .pipe(tap((fridge) => this.accept(fridge)));
   }
 
+  /** Remembered on the kitchen too, for anything the server writes later. */
+  setLocale(locale: string): Observable<Fridge> {
+    return this.http
+      .patch<Fridge>(`${environment.apiUrl}/fridge`, { locale })
+      .pipe(tap((fridge) => this.accept(fridge)));
+  }
+
   /**
    * Opens a kitchen someone shared. The server trades the join code for the
    * bearer token, sets the ten-year cookie, and we store the token here. A

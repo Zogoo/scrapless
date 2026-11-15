@@ -158,7 +158,7 @@
     "share_care": "Anyone with this link can open the kitchen.",
     "qr_alt": "QR code that opens this kitchen",
     "costs": "What the AI has cost",
-    "stub_mode": "Running offline with sample data — no API key set, so nothing has been billed.",
+    "stub_mode": "Sample mode: photos and voice use example answers, so nothing new is billed.",
     "calls": "Calls",
     "spend": "Spend",
     "total_spend": "Total",
@@ -167,7 +167,16 @@
     "forget": "Forget this fridge",
     "forget_note": "Deletes everything we hold for this fridge, on this phone and on every phone that opened it. There is no undo.",
     "forget_confirm": "Yes, delete it all",
-    "failures": "{{count}} calls failed — check the API key and that the account has credit."
+    "failures": "{{count}} reads did not go through. You can always type or say what you got.",
+    "language": "Language",
+    "jobs": {
+      "receipt_extract": "Reading photos",
+      "shelf_photo_extract": "Reading food photos",
+      "text_parse": "Understanding new words",
+      "memo_parse": "Shopping list",
+      "recipe_suggest": "Recipe ideas",
+      "transcribe": "Voice"
+    }
   },
   "common": {
     "loading": "One moment…",
@@ -197,5 +206,11 @@
     "froze": "{{name}} is in the freezer",
     "opened": "{{name}}: opened",
     "snooze": "{{name}}: asked again later"
+  },
+  "errors": {
+    "offline": "You're offline. This will keep working when you're back.",
+    "too_big": "That photo was a bit big. Try again.",
+    "server": "Our end had a wobble. Try that again?",
+    "generic": "That did not go through."
   }
 }

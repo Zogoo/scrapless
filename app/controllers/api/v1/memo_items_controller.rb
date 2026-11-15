@@ -27,7 +27,7 @@ module Api
       def dictate
         transcript = params[:transcript].presence || transcribe
         return if performed?
-        return render json: { error: "nothing heard" }, status: :unprocessable_content if transcript.blank?
+        return render json: { error: I18n.t("memo.nothing_heard") }, status: :unprocessable_content if transcript.blank?
 
         names = extract_names(transcript)
         created = names.filter_map do |name|
@@ -86,7 +86,7 @@ module Api
 
       def transcribe
         upload = params[:audio]
-        return render json: { error: "no audio" }, status: :unprocessable_content if upload.blank?
+        return render json: { error: I18n.t("capture.rejected.no_audio") }, status: :unprocessable_content if upload.blank?
 
         data = upload.read
         Ai::Transcriber.call(io: StringIO.new(data), filename: upload.original_filename,

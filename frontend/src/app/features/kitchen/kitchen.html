@@ -32,6 +32,7 @@
                     <div class="edit">
                       <input
                         type="text"
+                        maxlength="120"
                         [value]="draftName()"
                         (input)="draftName.set($any($event.target).value)"
                         (keyup.enter)="saveEdit(line)"
