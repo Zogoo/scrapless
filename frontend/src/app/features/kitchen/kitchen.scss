@@ -57,13 +57,16 @@
  * The track is painted by the component (one band per pack); the browser's own
  * track and fill are hidden so that painting is the only thing you see.
  */
+/* 48px to hit, 10px to see: the track is painted only in the content box. */
 .level {
   appearance: none;
   display: block;
+  box-sizing: border-box;
   width: 100%;
-  height: 10px;
-  margin: 0.5rem 0 0.25rem;
-  padding: 0;
+  height: var(--tap);
+  margin: 0;
+  padding: calc((var(--tap) - 10px) / 2) 0;
+  background-clip: content-box;
   border: none;
   border-radius: 999px;
   min-height: 0;
@@ -107,12 +110,19 @@
 
 .name-btn {
   flex: 1;
-  min-height: 0;
+  min-height: var(--tap);
   padding: 0.25rem 0;
   border: none;
   background: transparent;
   text-align: left;
   font-weight: 500;
+}
+
+.step {
+  flex: none;
+  min-width: var(--tap);
+  padding: 0;
+  font-size: 1.25rem;
 }
 
 .headline {
@@ -146,20 +156,4 @@
 .lede {
   margin: 0.25rem 0 0;
   color: var(--muted);
-}
-
-.fab {
-  position: fixed;
-  right: 1rem;
-  bottom: calc(72px + 1rem + env(safe-area-inset-bottom));
-  width: 3.75rem;
-  height: 3.75rem;
-  border-radius: var(--radius);
-  border: none;
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-size: 2rem;
-  line-height: 1;
-  box-shadow: 0 4px 16px rgb(0 0 0 / 18%);
-  z-index: 5;
 }

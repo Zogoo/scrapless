@@ -99,7 +99,9 @@
     "title": "Kitchen",
     "empty_group": "Nothing in here.",
     "opened": "Opened it",
-    "how_much": "How much {{name}} is left"
+    "how_much": "How much {{name}} is left",
+    "less": "Less {{name}}",
+    "more": "More {{name}}"
   },
   "storage": {
     "fridge": "Fridge",
@@ -150,7 +152,8 @@
     "save": "Save",
     "delete": "Delete",
     "retry": "Try again",
-    "by": "by {{name}}"
+    "by": "by {{name}}",
+    "delete_named": "Delete {{name}}"
   },
   "join": {
     "title": "Open this kitchen",

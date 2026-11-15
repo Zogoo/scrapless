@@ -112,8 +112,17 @@ export class Kitchen implements OnInit {
 
   /** Committed on release, not on every pixel of the drag. */
   protected commitLevel(line: KitchenLine, event: Event): void {
-    const level = Number((event.target as HTMLInputElement).value);
+    this.setLevel(line, Number((event.target as HTMLInputElement).value));
+  }
+
+  /** The same change as the slider, for anyone who cannot or will not drag. */
+  protected step(line: KitchenLine, delta: number): void {
+    this.setLevel(line, Math.min(line.packs.length, Math.max(0, this.level(line) + delta)));
+  }
+
+  private setLevel(line: KitchenLine, level: number): void {
     const ids = line.packs.map((pack) => pack.id);
+    this.preview.set({ key: line.key, level });
 
     this.items.level(ids, level).subscribe({
       next: () => this.items.load().subscribe({ next: () => this.preview.set(null) }),

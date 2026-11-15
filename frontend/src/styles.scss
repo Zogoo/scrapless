@@ -43,6 +43,8 @@
   --radius: 16px;
   --radius-control: 14px;
   --tap: 48px;
+  --tabbar-h: 72px;
+  --fab-size: 3.75rem;
   --shadow: none;
 }
 
@@ -260,4 +262,34 @@ label.field {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* The add button on Today and the Kitchen. One definition, used by both. */
+.fab {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(var(--tabbar-h) + 1rem + env(safe-area-inset-bottom));
+  width: var(--fab-size);
+  height: var(--fab-size);
+  border-radius: var(--radius);
+  border: none;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 2rem;
+  line-height: 1;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 18%);
+  z-index: 5;
+}
+
+/* Present for keyboards and screen readers, invisible on screen. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }

@@ -29,7 +29,7 @@ describe('Today', () => {
         provideRouter([]),
         provideTranslateService(),
         // Reads matchMedia, which jsdom lacks; this test never installs anything.
-        { provide: InstallService, useValue: {} },
+        { provide: InstallService, useValue: { shouldOffer: () => false, available: () => false } },
       ],
     });
     screen = TestBed.createComponent(Today).componentInstance as unknown as TodayScreen;
@@ -58,5 +58,18 @@ describe('Today', () => {
     });
 
     expect(screen.error()).toBe('');
+  });
+
+  // Observed in QA: a failed load left today() null, and the template read
+  // today()!.use_first anyway — a TypeError and a blank screen under the error.
+  it('renders the failure, not a crash, when the first load fails', () => {
+    const fixture = TestBed.createComponent(Today);
+    fixture.detectChanges();
+    http
+      .match(`${environment.apiUrl}/items`)
+      .forEach((req) => req.error(new ProgressEvent('error')));
+
+    expect(() => fixture.detectChanges()).not.toThrow();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.error')).not.toBeNull();
   });
 });

@@ -2,6 +2,12 @@ main {
   min-height: 60vh;
 }
 
+/* The tab bar and the add button are fixed over the page, so the page must end
+   above both, or its last controls can never be scrolled into reach. */
+main.with-tabs {
+  padding-bottom: calc(var(--tabbar-h) + var(--fab-size) + 2rem + env(safe-area-inset-bottom));
+}
+
 /* restlos AppBar: mark + 22px wordmark + household, surface #FAFAFA, no elevation. */
 .app-bar {
   position: sticky;
@@ -91,7 +97,7 @@ main {
   grid-template-columns: repeat(4, 1fr);
   border-top: 1px solid var(--border);
   background: var(--surface);
-  min-height: 72px;
+  min-height: var(--tabbar-h);
   padding-bottom: env(safe-area-inset-bottom);
 
   a {

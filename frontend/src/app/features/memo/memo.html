@@ -80,7 +80,7 @@
             type="button"
             class="ghost"
             (click)="remove(item.id)"
-            [attr.aria-label]="'common.delete' | translate"
+            [attr.aria-label]="'common.delete_named' | translate: { name: item.name }"
           >
             ✕
           </button>

@@ -99,7 +99,9 @@
     "title": "Küche",
     "empty_group": "Hier ist nichts.",
     "opened": "Geöffnet",
-    "how_much": "Wie viel {{name}} noch da ist"
+    "how_much": "Wie viel {{name}} noch da ist",
+    "less": "Weniger {{name}}",
+    "more": "Mehr {{name}}"
   },
   "storage": {
     "fridge": "Kühlschrank",
@@ -150,7 +152,8 @@
     "save": "Speichern",
     "delete": "Löschen",
     "retry": "Nochmal",
-    "by": "von {{name}}"
+    "by": "von {{name}}",
+    "delete_named": "{{name}} löschen"
   },
   "join": {
     "title": "Diese Küche öffnen",
