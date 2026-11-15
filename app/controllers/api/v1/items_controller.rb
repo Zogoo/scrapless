@@ -29,17 +29,7 @@ module Api
       # Correction has to be cheaper than capture (doc 2 §2.9 rule 4), and every
       # correction teaches the dictionary so the same line parses free next time.
       def update
-        item = current_household.items.find(params[:id])
-        item.update!(item_params)
-
-        if item.raw_text.present? && item.saved_change_to_attribute?(:display_name)
-          ProductAlias.record_correction!(
-            household: current_household, raw_text: item.raw_text, canonical_name: item.canonical_name,
-            category: item.category, merchant: item.capture&.merchant
-          )
-        end
-
-        log_event(item, "corrected", changed: item.previous_changes.keys - %w[updated_at lock_version])
+        item = Items::Correct.call(item: current_household.items.find(params[:id]), changes: item_params)
         render json: item_json(item.reload)
       end
 
