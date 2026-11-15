@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { environment } from '../../../environments/environment';
 import { localeInterceptor } from '../interceptors/locale.interceptor';
 import { LocaleService } from './locale.service';
 
@@ -47,8 +48,10 @@ describe('LocaleService', () => {
   it('tells the server which language to answer in', () => {
     locale.use('de');
 
-    TestBed.inject(HttpClient).get('/api/v1/items').subscribe();
+    TestBed.inject(HttpClient).get(`${environment.apiUrl}/items`).subscribe();
 
-    expect(http.expectOne('/api/v1/items').request.headers.get('X-Locale')).toBe('de');
+    expect(http.expectOne(`${environment.apiUrl}/items`).request.headers.get('X-Locale')).toBe(
+      'de',
+    );
   });
 });

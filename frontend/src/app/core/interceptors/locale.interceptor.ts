@@ -2,6 +2,7 @@ import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 
 import { LocaleService } from '../services/locale.service';
+import { isApiRequest } from './is-api';
 
 /**
  * Tells the server which language to answer in. Without it every sentence the
@@ -9,4 +10,6 @@ import { LocaleService } from '../services/locale.service';
  * whatever language the app was showing.
  */
 export const localeInterceptor: HttpInterceptorFn = (req, next) =>
-  next(req.clone({ setHeaders: { 'X-Locale': inject(LocaleService).current() } }));
+  isApiRequest(req)
+    ? next(req.clone({ setHeaders: { 'X-Locale': inject(LocaleService).current() } }))
+    : next(req);

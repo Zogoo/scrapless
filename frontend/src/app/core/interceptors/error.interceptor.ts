@@ -3,6 +3,8 @@ import { inject } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { catchError, throwError } from 'rxjs';
 
+import { isApiRequest } from './is-api';
+
 /**
  * Turns a transport failure into a sentence a person can act on.
  *
@@ -10,6 +12,8 @@ import { catchError, throwError } from 'rxjs';
  * below threshold" in favour of "that one was hard to read".
  */
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
+  if (!isApiRequest(req)) return next(req);
+
   const translate = inject(TranslateService);
 
   return next(req).pipe(
