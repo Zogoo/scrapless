@@ -124,12 +124,16 @@ RSpec.describe Ai::Client do
       }.to raise_error(described_class::Unavailable, /non-JSON/)
     end
 
-    it "turns a network failure into its own error class, not a raw socket error" do
-      allow(Net::HTTP).to receive(:start).and_raise(Errno::ECONNREFUSED)
+    # Each of these is the provider, not the photo, so the router must move on.
+    [ Errno::ECONNREFUSED, Errno::ECONNRESET, IO::TimeoutError, Net::OpenTimeout, Net::ReadTimeout,
+      EOFError, SocketError, OpenSSL::SSL::SSLError ].each do |failure|
+      it "turns #{failure} into Unavailable, not a raw socket error" do
+        allow(Net::HTTP).to receive(:start).and_raise(failure)
 
-      expect {
-        described_class.new.json_completion(purpose: :text_parse, messages: [], schema: {})
-      }.to raise_error(described_class::Error, /transport/)
+        expect {
+          described_class.new.json_completion(purpose: :text_parse, messages: [], schema: {})
+        }.to raise_error(described_class::Unavailable, /transport/)
+      end
     end
   end
 

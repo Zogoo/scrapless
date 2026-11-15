@@ -189,7 +189,10 @@ module Ai
     rescue JSON::ParserError
       # A 200 that is not JSON is a proxy or an outage page, not an answer.
       raise Unavailable, "non-JSON response body"
-    rescue Net::OpenTimeout, Net::ReadTimeout, SocketError, Errno::ECONNREFUSED => e
+    # Every way the wire can fail, by family rather than by the four classes
+    # first seen: a connect timeout on Ruby 3.4 is IO::TimeoutError, and a reset
+    # is Errno::ECONNRESET. Missing one escaped as a 500 and skipped the fallback.
+    rescue Timeout::Error, IOError, SocketError, SystemCallError, OpenSSL::SSL::SSLError => e
       raise Unavailable, "transport: #{e.class}"
     end
 
