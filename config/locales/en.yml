@@ -6,6 +6,10 @@ en:
     too_many_joins: "That is a lot of tries. Give it an hour."
   record:
     not_found: "We couldn't find that."
+    conflict: "Someone else just changed that. Here's the latest."
+  items:
+    unknown_outcome: "That isn't something we can do with food."
+    not_undoable: "That one can't be undone any more."
   capture:
     unreadable: "That one was hard to read. Want to try again, or just tell us the fresh stuff?"
     partial_parse: "We added what we recognised. Couldn't make sense of: %{list}"

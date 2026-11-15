@@ -101,7 +101,8 @@
     "opened": "Opened it",
     "how_much": "How much {{name}} is left",
     "less": "Less {{name}}",
-    "more": "More {{name}}"
+    "more": "More {{name}}",
+    "remove": "Remove from kitchen"
   },
   "storage": {
     "fridge": "Fridge",
@@ -163,5 +164,14 @@
     "opening": "Opening…",
     "invalid": "That link doesn't open a kitchen.",
     "too_many": "That is a lot of tries. Give it an hour."
+  },
+  "undo": {
+    "action": "Undo",
+    "used": "{{name}}: used",
+    "wasted": "Thanks, noted.",
+    "partial": "{{name}}: half left",
+    "froze": "{{name}} is in the freezer",
+    "opened": "{{name}}: opened",
+    "snooze": "{{name}}: asked again later"
   }
 }

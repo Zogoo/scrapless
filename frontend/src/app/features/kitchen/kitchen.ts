@@ -4,6 +4,7 @@ import { forkJoin } from 'rxjs';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { ItemsService } from '../../core/services/items.service';
+import { UndoService } from '../../core/services/undo.service';
 import { Outcome, ScoredItem, Storage } from '../../core/models';
 import { KitchenLine, formatLevel, toLines, trackBackground } from './kitchen-line';
 
@@ -21,6 +22,7 @@ import { KitchenLine, formatLevel, toLines, trackBackground } from './kitchen-li
 export class Kitchen implements OnInit {
   private readonly items = inject(ItemsService);
   private readonly router = inject(Router);
+  private readonly undo = inject(UndoService);
 
   protected readonly loading = signal(true);
   protected readonly error = signal('');
@@ -126,14 +128,35 @@ export class Kitchen implements OnInit {
 
     this.items.level(ids, level).subscribe({
       next: () => this.items.load().subscribe({ next: () => this.preview.set(null) }),
-      error: (err: { message?: string }) => {
-        this.preview.set(null);
-        this.error.set(err.message ?? '');
-      },
+      error: (err: { message?: string }) => this.fail(err),
     });
   }
 
   protected resolve(item: ScoredItem, outcome: Outcome): void {
-    this.items.resolve(item.id, outcome).subscribe({ next: () => this.load() });
+    this.items.resolve(item.id, outcome).subscribe({
+      next: () => {
+        this.undo.showOutcome(item, outcome);
+        this.load();
+      },
+      error: (err: { message?: string }) => this.fail(err),
+    });
+  }
+
+  /** For a line read wrong, not eaten or binned: it is not waste, so it is deleted. */
+  protected removeLine(line: KitchenLine): void {
+    forkJoin(line.packs.map((pack) => this.items.remove(pack.id))).subscribe({
+      next: () => {
+        this.editingKey.set(null);
+        this.load();
+      },
+      error: (err: { message?: string }) => this.fail(err),
+    });
+  }
+
+  /** Say what went wrong, then show what is true now — another phone may have won. */
+  private fail(err: { message?: string }): void {
+    this.preview.set(null);
+    this.load();
+    this.error.set(err.message ?? '');
   }
 }

@@ -4,6 +4,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { filter } from 'rxjs/operators';
 
 import { FridgeService } from './core/services/fridge.service';
+import { UndoService } from './core/services/undo.service';
 import { environment } from '../environments/environment';
 
 @Component({
@@ -14,6 +15,7 @@ import { environment } from '../environments/environment';
 })
 export class App implements OnInit {
   protected readonly fridge = inject(FridgeService);
+  protected readonly undo = inject(UndoService);
   private readonly router = inject(Router);
   private readonly translate = inject(TranslateService);
 

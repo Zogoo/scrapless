@@ -85,11 +85,19 @@ export class Memo implements OnInit, OnDestroy {
   }
 
   protected toggle(id: number, done: boolean): void {
-    this.memo.setDone(id, done).subscribe({ next: () => this.refresh() });
+    this.memo
+      .setDone(id, done)
+      .subscribe({ next: () => this.refresh(), error: (err) => this.fail(err) });
   }
 
   protected remove(id: number): void {
-    this.memo.remove(id).subscribe({ next: () => this.refresh() });
+    this.memo.remove(id).subscribe({ next: () => this.refresh(), error: (err) => this.fail(err) });
+  }
+
+  /** Show what went wrong, and the list as it really is now. */
+  private fail(err: { message?: string }): void {
+    this.error.set(err.message ?? '');
+    this.refresh();
   }
 
   /**

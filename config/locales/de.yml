@@ -6,6 +6,10 @@ de:
     too_many_joins: "Das sind viele Versuche. Probier es in einer Stunde nochmal."
   record:
     not_found: "Das haben wir nicht gefunden."
+    conflict: "Jemand anderes hat das gerade geändert. Hier ist der neue Stand."
+  items:
+    unknown_outcome: "Das können wir mit Lebensmitteln nicht machen."
+    not_undoable: "Das lässt sich nicht mehr rückgängig machen."
   capture:
     unreadable: "Der Bon war schwer zu lesen. Nochmal, oder sag mir einfach das Frische."
     partial_parse: "Wir haben übernommen, was wir kannten. Damit kamen wir nicht klar: %{list}"

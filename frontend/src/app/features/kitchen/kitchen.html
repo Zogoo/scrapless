@@ -42,6 +42,9 @@
                       <button type="button" class="ghost" (click)="editingKey.set(null)">
                         {{ 'common.cancel' | translate }}
                       </button>
+                      <button type="button" class="ghost danger" (click)="removeLine(line)">
+                        {{ 'kitchen.remove' | translate }}
+                      </button>
                     </div>
                   } @else {
                     <div class="row">
@@ -120,6 +123,9 @@
                           {{ 'kitchen.opened' | translate }}
                         </button>
                       }
+                      <button type="button" class="quiet" (click)="resolve(line.first, 'wasted')">
+                        🗑 {{ 'today.gone' | translate }}
+                      </button>
                     </div>
                   }
                 </li>

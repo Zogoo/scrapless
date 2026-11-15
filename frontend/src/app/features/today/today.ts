@@ -5,6 +5,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { ItemsService } from '../../core/services/items.service';
 import { InstallService } from '../../core/services/install.service';
+import { UndoService } from '../../core/services/undo.service';
 import { Outcome, ScoredItem } from '../../core/models';
 
 /**
@@ -23,6 +24,7 @@ import { Outcome, ScoredItem } from '../../core/models';
 export class Today implements OnInit {
   private readonly items = inject(ItemsService);
   private readonly router = inject(Router);
+  private readonly undo = inject(UndoService);
   protected readonly install = inject(InstallService);
 
   protected readonly today = this.items.today;
@@ -68,6 +70,7 @@ export class Today implements OnInit {
     this.items.resolve(item.id, outcome).subscribe({
       next: () => {
         this.busyId.set(null);
+        this.undo.showOutcome(item, outcome);
         this.load();
       },
       error: (err: { message?: string }) => {

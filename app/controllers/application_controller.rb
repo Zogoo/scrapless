@@ -7,6 +7,7 @@ class ApplicationController < ActionController::API
 
   rescue_from ActiveRecord::RecordNotFound, with: :render_not_found
   rescue_from ActiveRecord::RecordInvalid, with: :render_unprocessable
+  rescue_from ActiveRecord::StaleObjectError, with: :render_conflict
   rescue_from Ai::Client::Error, with: :render_unreadable
   rescue_from Ai::Client::Unavailable, with: :render_ai_unavailable
 
@@ -48,6 +49,12 @@ class ApplicationController < ActionController::API
   def render_unprocessable(exception)
     render json: { error: exception.record&.errors&.full_messages || [ exception.message ] },
            status: :unprocessable_content
+  end
+
+  # Two phones changed the same food at once (lock_version). Nothing is lost:
+  # the second change was refused, and the client reloads to show the first.
+  def render_conflict
+    render json: { error: I18n.t("record.conflict"), retryable: true }, status: :conflict
   end
 
   # The model read the photo and could not make sense of it. Retaking it is

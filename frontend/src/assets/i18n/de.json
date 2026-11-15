@@ -101,7 +101,8 @@
     "opened": "Geöffnet",
     "how_much": "Wie viel {{name}} noch da ist",
     "less": "Weniger {{name}}",
-    "more": "Mehr {{name}}"
+    "more": "Mehr {{name}}",
+    "remove": "Aus der Küche entfernen"
   },
   "storage": {
     "fridge": "Kühlschrank",
@@ -163,5 +164,14 @@
     "opening": "Wird geöffnet…",
     "invalid": "Dieser Link öffnet keine Küche.",
     "too_many": "Das sind viele Versuche. Probier es in einer Stunde nochmal."
+  },
+  "undo": {
+    "action": "Rückgängig",
+    "used": "{{name}}: verbraucht",
+    "wasted": "Danke — notiert.",
+    "partial": "{{name}}: Hälfte übrig",
+    "froze": "{{name}} ist im Gefrierfach",
+    "opened": "{{name}}: geöffnet",
+    "snooze": "{{name}}: später nochmal"
   }
 }

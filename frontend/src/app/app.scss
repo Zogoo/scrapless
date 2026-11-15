@@ -145,3 +145,32 @@ main.with-tabs {
     }
   }
 }
+
+/* Above the tab bar, clear of the add button, never over the page's last row
+   for long: it leaves by itself. */
+.toast {
+  position: fixed;
+  left: 1rem;
+  right: calc(1rem + var(--fab-size) + 0.75rem);
+  bottom: calc(var(--tabbar-h) + 1rem + env(safe-area-inset-bottom));
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 30rem;
+  padding: 0.25rem 0.25rem 0.25rem 1rem;
+  border-radius: var(--radius-control);
+  background: var(--ink);
+  color: var(--bg);
+
+  span {
+    flex: 1;
+  }
+
+  button {
+    border: none;
+    background: transparent;
+    color: var(--accent-container);
+    font-weight: 700;
+  }
+}
