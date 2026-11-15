@@ -53,6 +53,7 @@ export class Today implements OnInit {
 
   protected load(): void {
     this.loading.set(true);
+    this.error.set(''); // a retry that works must not keep the old failure on screen
     this.items.load().subscribe({
       next: () => this.loading.set(false),
       error: (err: { message?: string }) => {
