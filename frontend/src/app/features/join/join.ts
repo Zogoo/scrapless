@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -17,7 +17,13 @@ import { FridgeService, joinCodeFromLocation } from '../../core/services/fridge.
     <div class="join">
       <div class="hero">
         <span class="mark" aria-hidden="true">🧊</span>
-        <h1>{{ 'join.title' | translate }}</h1>
+        <h1>
+          @if (kitchenName(); as name) {
+            {{ 'join.title_named' | translate: { name } }}
+          } @else {
+            {{ 'join.title' | translate }}
+          }
+        </h1>
         <p class="lede">{{ 'join.lede' | translate }}</p>
       </div>
 
@@ -31,7 +37,7 @@ import { FridgeService, joinCodeFromLocation } from '../../core/services/fridge.
         <p class="error">{{ error() }}</p>
       }
 
-      @if (code) {
+      @if (kitchenName()) {
         <button type="button" class="primary" [disabled]="busy()" (click)="open()">
           {{ (busy() ? 'join.opening' : 'join.open') | translate }}
         </button>
@@ -39,7 +45,7 @@ import { FridgeService, joinCodeFromLocation } from '../../core/services/fridge.
     </div>
   `,
 })
-export class Join {
+export class Join implements OnInit {
   private readonly fridge = inject(FridgeService);
   private readonly router = inject(Router);
   private readonly translate = inject(TranslateService);
@@ -52,6 +58,17 @@ export class Join {
   protected readonly switching = this.fridge.isKnown();
   protected readonly busy = signal(false);
   protected readonly error = signal('');
+  /** Known only once the server recognised the code; until then, no button. */
+  protected readonly kitchenName = signal('');
+
+  ngOnInit(): void {
+    if (!this.code) return;
+
+    this.fridge.preview(this.code).subscribe({
+      next: ({ name }) => this.kitchenName.set(name),
+      error: (err: { status?: number }) => this.failed(err),
+    });
+  }
 
   protected open(): void {
     if (!this.code || this.busy()) return;
@@ -61,11 +78,15 @@ export class Join {
 
     this.fridge.join(this.code).subscribe({
       next: () => void this.router.navigate(['/today']),
-      error: (err: { status?: number; message?: string }) => {
-        const key = err.status === 429 ? 'join.too_many' : 'join.invalid';
-        this.error.set(this.translate.instant(key));
+      error: (err: { status?: number }) => {
+        this.failed(err);
         this.busy.set(false);
       },
     });
+  }
+
+  private failed(err: { status?: number }): void {
+    const key = err.status === 429 ? 'join.too_many' : 'join.invalid';
+    this.error.set(this.translate.instant(key));
   }
 }

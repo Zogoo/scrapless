@@ -40,6 +40,15 @@
     </button>
   </section>
 
+  @if (previous(); as back) {
+    <section class="block">
+      <h2>{{ 'settings.other_kitchen' | translate }}</h2>
+      <button type="button" class="wide" (click)="switchBack()">
+        {{ 'settings.switch_back' | translate: { name: back.name } }}
+      </button>
+    </section>
+  }
+
   <section class="block">
     <h2 id="language-head">{{ 'settings.language' | translate }}</h2>
     <div class="choices" role="group" aria-labelledby="language-head">

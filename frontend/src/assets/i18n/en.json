@@ -32,7 +32,8 @@
     "calm_body": "Your kitchen's in good shape.",
     "empty_title": "Nothing in here yet.",
     "empty_body": "Next time you shop, point the camera at the receipt.",
-    "add": "Add food"
+    "add": "Add food",
+    "first_capture": "Add what you have now"
   },
   "capture": {
     "title": "What did you get?",
@@ -176,7 +177,9 @@
       "memo_parse": "Shopping list",
       "recipe_suggest": "Recipe ideas",
       "transcribe": "Voice"
-    }
+    },
+    "other_kitchen": "Your other kitchen",
+    "switch_back": "Back to {{name}}"
   },
   "common": {
     "loading": "One moment…",
@@ -196,7 +199,8 @@
     "open": "Open this kitchen",
     "opening": "Opening…",
     "invalid": "That link doesn't open a kitchen.",
-    "too_many": "That is a lot of tries. Give it an hour."
+    "too_many": "That is a lot of tries. Give it an hour.",
+    "title_named": "Open {{name}}?"
   },
   "undo": {
     "action": "Undo",

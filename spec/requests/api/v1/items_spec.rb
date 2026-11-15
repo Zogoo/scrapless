@@ -51,6 +51,15 @@ RSpec.describe "Api::V1::Items", type: :request do
       expect(headline.downcase).not_to include("expire")
     end
 
+    it "tells a brand-new kitchen it has nothing captured yet" do
+      get "/api/v1/items", headers: headers
+      expect(response.parsed_body["has_captured"]).to be(false)
+
+      create(:capture, household: household)
+      get "/api/v1/items", headers: headers
+      expect(response.parsed_body["has_captured"]).to be(true)
+    end
+
     it "shows only this fridge's food" do
       create(:item, household: create(:household), display_name: "Someone else's")
 

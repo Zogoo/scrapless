@@ -159,6 +159,39 @@ RSpec.describe "Api::V1::Fridges", type: :request do
     end
   end
 
+  describe "POST /api/v1/fridge/preview" do
+    let(:shared) { create(:household, name: "Quiet Kitchen") }
+
+    it "names the kitchen behind a code, and hands out nothing else" do
+      post "/api/v1/fridge/preview", params: { join_code: shared.join_code }, as: :json
+
+      expect(response.parsed_body).to eq("name" => "Quiet Kitchen")
+      expect(cookies[:scrapless_fridge]).to be_blank
+    end
+
+    it "says plainly when a code opens nothing" do
+      post "/api/v1/fridge/preview", params: { join_code: "not-a-code" }, as: :json
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    # Otherwise preview would be a free way to test guessed codes.
+    it "counts against the same limit as joining" do
+      30.times { post "/api/v1/fridge/join", params: { join_code: "x" }, as: :json }
+      post "/api/v1/fridge/preview", params: { join_code: shared.join_code }, as: :json
+
+      expect(response).to have_http_status(:too_many_requests)
+    end
+
+    # The two limiters used to share one counter, so joins blocked creation.
+    it "does not let joins use up the fridge-creation limit" do
+      12.times { post "/api/v1/fridge/join", params: { join_code: "x" }, as: :json }
+      post "/api/v1/fridge", params: {}, as: :json
+
+      expect(response).to have_http_status(:created)
+    end
+  end
+
   describe "DELETE /api/v1/fridge" do
     it "erases the household outright" do
       household = create(:household)

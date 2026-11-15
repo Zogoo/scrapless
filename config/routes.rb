@@ -6,6 +6,7 @@ Rails.application.routes.draw do
       # Identity without an account: one POST creates the fridge.
       resource :fridge, only: %i[create show update destroy], controller: "fridges" do
         post :join
+        post :preview
       end
 
       resources :items, only: %i[index show update destroy] do

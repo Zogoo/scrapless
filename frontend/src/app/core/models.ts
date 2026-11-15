@@ -54,6 +54,7 @@ export interface Today {
   probably_gone: ScoredItem[];
   sweep_count: number;
   as_of: string;
+  has_captured: boolean;
 }
 
 export interface CapturedItem {

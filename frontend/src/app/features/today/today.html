@@ -38,6 +38,11 @@
       </picture>
       <h2>{{ 'today.empty_title' | translate }}</h2>
       <p>{{ 'today.empty_body' | translate }}</p>
+      @if (!today()?.has_captured) {
+        <button type="button" class="primary" (click)="capture()">
+          {{ 'today.first_capture' | translate }}
+        </button>
+      }
     </div>
   } @else if (today()) {
     @if (today()!.use_first.length > 0) {

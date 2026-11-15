@@ -8,6 +8,13 @@ import { Fridge } from '../models';
 
 const TOKEN_KEY = 'scrapless_token';
 const FRIDGE_KEY = 'scrapless_fridge';
+/** The kitchen this phone was on before it joined another, so it can go back. */
+const PREVIOUS_KEY = 'scrapless_previous';
+
+export interface PreviousKitchen {
+  token: string;
+  name: string;
+}
 
 /**
  * The join code sits in the fragment so opening the link does not send it to
@@ -103,9 +110,61 @@ export class FridgeService {
    * phone that already had a kitchen switches to this one.
    */
   join(code: string): Observable<Fridge> {
-    return this.http
-      .post<Fridge>(`${environment.apiUrl}/fridge/join`, { join_code: code })
-      .pipe(tap((fridge) => this.accept(fridge)));
+    const leaving = this.current();
+    return this.http.post<Fridge>(`${environment.apiUrl}/fridge/join`, { join_code: code }).pipe(
+      tap((fridge) => {
+        // Switching used to strand the old kitchen unless its link was saved.
+        if (leaving && leaving.id !== fridge.id) this.remember(leaving);
+        this.accept(fridge);
+      }),
+    );
+  }
+
+  /** The kitchen behind a share code, by name, without opening it. */
+  preview(code: string): Observable<{ name: string }> {
+    return this.http.post<{ name: string }>(`${environment.apiUrl}/fridge/preview`, {
+      join_code: code,
+    });
+  }
+
+  previous(): PreviousKitchen | null {
+    try {
+      return JSON.parse(localStorage.getItem(PREVIOUS_KEY) ?? 'null') as PreviousKitchen | null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Goes back to the kitchen this phone left, and remembers the one it is
+   * leaving, so the two can be swapped back and forth. The server re-stamps
+   * the cookie from the bearer token on the very next request.
+   */
+  switchBack(): Observable<Fridge | null> {
+    const back = this.previous();
+    const leaving = this.current();
+    if (!back) return of(null);
+
+    try {
+      if (leaving) this.remember(leaving);
+      else localStorage.removeItem(PREVIOUS_KEY);
+      localStorage.setItem(TOKEN_KEY, back.token);
+    } catch {
+      return of(null);
+    }
+    this.current.set(null);
+    return this.restore();
+  }
+
+  private remember(fridge: Fridge): void {
+    try {
+      localStorage.setItem(
+        PREVIOUS_KEY,
+        JSON.stringify({ token: fridge.token, name: fridge.name }),
+      );
+    } catch {
+      /* nowhere to keep it; the old kitchen's own link still works */
+    }
   }
 
   forget(): Observable<void> {

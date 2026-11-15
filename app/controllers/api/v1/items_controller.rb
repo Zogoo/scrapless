@@ -26,6 +26,9 @@ module Api
           fine_for_now: rest.reject { |s| s.phase == "ghost" }.map { |s| scored_json(s) },
           probably_gone: rest.select { |s| s.phase == "ghost" }.map { |s| scored_json(s) },
           sweep_count: scored.count(&:ambiguous?),
+          # A kitchen that has never captured anything gets one way in from
+          # Today itself (doc 2 §2.7: first inventory inside 180 seconds).
+          has_captured: current_household.captures.exists?,
           as_of: Date.current
         }
       end

@@ -65,6 +65,15 @@ export class Settings implements OnInit {
   /** Each language named in itself, as language pickers do. */
   protected readonly languageNames: Record<string, string> = { en: 'English', de: 'Deutsch' };
 
+  protected readonly previous = signal(this.fridge.previous());
+
+  protected switchBack(): void {
+    this.fridge.switchBack().subscribe({
+      next: () => void this.router.navigate(['/today']),
+      error: () => void this.router.navigate(['/today']),
+    });
+  }
+
   protected chooseLocale(code: string): void {
     this.locale.use(code);
     this.fridge.setLocale(code).subscribe();
