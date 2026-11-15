@@ -21,20 +21,27 @@ class ProductAlias < ApplicationRecord
   # Exact match first, then the same words in any order — enough to catch
   # "BROKKOLI 500G" against a stored "brokkoli" without a fuzzy-match library.
   #
-  # Takes several spellings of one line (the raw text and the model's name) and
-  # tries every exact match before any fuzzy one. Trying them one at a time let
-  # a fuzzy hit on "2 milch" ("H-Milch") beat the exact hit on "Milch".
+  # Takes several spellings of one line — the raw text first, it is the
+  # evidence; then the model's name — and tries every exact match before any
+  # fuzzy one. Each is also tried without its quantities, because tills print
+  # them inline: "H-MILCH 3,5%" is H-Milch and "2 milch" is Milch, exactly.
+  # (One spelling at a time, a fuzzy "2 milch" once beat the exact "Milch";
+  # names before raw text, "Milk" once beat the receipt's "H-MILCH".)
   #
   # The kitchen's own corrections are tried before the shared dictionary at
   # each step, but an exact shared hit still beats a fuzzy household one.
   def self.lookup(texts, merchant: nil, household: nil)
-    keys = Array(texts).map { |text| normalize_key(text) }.reject(&:blank?).uniq
+    keys = Array(texts).flat_map { |text| [ normalize_key(text), without_quantities(normalize_key(text)) ] }
+                       .reject(&:blank?).uniq
     return nil if keys.empty?
 
     layers = [ household && where(household: household), shared ].compact
     first_hit(layers, keys) { |layer, key| layer.exact_match(key, merchant) } ||
       first_hit(layers, keys) { |layer, key| layer.token_match(key) }
   end
+
+  # "h milch 3 5" -> "h milch"; "babyspinat 260g" -> "babyspinat".
+  def self.without_quantities(key) = key.split.grep_v(/\d/).join(" ")
 
   def self.first_hit(layers, keys)
     layers.each do |layer|

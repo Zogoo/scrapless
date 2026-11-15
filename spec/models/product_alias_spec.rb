@@ -43,11 +43,20 @@ RSpec.describe ProductAlias do
       expect(described_class.lookup([ "2 milch", "Milch" ]).canonical_name).to eq("Milch")
     end
 
-    it "breaks a fuzzy tie by length, not by row order" do
+    # Observed in the second QA pass: "H-MILCH 3,5%" became Milk, because the
+    # model's name matched exactly before the receipt line did.
+    it "reads a receipt line with its quantity attached exactly, before the model's name" do
+      create(:product_alias, raw_text: "h milch", canonical_name: "H-Milch", category: "dairy")
+      create(:product_alias, raw_text: "milk", canonical_name: "Milk", category: "dairy")
+
+      expect(described_class.lookup([ "H-MILCH 3,5%", "Milk" ]).canonical_name).to eq("H-Milch")
+    end
+
+    it "breaks a fuzzy tie by unexplained words, not by row order" do
       create(:product_alias, raw_text: "h milch", canonical_name: "H-Milch", category: "dairy")
       create(:product_alias, raw_text: "milch", canonical_name: "Milch", category: "dairy")
 
-      expect(described_class.lookup("milch 1l").canonical_name).to eq("Milch")
+      expect(described_class.lookup("milch frisch").canonical_name).to eq("Milch")
     end
 
     context "with a kitchen's own corrections" do
