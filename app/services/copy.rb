@@ -42,5 +42,7 @@ module Copy
   # emoji such as 🍽️ and ❄️, which need the variation selector to render.
   LEADING_EMOJI = /\A\p{Extended_Pictographic}\uFE0F?\s*/
 
-  def bare_name(item) = item.display_name.sub(LEADING_EMOJI, "")
+  def bare_name(item) = bare(item.display_name)
+
+  def bare(text) = text.to_s.sub(LEADING_EMOJI, "")
 end

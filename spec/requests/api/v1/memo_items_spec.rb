@@ -82,13 +82,51 @@ RSpec.describe "Api::V1::MemoItems", type: :request do
 
     it "ranks what this household actually buys above the generic staples" do
       [ 21, 14, 7 ].each do |days_ago|
-        create(:item, household: household, canonical_name: "hafermilch",
+        create(:item, household: household, canonical_name: "hafermilch", display_name: "Hafermilch",
                       acquired_on: Date.current - days_ago)
       end
 
       get "/api/v1/memo/suggestions", headers: headers
 
       expect(response.parsed_body.first["name"]).to eq("Hafermilch")
+    end
+  end
+
+  describe "QA fixes" do
+    # Two phones adding the same thing to one shared list.
+    it "keeps one open line per name" do
+      post "/api/v1/memo", params: { name: "gouda" }, headers: headers
+      post "/api/v1/memo", params: { name: "Gouda" }, headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(household.memo_items.pluck(:name)).to eq([ "Gouda" ])
+    end
+
+    it "does not add a spoken line that is already open" do
+      create(:memo_item, household: household, name: "Milch")
+
+      post "/api/v1/memo/dictate", params: { transcript: "milch und brot" }, headers: headers
+
+      expect(household.memo_items.order(:id).pluck(:name)).to eq(%w[Milch Brot])
+    end
+
+    it "clears every bought line in one go, and only those" do
+      create(:memo_item, household: household, name: "Eier", done: true)
+      create(:memo_item, household: household, name: "Brot")
+
+      delete "/api/v1/memo/clear_done", headers: headers
+
+      expect(response).to have_http_status(:no_content)
+      expect(household.memo_items.pluck(:name)).to eq([ "Brot" ])
+    end
+
+    it "stops suggesting a dismissed name" do
+      create(:item, household: household, canonical_name: "thing17", display_name: "Thing17",
+                    state: "rescued")
+
+      post "/api/v1/memo/dismiss_suggestion", params: { name: "Thing17" }, headers: headers
+
+      expect(response.parsed_body.map { |s| s["name"] }).not_to include("Thing17")
     end
   end
 end

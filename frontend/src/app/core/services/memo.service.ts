@@ -48,6 +48,18 @@ export class MemoService {
     return this.http.delete<void>(`${this.url}/${id}`);
   }
 
+  /** "Stop suggesting this": answers with the suggestions that are left. */
+  dismiss(name: string): Observable<Suggestion[]> {
+    return this.http
+      .post<Suggestion[]>(`${this.url}/dismiss_suggestion`, { name })
+      .pipe(tap((left) => this.suggestions.set(left)));
+  }
+
+  /** Every bought line, in one tap. */
+  clearDone(): Observable<void> {
+    return this.http.delete<void>(`${this.url}/clear_done`);
+  }
+
   suggest(query: string): Observable<Suggestion[]> {
     return this.http.get<Suggestion[]>(`${this.url}/suggestions`, { params: { q: query } });
   }

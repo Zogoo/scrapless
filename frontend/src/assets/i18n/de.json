@@ -104,7 +104,9 @@
     "listening": "Ich höre…",
     "empty": "Noch nichts auf der Liste.",
     "suggested": "Brauchst du meistens",
-    "shared": "Eine Liste für diese Küche. Wer den Link geöffnet hat, sieht dieselben Zeilen."
+    "shared": "Eine Liste für diese Küche. Wer den Link geöffnet hat, sieht dieselben Zeilen.",
+    "dismiss": "{{name}} nicht mehr vorschlagen",
+    "clear_done": "Gekauftes entfernen ({{count}})"
   },
   "recipes": {
     "title": "Rezepte",

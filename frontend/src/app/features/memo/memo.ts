@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { Subject, debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs';
@@ -28,6 +28,7 @@ export class Memo implements OnInit, OnDestroy {
 
   protected readonly items = this.memo.items;
   protected readonly suggestions = this.memo.suggestions;
+  protected readonly doneCount = computed(() => this.items().filter((item) => item.done).length);
   protected readonly typed = signal('');
   protected readonly matches = signal<Suggestion[]>([]);
   protected readonly busy = signal(false);
@@ -92,6 +93,14 @@ export class Memo implements OnInit, OnDestroy {
 
   protected remove(id: number): void {
     this.memo.remove(id).subscribe({ next: () => this.refresh(), error: (err) => this.fail(err) });
+  }
+
+  protected dismiss(name: string): void {
+    this.memo.dismiss(name).subscribe({ error: (err) => this.fail(err) });
+  }
+
+  protected clearDone(): void {
+    this.memo.clearDone().subscribe({ next: () => this.refresh(), error: (err) => this.fail(err) });
   }
 
   /** Show what went wrong, and the list as it really is now. */

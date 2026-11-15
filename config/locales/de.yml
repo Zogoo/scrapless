@@ -41,3 +41,27 @@ de:
     today: "heute verbrauchen"
     check_it: "%{name} — lohnt sich zu prüfen"
     probably_gone: "wahrscheinlich schon weg"
+  memo:
+    reason:
+      due: "meist alle %{cadence} Tage, zuletzt vor %{elapsed} Tagen gekauft"
+      bought:
+        one: "einmal gekauft"
+        other: "schon %{count}-mal gekauft"
+      common: "steht oft auf Listen"
+    staples:
+      milk: "Milch"
+      bread: "Brot"
+      eggs: "Eier"
+      butter: "Butter"
+      cheese: "Käse"
+      onions: "Zwiebeln"
+      potatoes: "Kartoffeln"
+      tomatoes: "Tomaten"
+      bananas: "Bananen"
+      apples: "Äpfel"
+      chicken: "Hähnchen"
+      coffee: "Kaffee"
+      rice: "Reis"
+      pasta: "Nudeln"
+      yoghurt: "Joghurt"
+      salad: "Salat"

@@ -41,3 +41,27 @@ en:
     today: "worth using today"
     check_it: "%{name} — worth checking"
     probably_gone: "probably gone by now"
+  memo:
+    reason:
+      due: "usually every %{cadence} days, last bought %{elapsed} days ago"
+      bought:
+        one: "bought once before"
+        other: "bought %{count} times before"
+      common: "often on lists"
+    staples:
+      milk: "Milk"
+      bread: "Bread"
+      eggs: "Eggs"
+      butter: "Butter"
+      cheese: "Cheese"
+      onions: "Onions"
+      potatoes: "Potatoes"
+      tomatoes: "Tomatoes"
+      bananas: "Bananas"
+      apples: "Apples"
+      chicken: "Chicken"
+      coffee: "Coffee"
+      rice: "Rice"
+      pasta: "Pasta"
+      yoghurt: "Yoghurt"
+      salad: "Salad"

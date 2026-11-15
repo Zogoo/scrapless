@@ -10,7 +10,11 @@ module Api
         }
       end
 
+      # Two people adding "milk" to one shared list get one line, not two.
       def create
+        existing = current_household.memo_items.open_line_for(params[:name])
+        return render json: memo_json(existing) if existing
+
         item = current_household.memo_items.create!(
           name: params[:name], note: params[:note].presence, source: source_param,
           added_by_name: actor_name
@@ -26,7 +30,9 @@ module Api
         return render json: { error: "nothing heard" }, status: :unprocessable_content if transcript.blank?
 
         names = extract_names(transcript)
-        created = names.map do |name|
+        created = names.filter_map do |name|
+          next if current_household.memo_items.open_line_for(name)
+
           current_household.memo_items.create!(name: name, source: "voice", added_by_name: actor_name)
         end
 
@@ -47,6 +53,18 @@ module Api
 
       def suggestions
         render json: suggestion_list
+      end
+
+      # "Stop suggesting this." For a junk line, or something bought once.
+      def dismiss_suggestion
+        current_household.suggestion_dismissals.find_or_create_by!(canonical_name: params.require(:name))
+        render json: suggestion_list
+      end
+
+      # Bought lines pile up otherwise; this clears them in one tap.
+      def clear_done
+        current_household.memo_items.where(done: true).delete_all
+        head :no_content
       end
 
       private
@@ -85,7 +103,7 @@ module Api
                   .map { |part| part.strip.squeeze(" ") }
                   .reject(&:blank?)
                   .first(25)
-                  .map { |part| part.sub(/\A(buy|get|kauf|hol)\s+/i, "").capitalize }
+                  .map { |part| part.sub(/\A(buy|get|kauf|hol)\s+/i, "") }
       end
 
       def memo_json(item)

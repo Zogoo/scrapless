@@ -89,6 +89,12 @@
     </ul>
   }
 
+  @if (doneCount() > 0) {
+    <button type="button" class="ghost clear-done" (click)="clearDone()">
+      {{ 'memo.clear_done' | translate: { count: doneCount() } }}
+    </button>
+  }
+
   <!-- Not a blank list: what this household buys on a rhythm and is now out of. -->
   @if (suggestions().length > 0 && !typed().trim()) {
     <h2 class="section-head">{{ 'memo.suggested' | translate }}</h2>
@@ -98,6 +104,14 @@
           <button type="button" (click)="add(suggestion.name, 'suggestion')">
             <span class="name">+ {{ suggestion.name }}</span>
             <small>{{ suggestion.reason }}</small>
+          </button>
+          <button
+            type="button"
+            class="ghost dismiss"
+            [attr.aria-label]="'memo.dismiss' | translate: { name: suggestion.name }"
+            (click)="dismiss(suggestion.name)"
+          >
+            ✕
           </button>
         </li>
       }

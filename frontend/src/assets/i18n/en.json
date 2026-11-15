@@ -104,7 +104,9 @@
     "listening": "Listening…",
     "empty": "Nothing on the list yet.",
     "suggested": "You usually need",
-    "shared": "One list for this kitchen. Everyone who opened the share link sees the same lines."
+    "shared": "One list for this kitchen. Everyone who opened the share link sees the same lines.",
+    "dismiss": "Stop suggesting {{name}}",
+    "clear_done": "Clear bought ({{count}})"
   },
   "recipes": {
     "title": "Recipes",

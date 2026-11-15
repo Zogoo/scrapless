@@ -20,6 +20,8 @@ Rails.application.routes.draw do
         collection do
           post :dictate
           get :suggestions
+          post :dismiss_suggestion
+          delete :clear_done
         end
       end
 
