@@ -22,7 +22,19 @@ module Api
 
       # Called once, on first visit, after the single onboarding question
       # ("name your fridge?" / skip).
+      #
+      # A browser that already holds a fridge gets that fridge back rather than a
+      # new one. The welcome screen can be reached by a phone whose boot request
+      # failed, and its Skip must not overwrite the cookie — on a one-phone
+      # household that cookie is the only copy of the kitchen. Starting over is
+      # Settings → forget, which clears it first.
       def create
+        existing = identified_household
+        if existing
+          refresh_cookie(existing)
+          return render json: household_json(existing), status: :ok
+        end
+
         household = Household.create!(
           { name: params[:name].presence, locale: locale_param }.compact
         )

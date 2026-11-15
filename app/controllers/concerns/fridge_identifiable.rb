@@ -19,14 +19,17 @@ module FridgeIdentifiable
   private
 
   def authenticate!
-    token = bearer_token.presence || cookies.signed[COOKIE_NAME].presence
-    return render_unauthorized unless token
-
-    @current_household = Household.find_by(token: token)
+    @current_household = identified_household
     return render_unauthorized unless @current_household
 
     refresh_cookie(@current_household)
     @current_household.touch_seen!
+  end
+
+  # The fridge this browser already holds, by token or by cookie, if any.
+  def identified_household
+    token = bearer_token.presence || cookies.signed[COOKIE_NAME].presence
+    Household.find_by(token: token) if token
   end
 
   def bearer_token

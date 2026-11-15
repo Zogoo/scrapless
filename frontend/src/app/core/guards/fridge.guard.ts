@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { map } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { of } from 'rxjs';
 
 import { FridgeService } from '../services/fridge.service';
@@ -16,7 +16,12 @@ export const fridgeGuard: CanActivateFn = () => {
 
   if (fridge.isKnown()) return of(true);
 
-  return fridge.restore().pipe(map((found) => (found ? true : router.createUrlTree(['/welcome']))));
+  return fridge.restore().pipe(
+    map((found) => (found ? true : router.createUrlTree(['/welcome']))),
+    // Could not ask. A phone that holds a token goes on to its screen, which
+    // shows its own retry; only a phone with nothing is sent to the welcome.
+    catchError(() => of(fridge.token ? true : router.createUrlTree(['/welcome']))),
+  );
 };
 
 /** The mirror image: keeps a known fridge out of the onboarding screen. */
@@ -26,5 +31,8 @@ export const noFridgeGuard: CanActivateFn = () => {
 
   if (fridge.isKnown()) return of(router.createUrlTree(['/today']));
 
-  return fridge.restore().pipe(map((found) => (found ? router.createUrlTree(['/today']) : true)));
+  return fridge.restore().pipe(
+    map((found) => (found ? router.createUrlTree(['/today']) : true)),
+    catchError(() => of(fridge.token ? router.createUrlTree(['/today']) : true)),
+  );
 };

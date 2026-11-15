@@ -27,11 +27,39 @@ RSpec.describe "Api::V1::Fridges", type: :request do
     it "is not blocked by the limiter under normal use" do
       3.times { post "/api/v1/fridge", params: {}, as: :json }
 
-      expect(response).to have_http_status(:created)
+      expect(response).to have_http_status(:success)
     end
 
     # Two independent stores, so clearing either one alone does not lose the
     # fridge. This is the cookie half.
+    # A phone whose boot request failed lands on the welcome screen with its
+    # cookie intact. Tapping Skip there must not replace the kitchen.
+    it "returns the fridge this browser already holds instead of minting another" do
+      post "/api/v1/fridge", params: { name: "Küche" }, as: :json
+      first = response.parsed_body
+
+      post "/api/v1/fridge", params: {}, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["id"]).to eq(first["id"])
+      expect(Household.count).to eq(1)
+    end
+
+    it "returns the fridge named by the bearer token too" do
+      household = create(:household)
+
+      post "/api/v1/fridge", params: {}, headers: fridge_headers(household), as: :json
+
+      expect(response.parsed_body["id"]).to eq(household.uuid)
+      expect(Household.count).to eq(1)
+    end
+
+    it "still makes a fridge when the token it was sent is unknown" do
+      post "/api/v1/fridge", params: {}, headers: { "Authorization" => "Bearer nope" }, as: :json
+
+      expect(response).to have_http_status(:created)
+    end
+
     it "sets a ten-year cookie alongside the token it returns" do
       post "/api/v1/fridge", params: {}, as: :json
 
