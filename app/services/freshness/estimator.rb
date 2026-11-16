@@ -25,21 +25,30 @@ module Freshness
     # point we claim nothing at all.
     BAND_OPENS_AT = 0.7
 
+    # Days thawed food keeps in the fridge or cupboard. USDA FSIS, "The Big
+    # Thaw": poultry, minced meat and fish an extra day or two after thawing in
+    # the fridge, red-meat cuts 3-5 days. meat_fish holds all of them, so it
+    # takes the short end. ⚠️ The default for everything else is our estimate.
+    THAWED_DAYS = { "meat_fish" => 2 }.freeze
+    THAWED_DEFAULT = 3
+
     Result = Struct.new(:window_start, :window_end, :confidence, :consume_days, :high_risk, keyword_init: true)
 
     def initialize(category:, storage: "fridge", acquired_on: Date.current,
-                   date_label_type: "none", date_label_value: nil, opened_on: nil)
+                   date_label_type: "none", date_label_value: nil, opened_on: nil, thawed_on: nil)
       @category = category.presence || "unknown"
       @storage = Item::STORAGES.include?(storage) ? storage : "fridge"
       @acquired_on = acquired_on || Date.current
       @date_label_type = date_label_type.presence || "none"
       @date_label_value = date_label_value
       @opened_on = opened_on
+      @thawed_on = thawed_on
     end
 
     def call
       result = printed_date_window || category_window || fallback_window
       apply_opened!(result)
+      apply_thawed!(result)
       clamp!(result)
       result
     end
@@ -101,6 +110,17 @@ module Freshness
       result.window_end = [ result.window_end, @opened_on + opened_life ].min
       result.window_start = [ result.window_start, @opened_on ].min
       result.confidence = [ result.confidence, 0.7 ].min
+    end
+
+    # Out of the freezer is not "fresh from the shop": thawed chicken given a
+    # fresh fridge window would read as fine for a week. Same shape as opening.
+    def apply_thawed!(result)
+      return if @thawed_on.blank?
+
+      life = THAWED_DAYS.fetch(@category, THAWED_DEFAULT)
+      result.window_end = [ result.window_end, @thawed_on + life ].min
+      result.window_start = [ result.window_start, @thawed_on ].min
+      result.confidence = [ result.confidence, 0.6 ].min
     end
 
     def clamp!(result)

@@ -1,5 +1,5 @@
 module Items
-  # One tap on a food: used, gone, half used, frozen, opened or "not now".
+  # One tap on a food: used, gone, half used, frozen, opened, moved or "not now".
   #
   # Every outcome is recorded with the fields it changed as they were before,
   # so the very next tap can take it back (Items::Undo). One-tap actions on a
@@ -9,16 +9,21 @@ module Items
     class UnknownOutcome < StandardError; end
 
     KINDS = { "used" => "used", "wasted" => "wasted", "partial" => "partial_use",
-              "froze" => "frozen", "opened" => "opened", "snooze" => "snoozed" }.freeze
+              "froze" => "frozen", "opened" => "opened", "snooze" => "snoozed",
+              "moved" => "moved" }.freeze
 
     # Everything an outcome may change, so undo can put it back exactly.
     TRACKED = %w[state resolved_at quantity amount_left storage storage_changed_at
                  window_start window_end confidence opened_on snoozed_until].freeze
 
-    def initialize(item:, outcome:, days: nil)
+    def initialize(item:, outcome:, days: nil, to: nil)
       @item = item
       @outcome = outcome.to_s
       @days = days
+      @to = to.to_s
+      # Into the freezer is freezing, whichever button said so: one event kind
+      # and one window rule for it in the audit log.
+      @outcome = "froze" if @outcome == "moved" && @to == "freezer"
     end
 
     def call
@@ -69,6 +74,23 @@ module Items
     def apply_opened
       rewindow(storage: @item.storage, acquired_on: @item.acquired_on, opened_on: Date.current)
       @item.opened_on = Date.current
+    end
+
+    # Somewhere else in the kitchen (into the freezer became "froze" above).
+    # Out of the freezer is a thaw, which keeps only days
+    # (Estimator::THAWED_DAYS). Otherwise a move never buys time: milk put in
+    # the cupboard must not inherit the cupboard's generic six months, so the
+    # band can only stay or come closer. Only freezing resets the clock.
+    def apply_moved
+      raise UnknownOutcome, @to unless Item::STORAGES.include?(@to) && @to != @item.storage
+
+      thawed = @item.frozen_storage?
+      was = [ @item.window_start, @item.window_end ]
+      rewindow(storage: @to, acquired_on: thawed ? Date.current : @item.acquired_on,
+               opened_on: @item.opened_on, thawed_on: (Date.current if thawed))
+      @item.window_start = [ @item.window_start, was[0] ].min
+      @item.window_end = [ @item.window_end, was[1] ].min
+      @item.assign_attributes(storage: @to, storage_changed_at: Time.current)
     end
 
     # A "no" must not become a delete.

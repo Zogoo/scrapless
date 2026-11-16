@@ -62,6 +62,13 @@ RSpec.describe Freshness::Estimator do
     expect(result.window_end).to eq(Date.current + 3)
   end
 
+  # Thawed chicken handed a fresh fridge window would read as fine for a week.
+  it "gives thawed meat a day or two, whatever the fridge table says" do
+    result = described_class.call(category: "meat_fish", storage: "fridge", thawed_on: Date.current)
+
+    expect(result.window_end).to eq(Date.current + 2)
+  end
+
   it "never returns a window that ends before it starts" do
     result = described_class.call(category: "meat_fish", acquired_on: Date.current,
                                   date_label_type: "verbrauchsdatum",

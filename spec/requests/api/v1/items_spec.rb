@@ -107,6 +107,20 @@ RSpec.describe "Api::V1::Items", type: :request do
       expect(item.window_end).to be > Date.current + 100
     end
 
+    it "moves food to the place it was sent" do
+      post "/api/v1/items/#{item.id}/resolve", params: { outcome: "moved", to: "pantry" }, headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["storage"]).to eq("pantry")
+    end
+
+    it "says so when the place is not one of the kitchen's" do
+      post "/api/v1/items/#{item.id}/resolve", params: { outcome: "moved", to: "garage" }, headers: headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(item.reload.storage).to eq("fridge")
+    end
+
     # Binary used/gone forces the user to lie, and the lie trains the priors.
     it "records half a spinach as half of it gone, not as a resolved item" do
       item.update!(quantity: 2)
