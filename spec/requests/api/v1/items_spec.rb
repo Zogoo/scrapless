@@ -203,7 +203,7 @@ RSpec.describe "Api::V1::Items", type: :request do
       expect(response).to have_http_status(:ok)
       body = response.parsed_body["items"]
       expect(body.map { |i| i["id"] }).to eq([ old.id, fresh.id ])
-      expect(body.map { |i| i["amount_left"] }).to eq([ 1.0, 0.25 ])
+      expect(body.map { |i| i["amount_left"] }).to eq([ 0.25, 1.0 ])
     end
 
     it "requires a level" do

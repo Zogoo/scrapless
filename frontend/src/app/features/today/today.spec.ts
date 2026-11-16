@@ -133,4 +133,56 @@ describe('Today', () => {
       'Sonntag',
     );
   });
+
+  // Home shows the same line as the Kitchen for the packs this filter already
+  // chose, and leaves the fine-for-now list as a list.
+  it('uses the shared line for use-first and keeps the rest of the filter', () => {
+    const fixture = TestBed.createComponent(Today);
+    fixture.detectChanges();
+    http.match(`${environment.apiUrl}/items`).forEach((req) =>
+      req.flush({
+        use_first: [
+          {
+            id: 7,
+            display_name: 'Milch',
+            canonical_name: 'milch',
+            storage: 'fridge',
+            amount_left: 1,
+            window_start: '2026-11-14',
+            window_end: '2026-11-20',
+            opened_on: null,
+            phase: 'fresh',
+            headline: 'fine for about 4 days',
+            high_risk: false,
+            safety_date: false,
+          },
+        ],
+        fine_for_now: [
+          {
+            id: 8,
+            display_name: 'Reis',
+            canonical_name: 'reis',
+            storage: 'pantry',
+            amount_left: 1,
+            window_end: '2027-01-01',
+            phase: 'fresh',
+            headline: 'fine',
+            life_fraction: 0.1,
+          },
+        ],
+        probably_gone: [],
+        sweep_count: 0,
+        as_of: '2026-11-16',
+        has_captured: true,
+      }),
+    );
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelectorAll('app-item-line input[type="range"]')).toHaveLength(1);
+    expect(root.querySelector('.rest-toggle')).not.toBeNull();
+    expect(root.textContent).not.toContain('today.used');
+    expect(root.textContent).not.toContain('today.froze');
+    expect(root.textContent).not.toContain('today.partial');
+  });
 });

@@ -68,12 +68,22 @@ module Items
       @item.assign_attributes(storage: "freezer", storage_changed_at: Time.current)
     end
 
-    # Opening restarts the clock on a short remaining life. Both ends of the
-    # window move: keeping the old start broke the start <= end rule for any
-    # food opened before its band had opened — which is most food.
+    # Opening shortens the end already on the item, and only when the opened
+    # life is sooner. Rebuilding from the category table first threw that end
+    # away, so every open — including one the slider repeated — read as 3 days.
+    # A pack that is already open is left alone; the slider may change its
+    # amount and must not restart the clock. The start still has to move back
+    # when the band has not begun, or start > end fails validation.
     def apply_opened
-      rewindow(storage: @item.storage, acquired_on: @item.acquired_on, opened_on: Date.current)
-      @item.opened_on = Date.current
+      return if @item.opened_on.present?
+
+      opened = Date.current
+      cap = opened + (@item.frozen_storage? ? 2 : 3)
+      @item.opened_on = opened
+      @item.window_end = cap if @item.window_end.blank? || cap < @item.window_end
+      @item.window_start = [ @item.window_start, opened, @item.window_end ].compact.min
+      @item.window_start = [ @item.window_start, @item.acquired_on ].compact.max
+      @item.window_end = [ @item.window_end, @item.window_start ].compact.max
     end
 
     # Somewhere else in the kitchen (into the freezer became "froze" above).

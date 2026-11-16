@@ -1,30 +1,29 @@
 import {
+  ChangeDetectionStrategy,
   Component,
-  ElementRef,
   OnInit,
   computed,
   inject,
   signal,
-  viewChild,
-  ChangeDetectionStrategy,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { ItemsService } from '../../core/services/items.service';
-import { UndoService } from '../../core/services/undo.service';
-import { Outcome, ScoredItem, Storage } from '../../core/models';
-import { KitchenLine, formatLevel, toLines, trackBackground } from './kitchen-line';
+import { ScoredItem, Storage } from '../../core/models';
+import { ItemLine } from '../../shared/item-line/item-line';
+import { KitchenLine, toLines } from '../../shared/item-line/line';
 
 /**
  * The full inventory, deliberately demoted to a tab you may visit twice a month.
  * Sorted by time left, never alphabetically: this is a triage queue, not a
- * database.
+ * database. Each line is the same card Home uses; here the packs of one food
+ * in one place are grouped into it.
  */
 @Component({
   selector: 'app-kitchen',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, ItemLine],
   templateUrl: './kitchen.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './kitchen.scss',
@@ -32,17 +31,11 @@ import { KitchenLine, formatLevel, toLines, trackBackground } from './kitchen-li
 export class Kitchen implements OnInit {
   private readonly items = inject(ItemsService);
   private readonly router = inject(Router);
-  private readonly undo = inject(UndoService);
 
   protected readonly loading = signal(true);
   protected readonly error = signal('');
-  /** The food whose place is being changed, while the sheet is up. */
-  protected readonly moving = signal<ScoredItem | null>(null);
-  private readonly moveSheet = viewChild<ElementRef<HTMLDialogElement>>('moveSheet');
   protected readonly editingKey = signal<string | null>(null);
   protected readonly draftName = signal('');
-  /** The line being dragged and where its thumb is, before the server agrees. */
-  private readonly preview = signal<{ key: string; level: number } | null>(null);
 
   private readonly all = computed<ScoredItem[]>(() => {
     const today = this.items.today();
@@ -85,28 +78,6 @@ export class Kitchen implements OnInit {
       ?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
   }
 
-  protected startMove(item: ScoredItem): void {
-    this.moving.set(item);
-    this.moveSheet()?.nativeElement.showModal();
-  }
-
-  /** A tap on the dimmed page around the sheet is a "never mind". */
-  protected closeOnBackdrop(event: MouseEvent): void {
-    if (event.target === event.currentTarget) (event.currentTarget as HTMLDialogElement).close();
-  }
-
-  /** One tap in the sheet; the toast names the new place and can take it back. */
-  protected move(item: ScoredItem, storage: Storage): void {
-    this.moveSheet()?.nativeElement.close();
-    this.items.move(item.id, storage).subscribe({
-      next: () => {
-        this.undo.showOutcome(item, 'moved', storage);
-        this.load();
-      },
-      error: (err: { message?: string }) => this.fail(err),
-    });
-  }
-
   protected startEdit(line: KitchenLine): void {
     this.editingKey.set(line.key);
     this.draftName.set(line.first.display_name);
@@ -132,53 +103,6 @@ export class Kitchen implements OnInit {
     });
   }
 
-  protected level(line: KitchenLine): number {
-    const preview = this.preview();
-    return preview?.key === line.key ? preview.level : line.level;
-  }
-
-  protected track(line: KitchenLine): string {
-    return trackBackground(line, this.level(line));
-  }
-
-  protected amount(line: KitchenLine): string {
-    return formatLevel(this.level(line));
-  }
-
-  protected slide(line: KitchenLine, event: Event): void {
-    this.preview.set({ key: line.key, level: Number((event.target as HTMLInputElement).value) });
-  }
-
-  /** Committed on release, not on every pixel of the drag. */
-  protected commitLevel(line: KitchenLine, event: Event): void {
-    this.setLevel(line, Number((event.target as HTMLInputElement).value));
-  }
-
-  /** The same change as the slider, for anyone who cannot or will not drag. */
-  protected step(line: KitchenLine, delta: number): void {
-    this.setLevel(line, Math.min(line.packs.length, Math.max(0, this.level(line) + delta)));
-  }
-
-  private setLevel(line: KitchenLine, level: number): void {
-    const ids = line.packs.map((pack) => pack.id);
-    this.preview.set({ key: line.key, level });
-
-    this.items.level(ids, level).subscribe({
-      next: () => this.items.load().subscribe({ next: () => this.preview.set(null) }),
-      error: (err: { message?: string }) => this.fail(err),
-    });
-  }
-
-  protected resolve(item: ScoredItem, outcome: Outcome): void {
-    this.items.resolve(item.id, outcome).subscribe({
-      next: () => {
-        this.undo.showOutcome(item, outcome);
-        this.load();
-      },
-      error: (err: { message?: string }) => this.fail(err),
-    });
-  }
-
   /** For a line read wrong, not eaten or binned: it is not waste, so it is deleted. */
   protected removeLine(line: KitchenLine): void {
     forkJoin(line.packs.map((pack) => this.items.remove(pack.id))).subscribe({
@@ -186,14 +110,7 @@ export class Kitchen implements OnInit {
         this.editingKey.set(null);
         this.load();
       },
-      error: (err: { message?: string }) => this.fail(err),
+      error: (err: { message?: string }) => this.error.set(err.message ?? ''),
     });
-  }
-
-  /** Say what went wrong, then show what is true now — another phone may have won. */
-  private fail(err: { message?: string }): void {
-    this.preview.set(null);
-    this.load();
-    this.error.set(err.message ?? '');
   }
 }

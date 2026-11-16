@@ -123,10 +123,8 @@
   "kitchen": {
     "title": "Kitchen",
     "empty_group": "Nothing in here.",
-    "opened": "Opened it",
     "how_much": "How much {{name}} is left",
-    "less": "Less {{name}}",
-    "more": "More {{name}}",
+    "percent": "{{count}}%",
     "remove": "Remove from kitchen",
     "jump": "Places in the kitchen",
     "move_label": "{{name}} is in the {{place}}. Move it",

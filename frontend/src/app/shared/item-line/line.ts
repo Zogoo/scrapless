@@ -11,7 +11,7 @@ export interface KitchenLine {
   key: string;
   /** Oldest added first (lowest id). The slider fills this order, left to right. */
   packs: ScoredItem[];
-  /** Soonest-dying pack: the headline and the Used / Froze / Opened buttons. */
+  /** Soonest-dying pack: the headline, and the pack a slider touch marks opened. */
   first: ScoredItem;
   /** Total left across packs, 0..packs.length. */
   level: number;
@@ -21,6 +21,16 @@ export interface Segment {
   id: number;
   phase: ScoredItem['phase'];
   amount: number;
+}
+
+/** One row a screen already chose. Home's filter picks single packs; it does not regroup them. */
+export function lineFor(item: ScoredItem): KitchenLine {
+  return {
+    key: `${item.storage}:${item.id}`,
+    packs: [item],
+    first: item,
+    level: item.amount_left,
+  };
 }
 
 export function lineKey(item: ScoredItem): string {
@@ -49,17 +59,18 @@ export function toLines(items: ScoredItem[]): KitchenLine[] {
 }
 
 /**
- * How a level spreads over the packs. Oldest added is filled first, so lowering
- * drains the most recently added pack and raising refills that pack before any
- * older one. Mirrors Inventory::SetLevel. Returned oldest → newest, left → right.
+ * How a level spreads over the packs. Newest added is filled first, so lowering
+ * drains the older pack (the left band) and raising refills that pack before any
+ * newer one. Mirrors Inventory::SetLevel. Returned oldest → newest, left → right.
  */
 export function segments(line: KitchenLine, level = line.level): Segment[] {
   let remaining = Math.max(0, Math.min(level, line.packs.length));
-  return line.packs.map((pack) => {
+  const newestFirst = [...line.packs].reverse().map((pack) => {
     const amount = Math.min(remaining, 1);
     remaining -= amount;
     return { id: pack.id, phase: pack.phase, amount };
   });
+  return newestFirst.reverse();
 }
 
 const PHASE_TOKEN: Record<ScoredItem['phase'], string> = {
@@ -70,8 +81,8 @@ const PHASE_TOKEN: Record<ScoredItem['phase'], string> = {
 };
 
 /**
- * The slider track: one coloured band per pack. Left is the pack added first,
- * right is the one just added (the end lowering drains), then empty. Colour is
+ * The slider track: one coloured band per pack. Left is the pack added first
+ * (the band lowering drains), right is the one just added, then empty. Colour is
  * that pack's freshness, not its age. Length carries the meaning (see styles.scss).
  */
 export function trackBackground(line: KitchenLine, level = line.level): string {
@@ -91,13 +102,21 @@ export function trackBackground(line: KitchenLine, level = line.level): string {
   return `linear-gradient(to right, ${stops.join(', ')})`;
 }
 
-const FRACTIONS: Record<number, string> = { 0.25: '¼', 0.5: '½', 0.75: '¾' };
+/** The only stops the Kitchen slider has. */
+export const PERCENT_STEP = 25;
 
-/** "1½", "¾", "2" — an amount, never a unit. */
-export function formatLevel(level: number): string {
-  const quarters = Math.round(level * 4) / 4;
-  const whole = Math.floor(quarters);
-  const fraction = FRACTIONS[quarters - whole] ?? '';
-  if (!fraction) return String(whole);
-  return whole === 0 ? fraction : `${whole}${fraction}`;
+function snapPercent(percent: number): number {
+  const snapped = Math.round(percent / PERCENT_STEP) * PERCENT_STEP;
+  return Math.min(100, Math.max(0, snapped));
+}
+
+/** Where the thumb sits: 0, 25, 50, 75, or 100, for the whole line. */
+export function levelPercent(level: number, packCount: number): number {
+  if (packCount <= 0) return 0;
+  return snapPercent((level / packCount) * 100);
+}
+
+/** The level the server stores for one of those five stops. 0 uses the line up. */
+export function levelFromPercent(percent: number, packCount: number): number {
+  return (snapPercent(percent) / 100) * packCount;
 }
