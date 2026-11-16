@@ -80,7 +80,7 @@
                       'kitchen.how_much' | translate: { name: line.first.display_name }
                     "
                     [attr.aria-valuetext]="'kitchen.percent' | translate: { count: percent(line) }"
-                    (pointerdown)="openFromSlider(line)"
+                    (pointerdown)="beginGesture(line)"
                     (input)="slide(line, $event)"
                     (change)="commitLevel(line, $event)"
                   />

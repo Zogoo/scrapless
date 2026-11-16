@@ -49,8 +49,17 @@ export class Kitchen implements OnInit {
   protected readonly draftName = signal('');
   /** The line being dragged and where its thumb is, before the server agrees. */
   private readonly preview = signal<{ key: string; percent: number } | null>(null);
-  /** The pack a slider touch is already opening, so a drag does not ask twice. */
+  /**
+   * One drag. `dates` is the window before the first move. A release back at
+   * the starting percent undoes the open, which writes that window back. An
+   * already-open pack is not reopened: the drag may change its amount only.
+   */
+  private gesture: Gesture | null = null;
+  /** The pack a slider move is already opening, so a drag does not ask twice. */
   private openingId: number | null = null;
+  /** True while that open request is still out, so a cancel waits for it. */
+  private openInFlight = false;
+  private afterOpen: (() => void) | null = null;
 
   private readonly all = computed<ScoredItem[]>(() => {
     const today = this.items.today();
@@ -158,29 +167,107 @@ export class Kitchen implements OnInit {
     return trackBackground(line, this.level(line));
   }
 
-  /** The first touch stands in for the old Opened button, on the same pack. */
-  protected openFromSlider(line: KitchenLine): void {
+  /** The thumb went down. Nothing is opened until the percent actually changes. */
+  protected beginGesture(line: KitchenLine): void {
+    if (this.gesture?.key === line.key) return;
+
     const pack = line.first;
+    this.gesture = {
+      key: line.key,
+      packId: pack.id,
+      startPercent: levelPercent(line.level, line.packs.length),
+      dates: {
+        window_start: pack.window_start,
+        window_end: pack.window_end,
+        opened_on: pack.opened_on,
+      },
+      openSent: false,
+    };
+  }
+
+  /**
+   * The first move off the starting percent opens the soonest pack, unless it
+   * was already open. Resolve keeps the dates from just before that move.
+   */
+  private openOnFirstMove(line: KitchenLine): void {
+    const gesture = this.gesture;
+    const pack = line.first;
+    // dates.opened_on is the window from before this drag. An open that was
+    // already there is left alone; only the amount may change.
+    if (!gesture || gesture.dates.opened_on || gesture.openSent || pack.id !== gesture.packId) {
+      return;
+    }
     if (pack.opened_on || this.openingId === pack.id) return;
 
+    gesture.openSent = true;
     this.openingId = pack.id;
+    this.openInFlight = true;
     this.items.resolve(pack.id, 'opened').subscribe({
+      next: () => this.settleOpen(),
       error: () => {
+        gesture.openSent = false;
         if (this.openingId === pack.id) this.openingId = null;
+        this.settleOpen();
       },
     });
   }
 
-  protected slide(line: KitchenLine, event: Event): void {
-    this.openFromSlider(line);
-    const percent = Number((event.target as HTMLInputElement).value);
-    this.preview.set({ key: line.key, percent });
+  private settleOpen(): void {
+    this.openInFlight = false;
+    const resume = this.afterOpen;
+    this.afterOpen = null;
+    resume?.();
   }
 
-  /** Committed on release. 0% is the used action: the line is finished. */
-  protected commitLevel(line: KitchenLine, event: Event): void {
+  protected slide(line: KitchenLine, event: Event): void {
+    this.beginGesture(line);
     const percent = Number((event.target as HTMLInputElement).value);
+    this.preview.set({ key: line.key, percent });
+    if (this.gesture && percent !== this.gesture.startPercent) this.openOnFirstMove(line);
+  }
+
+  /**
+   * Committed on release. Back at the starting percent, the open is taken
+   * back: the remembered dates return and opened clears. A new percent keeps
+   * the open and writes the amount. 0% still uses the line.
+   */
+  protected commitLevel(line: KitchenLine, event: Event): void {
+    this.beginGesture(line);
+    const percent = Number((event.target as HTMLInputElement).value);
+    const gesture = this.gesture;
+    if (!gesture) return;
+
+    if (percent !== gesture.startPercent) this.openOnFirstMove(line);
+    this.gesture = null;
+
+    if (percent === gesture.startPercent) {
+      this.preview.set(null);
+      this.restoreIfCancelled(gesture);
+      return;
+    }
+
     this.setLevel(line, levelFromPercent(percent, line.packs.length));
+  }
+
+  /** Undo writes back the window Resolve stored before the first move. */
+  private restoreIfCancelled(gesture: Gesture): void {
+    const run = () => {
+      if (!gesture.openSent) return;
+
+      this.items.undo(gesture.packId).subscribe({
+        next: () =>
+          this.items.load().subscribe({
+            next: () => {
+              this.preview.set(null);
+              this.openingId = null;
+            },
+          }),
+        error: (err: { message?: string }) => this.fail(err),
+      });
+    };
+
+    if (this.openInFlight) this.afterOpen = run;
+    else run();
   }
 
   private setLevel(line: KitchenLine, level: number): void {
@@ -188,7 +275,13 @@ export class Kitchen implements OnInit {
     this.preview.set({ key: line.key, percent: levelPercent(level, line.packs.length) });
 
     this.items.level(ids, level).subscribe({
-      next: () => this.items.load().subscribe({ next: () => this.preview.set(null) }),
+      next: () =>
+        this.items.load().subscribe({
+          next: () => {
+            this.preview.set(null);
+            this.openingId = null;
+          },
+        }),
       error: (err: { message?: string }) => this.fail(err),
     });
   }
@@ -217,7 +310,21 @@ export class Kitchen implements OnInit {
   /** Say what went wrong, then show what is true now — another phone may have won. */
   private fail(err: { message?: string }): void {
     this.preview.set(null);
+    this.openingId = null;
     this.load();
     this.error.set(err.message ?? '');
   }
+}
+
+/** Dates from before a drag's first move. Undo puts these back if it is cancelled. */
+interface Gesture {
+  key: string;
+  packId: number;
+  startPercent: number;
+  dates: {
+    window_start: string;
+    window_end: string;
+    opened_on: string | null;
+  };
+  openSent: boolean;
 }
