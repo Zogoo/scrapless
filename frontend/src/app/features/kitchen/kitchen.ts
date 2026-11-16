@@ -15,7 +15,13 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { ItemsService } from '../../core/services/items.service';
 import { UndoService } from '../../core/services/undo.service';
 import { Outcome, ScoredItem, Storage } from '../../core/models';
-import { KitchenLine, formatLevel, toLines, trackBackground } from './kitchen-line';
+import {
+  KitchenLine,
+  levelFromPercent,
+  levelPercent,
+  toLines,
+  trackBackground,
+} from './kitchen-line';
 
 /**
  * The full inventory, deliberately demoted to a tab you may visit twice a month.
@@ -42,7 +48,9 @@ export class Kitchen implements OnInit {
   protected readonly editingKey = signal<string | null>(null);
   protected readonly draftName = signal('');
   /** The line being dragged and where its thumb is, before the server agrees. */
-  private readonly preview = signal<{ key: string; level: number } | null>(null);
+  private readonly preview = signal<{ key: string; percent: number } | null>(null);
+  /** The pack a slider touch is already opening, so a drag does not ask twice. */
+  private openingId: number | null = null;
 
   private readonly all = computed<ScoredItem[]>(() => {
     const today = this.items.today();
@@ -132,36 +140,52 @@ export class Kitchen implements OnInit {
     });
   }
 
+  protected percent(line: KitchenLine): number {
+    const preview = this.preview();
+    return preview?.key === line.key
+      ? preview.percent
+      : levelPercent(line.level, line.packs.length);
+  }
+
   protected level(line: KitchenLine): number {
     const preview = this.preview();
-    return preview?.key === line.key ? preview.level : line.level;
+    return preview?.key === line.key
+      ? levelFromPercent(preview.percent, line.packs.length)
+      : line.level;
   }
 
   protected track(line: KitchenLine): string {
     return trackBackground(line, this.level(line));
   }
 
-  protected amount(line: KitchenLine): string {
-    return formatLevel(this.level(line));
+  /** The first touch stands in for the old Opened button, on the same pack. */
+  protected openFromSlider(line: KitchenLine): void {
+    const pack = line.first;
+    if (pack.opened_on || this.openingId === pack.id) return;
+
+    this.openingId = pack.id;
+    this.items.resolve(pack.id, 'opened').subscribe({
+      error: () => {
+        if (this.openingId === pack.id) this.openingId = null;
+      },
+    });
   }
 
   protected slide(line: KitchenLine, event: Event): void {
-    this.preview.set({ key: line.key, level: Number((event.target as HTMLInputElement).value) });
+    this.openFromSlider(line);
+    const percent = Number((event.target as HTMLInputElement).value);
+    this.preview.set({ key: line.key, percent });
   }
 
-  /** Committed on release, not on every pixel of the drag. */
+  /** Committed on release. 0% is the used action: the line is finished. */
   protected commitLevel(line: KitchenLine, event: Event): void {
-    this.setLevel(line, Number((event.target as HTMLInputElement).value));
-  }
-
-  /** The same change as the slider, for anyone who cannot or will not drag. */
-  protected step(line: KitchenLine, delta: number): void {
-    this.setLevel(line, Math.min(line.packs.length, Math.max(0, this.level(line) + delta)));
+    const percent = Number((event.target as HTMLInputElement).value);
+    this.setLevel(line, levelFromPercent(percent, line.packs.length));
   }
 
   private setLevel(line: KitchenLine, level: number): void {
     const ids = line.packs.map((pack) => pack.id);
-    this.preview.set({ key: line.key, level });
+    this.preview.set({ key: line.key, percent: levelPercent(level, line.packs.length) });
 
     this.items.level(ids, level).subscribe({
       next: () => this.items.load().subscribe({ next: () => this.preview.set(null) }),

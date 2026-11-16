@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ScoredItem } from '../../core/models';
-import { formatLevel, segments, toLines, trackBackground } from './kitchen-line';
+import { levelFromPercent, levelPercent, segments, toLines, trackBackground } from './kitchen-line';
 
 function pack(overrides: Partial<ScoredItem>): ScoredItem {
   return {
@@ -99,11 +99,18 @@ describe('trackBackground', () => {
   });
 });
 
-describe('formatLevel', () => {
-  it('says how much without a unit', () => {
-    expect(formatLevel(1.5)).toBe('1½');
-    expect(formatLevel(0.75)).toBe('¾');
-    expect(formatLevel(2)).toBe('2');
-    expect(formatLevel(0)).toBe('0');
+describe('levelPercent', () => {
+  it('snaps the line to 0, 25, 50, 75, or 100', () => {
+    expect(levelPercent(1.5, 2)).toBe(75);
+    expect(levelPercent(0.1, 1)).toBe(0);
+    expect(levelPercent(0.8, 1)).toBe(75);
+    expect(levelPercent(2, 2)).toBe(100);
+  });
+
+  it('turns those stops back into a level, and 0% uses the line', () => {
+    expect(levelFromPercent(50, 2)).toBe(1);
+    expect(levelFromPercent(25, 1)).toBe(0.25);
+    expect(levelFromPercent(0, 3)).toBe(0);
+    expect(levelFromPercent(100, 3)).toBe(3);
   });
 });

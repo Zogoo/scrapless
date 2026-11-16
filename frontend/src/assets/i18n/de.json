@@ -123,10 +123,8 @@
   "kitchen": {
     "title": "Küche",
     "empty_group": "Hier ist nichts.",
-    "opened": "Geöffnet",
     "how_much": "Wie viel {{name}} noch da ist",
-    "less": "Weniger {{name}}",
-    "more": "Mehr {{name}}",
+    "percent": "{{count}} %",
     "remove": "Aus der Küche entfernen",
     "jump": "Orte in der Küche",
     "move_label": "{{name}} ist im {{place}}. Woanders hin",

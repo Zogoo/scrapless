@@ -11,14 +11,14 @@ import { UndoService } from '../../core/services/undo.service';
 import { Kitchen } from './kitchen';
 import { KitchenLine, toLines } from './kitchen-line';
 
-function pack(id: number, amountLeft = 1, name = 'milk'): ScoredItem {
+function pack(id: number, amountLeft = 1, name = 'milk', windowEnd = '2026-11-20'): ScoredItem {
   return {
     id,
     display_name: name,
     canonical_name: name,
     storage: 'fridge',
     amount_left: amountLeft,
-    window_end: '2026-11-20',
+    window_end: windowEnd,
     phase: 'fresh',
   } as ScoredItem;
 }
@@ -33,11 +33,16 @@ HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
 
 /** The surface the test drives; these members are protected on the component. */
 interface KitchenScreen {
-  step(line: KitchenLine, delta: number): void;
+  commitLevel(line: KitchenLine, event: Event): void;
+  openFromSlider(line: KitchenLine): void;
   move(item: ScoredItem, storage: Storage): void;
 }
 
-describe('Kitchen steps', () => {
+function slider(percent: number): Event {
+  return { target: { value: String(percent) } } as unknown as Event;
+}
+
+describe('Kitchen slider', () => {
   let http: HttpTestingController;
   let screen: KitchenScreen;
 
@@ -60,25 +65,38 @@ describe('Kitchen steps', () => {
     TestBed.resetTestingModule();
   });
 
-  // The slider is a drag; doc 3 R3-AC3 asks for a way that is not.
-  it('lowers a line by a quarter without a drag', () => {
+  it('stops only on quarters of the line', () => {
     const [line] = toLines([pack(1), pack(2)]);
 
-    screen.step(line, -0.25);
+    screen.commitLevel(line, slider(50));
 
     const req = http.expectOne(`${environment.apiUrl}/items/level`);
-    expect(req.request.body).toEqual({ ids: [1, 2], level: 1.75 });
+    expect(req.request.body).toEqual({ ids: [1, 2], level: 1 });
+    req.flush({ items: [] });
+    http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
   });
 
-  it('never steps past empty or full', () => {
-    const [line] = toLines([pack(1, 0.1)]);
+  it('uses the whole line when the slider reaches 0%', () => {
+    const [line] = toLines([pack(1), pack(2, 0.5)]);
 
-    screen.step(line, -0.25);
-    expect(http.expectOne(`${environment.apiUrl}/items/level`).request.body.level).toBe(0);
+    screen.commitLevel(line, slider(0));
 
-    const [full] = toLines([pack(3, 1, 'bread')]);
-    screen.step(full, 0.25);
-    expect(http.expectOne(`${environment.apiUrl}/items/level`).request.body.level).toBe(1);
+    const req = http.expectOne(`${environment.apiUrl}/items/level`);
+    expect(req.request.body).toEqual({ ids: [1, 2], level: 0 });
+    req.flush({ items: [] });
+    http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
+  });
+
+  it('marks the soonest pack opened on the first slider touch and not again', () => {
+    const [line] = toLines([pack(1, 1, 'milk', '2026-11-20'), pack(2, 1, 'milk', '2026-11-14')]);
+
+    screen.openFromSlider(line);
+    const req = http.expectOne(`${environment.apiUrl}/items/2/resolve`);
+    expect(req.request.body).toEqual({ outcome: 'opened' });
+    req.flush({});
+
+    screen.openFromSlider(line);
+    http.expectNone(`${environment.apiUrl}/items/2/resolve`);
   });
 
   // Bread to the cupboard is one request; the server decides what that does
