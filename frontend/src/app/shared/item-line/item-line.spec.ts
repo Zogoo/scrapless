@@ -8,8 +8,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { environment } from '../../../environments/environment';
 import { ScoredItem, Storage } from '../../core/models';
 import { UndoService } from '../../core/services/undo.service';
-import { Kitchen } from './kitchen';
-import { KitchenLine, toLines } from './kitchen-line';
+import { ItemLine } from './item-line';
+import { KitchenLine, toLines } from './line';
 
 function pack(
   id: number,
@@ -40,10 +40,10 @@ HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
 };
 
 /** The surface the test drives; these members are protected on the component. */
-interface KitchenScreen {
-  beginGesture(line: KitchenLine): void;
-  slide(line: KitchenLine, event: Event): void;
-  commitLevel(line: KitchenLine, event: Event): void;
+interface ItemLineScreen {
+  beginGesture(): void;
+  slide(event: Event): void;
+  commitLevel(event: Event): void;
   move(item: ScoredItem, storage: Storage): void;
 }
 
@@ -51,13 +51,12 @@ function slider(percent: number): Event {
   return { target: { value: String(percent) } } as unknown as Event;
 }
 
-describe('Kitchen slider', () => {
+describe('Item line', () => {
   let http: HttpTestingController;
-  let screen: KitchenScreen;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [Kitchen],
+      imports: [ItemLine],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -65,7 +64,6 @@ describe('Kitchen slider', () => {
         provideTranslateService(),
       ],
     });
-    screen = TestBed.createComponent(Kitchen).componentInstance as unknown as KitchenScreen;
     http = TestBed.inject(HttpTestingController);
   });
 
@@ -74,10 +72,16 @@ describe('Kitchen slider', () => {
     TestBed.resetTestingModule();
   });
 
-  it('stops only on quarters of the line', () => {
-    const [line] = toLines([pack(1), pack(2)]);
+  function mount(line: KitchenLine): ItemLineScreen {
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput('line', line);
+    return fixture.componentInstance as unknown as ItemLineScreen;
+  }
 
-    screen.commitLevel(line, slider(50));
+  it('stops only on quarters of the line', () => {
+    const screen = mount(toLines([pack(1), pack(2)])[0]);
+
+    screen.commitLevel(slider(50));
 
     const opened = http.expectOne(`${environment.apiUrl}/items/1/resolve`);
     expect(opened.request.body).toEqual({ outcome: 'opened' });
@@ -89,9 +93,9 @@ describe('Kitchen slider', () => {
   });
 
   it('uses the whole line when the slider reaches 0%', () => {
-    const [line] = toLines([pack(1), pack(2, 0.5)]);
+    const screen = mount(toLines([pack(1), pack(2, 0.5)])[0]);
 
-    screen.commitLevel(line, slider(0));
+    screen.commitLevel(slider(0));
 
     http.expectOne(`${environment.apiUrl}/items/1/resolve`).flush({});
     const req = http.expectOne(`${environment.apiUrl}/items/level`);
@@ -101,23 +105,25 @@ describe('Kitchen slider', () => {
   });
 
   it('opens the soonest pack on the first move, and not again', () => {
-    const [line] = toLines([pack(1, 1, 'milk', '2026-11-20'), pack(2, 1, 'milk', '2026-11-14')]);
+    const screen = mount(
+      toLines([pack(1, 1, 'milk', '2026-11-20'), pack(2, 1, 'milk', '2026-11-14')])[0],
+    );
 
-    screen.slide(line, slider(75));
+    screen.slide(slider(75));
     const req = http.expectOne(`${environment.apiUrl}/items/2/resolve`);
     expect(req.request.body).toEqual({ outcome: 'opened' });
     req.flush({});
 
-    screen.slide(line, slider(50));
+    screen.slide(slider(50));
     http.expectNone(`${environment.apiUrl}/items/2/resolve`);
   });
 
   it('puts the dates back and clears opened when the slider returns to where it started', () => {
-    const [line] = toLines([pack(1), pack(2)]);
+    const screen = mount(toLines([pack(1), pack(2)])[0]);
 
-    screen.beginGesture(line);
-    screen.slide(line, slider(50));
-    screen.commitLevel(line, slider(100));
+    screen.beginGesture();
+    screen.slide(slider(50));
+    screen.commitLevel(slider(100));
 
     const opened = http.expectOne(`${environment.apiUrl}/items/1/resolve`);
     expect(opened.request.body).toEqual({ outcome: 'opened' });
@@ -129,11 +135,11 @@ describe('Kitchen slider', () => {
   });
 
   it('keeps the pack opened when the slider stays at a new percentage', () => {
-    const [line] = toLines([pack(1), pack(2)]);
+    const screen = mount(toLines([pack(1), pack(2)])[0]);
 
-    screen.slide(line, slider(50));
+    screen.slide(slider(50));
     http.expectOne(`${environment.apiUrl}/items/1/resolve`).flush({});
-    screen.commitLevel(line, slider(50));
+    screen.commitLevel(slider(50));
 
     const req = http.expectOne(`${environment.apiUrl}/items/level`);
     expect(req.request.body).toEqual({ ids: [1, 2], level: 1 });
@@ -143,10 +149,10 @@ describe('Kitchen slider', () => {
   });
 
   it('changes only the amount of a pack that was already opened', () => {
-    const [line] = toLines([pack(1, 1, 'milk', '2026-11-20', '2026-11-12'), pack(2)]);
+    const screen = mount(toLines([pack(1, 1, 'milk', '2026-11-20', '2026-11-12'), pack(2)])[0]);
 
-    screen.slide(line, slider(50));
-    screen.commitLevel(line, slider(50));
+    screen.slide(slider(50));
+    screen.commitLevel(slider(50));
 
     http.expectNone(`${environment.apiUrl}/items/1/resolve`);
     const req = http.expectOne(`${environment.apiUrl}/items/level`);
@@ -160,6 +166,7 @@ describe('Kitchen slider', () => {
   // to its window (a thaw, a freeze, or the same clock in a new place).
   it('moves food with one request and says where it went', () => {
     const bread = pack(4, 1, 'Brot');
+    const screen = mount(toLines([bread])[0]);
 
     screen.move(bread, 'pantry');
 

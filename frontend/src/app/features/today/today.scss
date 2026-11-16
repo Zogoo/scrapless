@@ -45,50 +45,6 @@
   color: var(--ink);
 }
 
-.rescue {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-
-  &.high-risk {
-    border-left: 4px solid var(--danger);
-  }
-}
-
-.line {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.badge {
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  background: var(--surface-sunken);
-  color: var(--ink);
-  font-size: 0.75rem;
-  white-space: nowrap;
-}
-
-.headline {
-  margin: 0;
-  color: var(--muted);
-}
-
-/* Actions live in the bottom third of the card and wrap rather than shrink,
-   so no target ever drops below 48px. */
-.rescue .actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-
-  button {
-    flex: 1 1 auto;
-    min-width: 6.5rem;
-  }
-}
-
 .calm {
   padding: 2.5rem 1rem;
   text-align: center;

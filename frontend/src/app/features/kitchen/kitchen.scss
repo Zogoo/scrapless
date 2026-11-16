@@ -64,107 +64,6 @@
 
 .group li {
   overflow: hidden;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-
-  .amount {
-    flex: none;
-    min-width: 4ch;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    text-align: right;
-  }
-}
-
-/*
- * The track is painted by the component (one band per pack); the browser's own
- * track and fill are hidden so that painting is the only thing you see.
- */
-/* 48px to hit, 10px to see: the track is painted only in the content box. */
-.level {
-  appearance: none;
-  display: block;
-  box-sizing: border-box;
-  width: 100%;
-  height: var(--tap);
-  margin: 0;
-  padding: calc((var(--tap) - 10px) / 2) 0;
-  background-clip: content-box;
-  border: none;
-  border-radius: 999px;
-  min-height: 0;
-  cursor: pointer;
-
-  &::-webkit-slider-runnable-track {
-    height: 10px;
-    background: transparent;
-  }
-
-  &::-moz-range-track {
-    height: 10px;
-    background: transparent;
-  }
-
-  &::-webkit-slider-thumb {
-    appearance: none;
-    width: 26px;
-    height: 26px;
-    margin-top: -8px;
-    border-radius: 50%;
-    border: 2px solid var(--ink);
-    background: var(--surface);
-    box-shadow: 0 1px 4px rgb(0 0 0 / 25%);
-  }
-
-  &::-moz-range-thumb {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    border: 2px solid var(--ink);
-    background: var(--surface);
-    box-shadow: 0 1px 4px rgb(0 0 0 / 25%);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 6px;
-  }
-}
-
-.name-btn {
-  flex: 1;
-  min-height: var(--tap);
-  padding: 0.25rem 0;
-  border: none;
-  background: transparent;
-  text-align: left;
-  font-weight: 500;
-}
-
-.headline {
-  margin: 0.2rem 0 0.5rem;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-.row-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-
-  button {
-    flex: 1 1 auto;
-    min-height: 2.75rem;
-    font-size: 0.9rem;
-  }
 }
 
 .edit {
@@ -186,10 +85,6 @@
   color: var(--danger);
 }
 
-.place {
-  font-weight: 600;
-}
-
 /* A line that leaves (used, gone, moved) folds away instead of vanishing, so
    the eye sees that something changed (NN/g, change blindness). */
 .leaving {
@@ -206,50 +101,5 @@
 @media (prefers-reduced-motion: reduce) {
   .leaving {
     animation-duration: 1ms;
-  }
-}
-
-/* The move sheet: anchored at the bottom, where the thumb already is. */
-.sheet {
-  width: 100%;
-  max-width: 34rem;
-  margin: auto auto 0;
-  padding: 1.25rem 1rem calc(1rem + env(safe-area-inset-bottom));
-  border: none;
-  border-radius: var(--radius) var(--radius) 0 0;
-  background: var(--surface);
-  color: var(--ink);
-
-  &::backdrop {
-    background: rgb(0 0 0 / 45%);
-  }
-
-  h2 {
-    margin: 0 0 1rem;
-    font-size: 1.1rem;
-  }
-
-  .places {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
-
-    button {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      min-height: 52px;
-      font-weight: 600;
-    }
-
-    small {
-      color: var(--muted);
-      font-weight: 400;
-    }
-  }
-
-  > .ghost {
-    width: 100%;
   }
 }

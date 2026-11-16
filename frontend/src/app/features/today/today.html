@@ -49,58 +49,7 @@
       <h2 class="section-head">{{ 'today.use_first' | translate }}</h2>
 
       @for (item of today()!.use_first; track item.id) {
-        <article class="card rescue" [class.high-risk]="item.high_risk">
-          <div class="line">
-            <h3 [id]="'item-' + item.id">{{ item.display_name }}</h3>
-            @if (item.safety_date) {
-              <span class="badge">{{ 'today.safety_date' | translate }}</span>
-            }
-          </div>
-
-          <p class="headline">{{ item.headline }}</p>
-          @if (item.added_by_name) {
-            <p class="by">{{ 'common.by' | translate: { name: item.added_by_name } }}</p>
-          }
-
-          <!-- Length is the primary freshness channel, text is the second and the
-               icon the third. Colour only reinforces: red-green CVD is ~8% of men. -->
-          <div
-            class="bar"
-            role="img"
-            [attr.aria-label]="item.headline"
-            [attr.data-phase]="item.phase"
-          >
-            <span [style.width]="barWidth(item)"></span>
-          </div>
-
-          <div class="actions" role="group" [attr.aria-labelledby]="'item-' + item.id">
-            <button type="button" [disabled]="busyId() === item.id" (click)="resolve(item, 'used')">
-              ✔ {{ 'today.used' | translate }}
-            </button>
-            <button
-              type="button"
-              [disabled]="busyId() === item.id"
-              (click)="resolve(item, 'partial')"
-            >
-              ½ {{ 'today.partial' | translate }}
-            </button>
-            <button
-              type="button"
-              [disabled]="busyId() === item.id"
-              (click)="resolve(item, 'froze')"
-            >
-              ❄️ {{ 'today.froze' | translate }}
-            </button>
-            <button
-              type="button"
-              class="quiet"
-              [disabled]="busyId() === item.id"
-              (click)="resolve(item, 'wasted')"
-            >
-              🗑 {{ 'today.gone' | translate }}
-            </button>
-          </div>
-        </article>
+        <app-item-line [line]="lineFor(item)" (failed)="error.set($event)" />
       }
     } @else if (allCalm()) {
       <div class="calm">
