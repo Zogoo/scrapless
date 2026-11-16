@@ -277,8 +277,19 @@ keys and no subscription: the real `Dispatch` wrote the evening's row, the badge
 outlined both foods and cleared the badge, a cold open of `/today?n=…` kept it cleared while
 the boot load crossed the read, and the German UI got German words from the server.
 
+**Then again end to end in docker-compose, with the bell and a real push through FCM.** A
+headless Chrome turned push on from the bell's own offer; the real `Dispatch` and
+`DeliverPushJob` delivered "Brokkoli and Spinat want using tonight." with the unread count;
+the service worker told the open app and the badge went to 2 without a reload; opening
+`/today?n=…` marked it read on the server, outlined both foods and closed the lock-screen
+copy. Turning push off and on again in Settings worked, and the tick answered 404 without its
+token and sent nothing outside 17:00–20:00. That pass found the badge staying at "1 unread"
+after its food was used — food changes now recount the bell — and subscription keys in the
+request log, now filtered.
+
 ⚠️ **Still not verified:** a phone (Android via FCM, iPhone via APNs from the Home Screen),
-the tap on a real lock-screen notification, the app-icon badge, and Fly's scheduled machine.
+the tap on a real lock-screen notification (a synthetic click cannot focus a window), the
+app-icon badge, and Fly's scheduled machine.
 
 ---
 

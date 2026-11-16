@@ -63,6 +63,11 @@ export class NotificationsService {
     this.syncBadge();
   }
 
+  /** Food changed: reload, unless there is nothing in the bell it could change. */
+  recount(): void {
+    if (this.list().length) void this.load();
+  }
+
   /**
    * A different kitchen, or none: empty the bell and drop any load still on
    * its way. Ids are global, so what was read here stays read.

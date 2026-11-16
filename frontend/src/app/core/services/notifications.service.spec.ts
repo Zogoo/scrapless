@@ -111,6 +111,19 @@ describe('NotificationsService', () => {
     expect(service.list().map((e) => e.id)).toEqual([2]);
   });
 
+  it('recounts after food changes, but only when the bell holds anything', async () => {
+    service.recount();
+    http.expectNone(URL);
+
+    await loadWith([entry(1)]);
+    service.recount();
+    http.expectOne(URL).flush([entry(1, { live: false, unread: false })]);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(service.unread()).toBe(0);
+  });
+
   it('empties when the kitchen is forgotten', async () => {
     await loadWith([entry(1)]);
 
