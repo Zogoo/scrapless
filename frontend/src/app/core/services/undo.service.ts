@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { switchMap } from 'rxjs';
 
-import { Outcome, ScoredItem } from '../models';
+import { Outcome, ScoredItem, Storage } from '../models';
 
 import { ItemsService } from './items.service';
 
@@ -17,6 +17,10 @@ export interface Notice {
  * doc 4 §4.13) and offers to take it back. Today and the Kitchen reorder
  * themselves after every tap, so the next tap can land on a different food;
  * without this, that mistake was permanent.
+ *
+ * A notice that offers Undo stays until it is closed or replaced: an Undo
+ * that runs away on a timer is one some people can never reach (WCAG 2.2.1).
+ * A plain message still goes by itself.
  */
 @Injectable({ providedIn: 'root' })
 export class UndoService {
@@ -31,12 +35,22 @@ export class UndoService {
   show(notice: Notice): void {
     this.clearTimer();
     this.notice.set(notice);
-    this.timer = setTimeout(() => this.notice.set(null), UndoService.SHOW_MS);
+    if (notice.itemId === undefined) {
+      this.timer = setTimeout(() => this.notice.set(null), UndoService.SHOW_MS);
+    }
   }
 
-  /** "Broccoli: used", "Danke — notiert." — after any one-tap outcome. */
-  showOutcome(item: ScoredItem, outcome: Outcome): void {
-    const message = this.translate.instant(`undo.${outcome}`, { name: item.display_name });
+  dismiss(): void {
+    this.clearTimer();
+    this.notice.set(null);
+  }
+
+  /** "Broccoli: used", "Brot ist jetzt im Vorrat" — after any one-tap outcome. */
+  showOutcome(item: ScoredItem, outcome: Outcome, place?: Storage): void {
+    const message = this.translate.instant(`undo.${outcome}`, {
+      name: item.display_name,
+      place: place ? this.translate.instant(`storage.${place}`) : '',
+    });
     this.show({ itemId: item.id, message });
   }
 
@@ -44,8 +58,7 @@ export class UndoService {
     const id = this.notice()?.itemId;
     if (id === undefined) return;
 
-    this.clearTimer();
-    this.notice.set(null);
+    this.dismiss();
     this.items
       .undo(id)
       .pipe(switchMap(() => this.items.load()))

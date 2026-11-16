@@ -187,7 +187,7 @@ found four more, also fixed. The ones that change how the app behaves:
 | Area | Now |
 |---|---|
 | **Layout** | The page ends above the fixed tab bar and add button. Before, a phone could not reach Today's "Fine for now", the Kitchen's lower groups, or "Forget this fridge". |
-| **Undo** | Every one-tap outcome (used, gone, half, froze, opened) shows a toast with Undo for six seconds; `POST /items/:id/undo` restores the item for ten minutes. The lists reorder after each tap, so a mis-tap used to be permanent. |
+| **Undo** | Every one-tap outcome (used, gone, half, froze, opened, moved) shows a toast with Undo that stays until closed (WCAG 2.2.1); `POST /items/:id/undo` restores the item for ten minutes. The lists reorder after each tap, so a mis-tap used to be permanent. |
 | **Opened** | Failed with 422 on any food opened before its window began, which is most food. |
 | **Language** | The client never sent `X-Locale`, so every sentence the server wrote was English. It does now; Settings has a language switch. The tap grid shows the UI language but sends the receipt's word, so a tap and a Bon land on one Kitchen line. |
 | **Shop** | No suggestion for food still at home; suggestions can be dismissed (`suggestion_dismissals`); one open line per name; "Clear bought". |
@@ -199,6 +199,24 @@ found four more, also fixed. The ones that change how the app behaves:
 One regression was caught only in the browser, which is why `app.config.spec.ts` exists: an
 interceptor that injected `TranslateService` ran on the translation loader's own request and
 booted the app to a blank screen (NG0200). Interceptors now act on API calls only.
+
+### And what moving food between places needed
+
+The Kitchen showed one place at a time; opening the Freezer closed the Fridge and pushed the
+Cupboard out of reach. Only fridge → freezer existed ("Froze it"). Now, following NN/g on
+accordions and drag-and-drop, WCAG 2.5.7, and the touch studies summarised in the research
+pass (tap beats drag; hidden gestures go unfound):
+
+- **All three places on one page**, with a row under the app bar that stays in view and jumps
+  to each, with its count. The app bar never actually stuck (`<app-root>` was inline); it does
+  now, at a fixed `--appbar-h`.
+- **"Fridge ▾" on each card** opens a sheet of the three places, current one marked. It
+  replaces "Froze it" in the Kitchen; Today keeps the one-tap freeze.
+- **`outcome: "moved", to:`** on `POST /items/:id/resolve`, so a move is undoable like every
+  other tap. Into the freezer is recorded as freezing. Out of it is a thaw: two days for
+  meat and fish (USDA FSIS, "The Big Thaw"), three for anything else ⚠️ *our estimate*.
+  Otherwise **a move never lengthens the window**: milk put in the cupboard would have
+  inherited the cupboard's generic six months, because no dairy-in-cupboard rule exists.
 
 ---
 
@@ -240,7 +258,7 @@ fly deploy --remote-only -a scrapless-app
 
 ## 13.5 Verification
 
-Backend 274 examples, frontend 47, RuboCop and Brakeman clean. Beyond the suites, the running app was
+Backend 283 examples, frontend 49, RuboCop and Brakeman clean. Beyond the suites, the running app was
 driven end to end: fridge created and named, four items added through the tap grid with
 **zero** billed model calls, the shop rewound a week to exercise the risk model, chicken
 correctly suppressed, localStorage cleared and the fridge restored from the cookie alone, and

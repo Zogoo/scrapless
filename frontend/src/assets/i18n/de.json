@@ -127,7 +127,11 @@
     "how_much": "Wie viel {{name}} noch da ist",
     "less": "Weniger {{name}}",
     "more": "Mehr {{name}}",
-    "remove": "Aus der Küche entfernen"
+    "remove": "Aus der Küche entfernen",
+    "jump": "Orte in der Küche",
+    "move_label": "{{name}} ist im {{place}}. Woanders hin",
+    "move_title": "Wo ist {{name}} jetzt?",
+    "here_now": "gerade hier"
   },
   "storage": {
     "fridge": "Kühlschrank",
@@ -209,7 +213,8 @@
     "partial": "{{name}}: Hälfte übrig",
     "froze": "{{name}} ist im Gefrierfach",
     "opened": "{{name}}: geöffnet",
-    "snooze": "{{name}}: später nochmal"
+    "snooze": "{{name}}: später nochmal",
+    "moved": "{{name}} ist jetzt im {{place}}"
   },
   "errors": {
     "offline": "Du bist offline. Sobald du wieder online bist, geht es weiter.",

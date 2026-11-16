@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { Item, Outcome, Today } from '../models';
+import { Item, Outcome, Storage, Today } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class ItemsService {
@@ -19,6 +19,11 @@ export class ItemsService {
   /** Every outcome is one POST with no form. */
   resolve(id: number, outcome: Outcome, days?: number): Observable<Item> {
     return this.http.post<Item>(`${this.url}/${id}/resolve`, { outcome, days });
+  }
+
+  /** To another place in the kitchen; the server treats the freezer as freezing it. */
+  move(id: number, to: Storage): Observable<Item> {
+    return this.http.post<Item>(`${this.url}/${id}/resolve`, { outcome: 'moved', to });
   }
 
   /** Takes back the last tap on this food, if it was just now. */

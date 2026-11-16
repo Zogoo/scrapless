@@ -1,9 +1,11 @@
 import {
   Component,
+  ElementRef,
   OnInit,
   computed,
   inject,
   signal,
+  viewChild,
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { Router } from '@angular/router';
@@ -34,7 +36,9 @@ export class Kitchen implements OnInit {
 
   protected readonly loading = signal(true);
   protected readonly error = signal('');
-  protected readonly open = signal<Storage | null>('fridge');
+  /** The food whose place is being changed, while the sheet is up. */
+  protected readonly moving = signal<ScoredItem | null>(null);
+  private readonly moveSheet = viewChild<ElementRef<HTMLDialogElement>>('moveSheet');
   protected readonly editingKey = signal<string | null>(null);
   protected readonly draftName = signal('');
   /** The line being dragged and where its thumb is, before the server agrees. */
@@ -74,8 +78,33 @@ export class Kitchen implements OnInit {
     });
   }
 
-  protected toggle(storage: Storage): void {
-    this.open.set(this.open() === storage ? null : storage);
+  protected jump(storage: Storage): void {
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    document
+      .getElementById(`place-${storage}`)
+      ?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  }
+
+  protected startMove(item: ScoredItem): void {
+    this.moving.set(item);
+    this.moveSheet()?.nativeElement.showModal();
+  }
+
+  /** A tap on the dimmed page around the sheet is a "never mind". */
+  protected closeOnBackdrop(event: MouseEvent): void {
+    if (event.target === event.currentTarget) (event.currentTarget as HTMLDialogElement).close();
+  }
+
+  /** One tap in the sheet; the toast names the new place and can take it back. */
+  protected move(item: ScoredItem, storage: Storage): void {
+    this.moveSheet()?.nativeElement.close();
+    this.items.move(item.id, storage).subscribe({
+      next: () => {
+        this.undo.showOutcome(item, 'moved', storage);
+        this.load();
+      },
+      error: (err: { message?: string }) => this.fail(err),
+    });
   }
 
   protected startEdit(line: KitchenLine): void {

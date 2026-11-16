@@ -7,20 +7,50 @@
   margin: 0 auto;
 }
 
-.group-head {
+/* Stays in view under the app bar: where each place is, and how much is in it. */
+.jump {
+  position: sticky;
+  top: calc(var(--appbar-h) + env(safe-area-inset-top));
+  z-index: 2;
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  border-color: transparent;
-  background: transparent;
-  font-weight: 600;
+  gap: 0.4rem;
+  margin: 0 -1rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg);
 
-  .count {
-    margin-left: auto;
-    color: var(--muted);
-    font-weight: 400;
+  /* Name over count, so "Kühlschrank" and "Fridge" give the same shape. */
+  button {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.2rem 0.25rem;
+    font-size: 0.9rem;
+    line-height: 1.2;
+
+    .count {
+      margin: 0;
+    }
   }
+}
+
+.count {
+  margin-left: 0.35rem;
+  color: var(--muted);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.group {
+  /* A jump lands below the app bar and the place row, not under them. */
+  scroll-margin-top: calc(var(--appbar-h) + var(--tap) + 1.5rem + env(safe-area-inset-top));
+}
+
+.group-head {
+  margin: 0.75rem 0 0.5rem;
+  font-size: 1.1rem;
 }
 
 .group ul {
@@ -33,6 +63,7 @@
 }
 
 .group li {
+  overflow: hidden;
   padding: 0.6rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -160,4 +191,72 @@
 
 .danger {
   color: var(--danger);
+}
+
+.place {
+  font-weight: 600;
+}
+
+/* A line that leaves (used, gone, moved) folds away instead of vanishing, so
+   the eye sees that something changed (NN/g, change blindness). */
+.leaving {
+  animation: leave 250ms ease-in forwards;
+}
+
+@keyframes leave {
+  to {
+    opacity: 0;
+    transform: translateX(1.5rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leaving {
+    animation-duration: 1ms;
+  }
+}
+
+/* The move sheet: anchored at the bottom, where the thumb already is. */
+.sheet {
+  width: 100%;
+  max-width: 34rem;
+  margin: auto auto 0;
+  padding: 1.25rem 1rem calc(1rem + env(safe-area-inset-bottom));
+  border: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: var(--surface);
+  color: var(--ink);
+
+  &::backdrop {
+    background: rgb(0 0 0 / 45%);
+  }
+
+  h2 {
+    margin: 0 0 1rem;
+    font-size: 1.1rem;
+  }
+
+  .places {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+
+    button {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 52px;
+      font-weight: 600;
+    }
+
+    small {
+      color: var(--muted);
+      font-weight: 400;
+    }
+  }
+
+  > .ghost {
+    width: 100%;
+  }
 }

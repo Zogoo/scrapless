@@ -10,7 +10,7 @@ export interface Fridge {
 
 export type Phase = 'fresh' | 'aging' | 'at_risk' | 'ghost';
 export type Storage = 'fridge' | 'freezer' | 'pantry';
-export type Outcome = 'used' | 'wasted' | 'partial' | 'froze' | 'opened' | 'snooze';
+export type Outcome = 'used' | 'wasted' | 'partial' | 'froze' | 'opened' | 'snooze' | 'moved';
 
 export interface Item {
   id: number;
