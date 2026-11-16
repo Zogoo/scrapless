@@ -1,4 +1,5 @@
 require_relative "boot"
+require_relative "../lib/middleware/static_cache_control"
 
 require "rails"
 # Pick the frameworks you want:
@@ -26,7 +27,7 @@ module Restlify
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
-    config.autoload_lib(ignore: %w[assets tasks])
+    config.autoload_lib(ignore: %w[assets middleware tasks])
 
     # Configuration for the application, engines, and railties goes here.
     #
@@ -50,6 +51,7 @@ module Restlify
     config.middleware.use ActionDispatch::Static, "#{root}/public", headers: {
       "cache-control" => "public, max-age=#{1.hour.to_i}"
     }
+    config.middleware.insert_before ActionDispatch::Static, StaticCacheControl
 
     config.i18n.default_locale = :en
     config.i18n.available_locales = %i[en de]
