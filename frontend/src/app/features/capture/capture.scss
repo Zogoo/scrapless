@@ -313,3 +313,31 @@
     flex: 1 1 auto;
   }
 }
+
+/* The one permission question, asked after the first foods land. */
+.notify-ask {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-tint);
+
+  p {
+    margin: 0;
+  }
+}
+
+.notify-head {
+  font-weight: 600;
+}
+
+.notify-actions {
+  display: flex;
+  gap: 0.5rem;
+
+  button {
+    flex: 1;
+    min-height: 48px;
+  }
+}

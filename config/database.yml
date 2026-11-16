@@ -1,6 +1,8 @@
+# The primary pool covers Puma's threads plus the Solid Queue worker threads
+# that run inside the same process in production (config/queue.yml).
 default: &default
   adapter: sqlite3
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS", 5) %>
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS", 5).to_i + 5 %>
   timeout: 5000
 
 development:
@@ -11,6 +13,14 @@ test:
   <<: *default
   database: <%= ENV.fetch("DATABASE_PATH", "storage/test.sqlite3") %>
 
+# Solid Queue gets its own file beside the primary one, on the same volume, so
+# queue polling never contends with the app's single SQLite writer.
+<% primary = ENV.fetch("DATABASE_PATH", "storage/production.sqlite3") %>
 production:
-  <<: *default
-  database: <%= ENV.fetch("DATABASE_PATH", "storage/production.sqlite3") %>
+  primary:
+    <<: *default
+    database: <%= primary %>
+  queue:
+    <<: *default
+    database: <%= ENV.fetch("QUEUE_DATABASE_PATH", primary.sub(/\.sqlite3\z/, "_queue.sqlite3")) %>
+    migrations_paths: db/queue_migrate

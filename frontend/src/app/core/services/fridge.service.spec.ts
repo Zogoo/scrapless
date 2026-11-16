@@ -16,6 +16,7 @@ const shared: Fridge = {
   token: 'bearer-secret',
   join_code: 'join-code',
   locale: 'en',
+  alerts_per_week: 1,
   created_at: '2026-11-12T00:00:00Z',
 };
 

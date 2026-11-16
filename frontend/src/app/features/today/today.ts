@@ -6,13 +6,14 @@ import {
   signal,
   ChangeDetectionStrategy,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { ItemsService } from '../../core/services/items.service';
 import { InstallService } from '../../core/services/install.service';
 import { UndoService } from '../../core/services/undo.service';
 import { LocaleService } from '../../core/services/locale.service';
+import { PushService } from '../../core/services/push.service';
 import { Outcome, ScoredItem } from '../../core/models';
 
 /**
@@ -32,6 +33,8 @@ import { Outcome, ScoredItem } from '../../core/models';
 export class Today implements OnInit {
   private readonly items = inject(ItemsService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly push = inject(PushService);
   private readonly undo = inject(UndoService);
   private readonly translate = inject(TranslateService);
   private readonly locale = inject(LocaleService);
@@ -68,6 +71,16 @@ export class Today implements OnInit {
 
   ngOnInit(): void {
     this.load();
+    this.countOpenedNotification();
+  }
+
+  /** A tapped notification opens /today?n=<id>; count it once, then drop the id. */
+  private countOpenedNotification(): void {
+    const id = this.route.snapshot.queryParamMap.get('n');
+    if (!id || !/^\d+$/.test(id)) return;
+
+    this.push.opened(id);
+    void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
   }
 
   protected load(): void {

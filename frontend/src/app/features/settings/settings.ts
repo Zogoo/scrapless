@@ -16,6 +16,7 @@ import { ActorService } from '../../core/services/actor.service';
 import { CaptureService } from '../../core/services/capture.service';
 import { InstallService } from '../../core/services/install.service';
 import { LocaleService } from '../../core/services/locale.service';
+import { PushService } from '../../core/services/push.service';
 import { qrImageSrc } from '../../core/qr-image';
 import { CostReport } from '../../core/models';
 
@@ -31,6 +32,7 @@ export class Settings implements OnInit {
   protected readonly actor = inject(ActorService);
   protected readonly install = inject(InstallService);
   protected readonly locale = inject(LocaleService);
+  protected readonly push = inject(PushService);
   private readonly captures = inject(CaptureService);
   private readonly router = inject(Router);
 
@@ -85,6 +87,18 @@ export class Settings implements OnInit {
   protected chooseLocale(code: string): void {
     this.locale.use(code);
     this.fridge.setLocale(code).subscribe();
+  }
+
+  /** At most this many a week; the server enforces it, this only chooses it. */
+  protected readonly budgets = [1, 2, 3];
+
+  protected toggleNotifications(): void {
+    // Straight from the tap: Safari only shows the prompt inside one.
+    void (this.push.state() === 'on' ? this.push.disable() : this.push.enable());
+  }
+
+  protected chooseBudget(count: number): void {
+    this.fridge.setAlertsPerWeek(count).subscribe();
   }
 
   protected saveActor(): void {

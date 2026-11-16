@@ -11,6 +11,9 @@
  *   navigations and static assets -> cache first, revalidate in the background
  *   /api/*                        -> network only, never cached
  *
+ * And push: the server sends one notification at a time (see the handlers at
+ * the bottom), and a tap opens Today.
+ *
  * The API is never cached on purpose. Serving a stale "use the spinach today"
  * from last Tuesday is worse than showing nothing: the entire product promise
  * is that the thing on screen is current.
@@ -65,6 +68,46 @@ self.addEventListener('fetch', (event) => {
         .catch(() => cached);
 
       return cached || network;
+    }),
+  );
+});
+
+// The server sends { title, body, url, tag }. The tag means a newer notification
+// replaces an older one, so a retried push never shows twice.
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = {};
+  }
+  if (!data.title) return;
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      tag: data.tag,
+      icon: '/branding/app_icon_light.png',
+      data: { url: data.url },
+    }),
+  );
+});
+
+// One action: open Today. Only ever a page of this app, whatever the payload says.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || '/today', self.location.origin);
+  const url = target.origin === self.location.origin ? target.href : '/today';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+      const open = windows[0];
+      if (!open) return self.clients.openWindow(url);
+
+      return open
+        .focus()
+        .then((client) => client.navigate(url))
+        .catch(() => self.clients.openWindow(url));
     }),
   );
 });

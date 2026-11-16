@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, effect, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { filter } from 'rxjs/operators';
@@ -6,6 +6,7 @@ import { filter } from 'rxjs/operators';
 import { FridgeService } from './core/services/fridge.service';
 import { UndoService } from './core/services/undo.service';
 import { LocaleService } from './core/services/locale.service';
+import { PushService } from './core/services/push.service';
 
 @Component({
   selector: 'app-root',
@@ -19,12 +20,21 @@ export class App implements OnInit {
   protected readonly undo = inject(UndoService);
   private readonly locale = inject(LocaleService);
   private readonly router = inject(Router);
+  private readonly push = inject(PushService);
 
   protected readonly ready = signal(false);
   protected readonly showTabs = signal(false);
   protected readonly showYou = signal(false);
   /** Brand bar matches the restlos shell. Capture keeps the camera full-bleed. */
   protected readonly showBrand = signal(false);
+
+  constructor() {
+    // Whenever this phone lands on a kitchen — boot, join, switching back, a new
+    // one after forgetting — re-tell the server where to send notifications.
+    effect(() => {
+      if (this.fridge.fridge()?.id) void this.push.refresh();
+    });
+  }
 
   ngOnInit(): void {
     this.locale.use(this.locale.initial());

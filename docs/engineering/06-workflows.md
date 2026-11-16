@@ -56,7 +56,8 @@ Work the checklist in order:
 
 ## Background work
 
-Use Active Job — it is already configured with the `:async` adapter.
+Use Active Job. Production runs Solid Queue inside Puma, with jobs in their own SQLite file
+(`DATABASE_PATH` with `_queue` added); development uses `:async` and specs use `:test`.
 
 ```ruby
 UserMailer.welcome(user).deliver_later

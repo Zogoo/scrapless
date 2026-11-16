@@ -28,8 +28,18 @@ Rails.application.routes.draw do
 
       resource :costs, only: :show, controller: "costs"
 
+      resource :push_subscription, only: %i[create destroy] do
+        get :key
+      end
+      post "notifications/:id/opened", to: "notifications#opened", as: :notification_opened
+
       post "recipes/suggest", to: "recipes#suggest"
     end
+  end
+
+  # Server-to-server only: the hourly Fly machine that wakes this one.
+  namespace :internal do
+    post "notifications/tick", to: "notifications#tick"
   end
 
   # "/" is not matched by the catch-all below, and without this Rails serves its

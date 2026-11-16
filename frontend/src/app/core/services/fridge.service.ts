@@ -104,6 +104,13 @@ export class FridgeService {
       .pipe(tap((fridge) => this.accept(fridge)));
   }
 
+  /** The kitchen's weekly notification budget, shared by every phone in it. */
+  setAlertsPerWeek(count: number): Observable<Fridge> {
+    return this.http
+      .patch<Fridge>(`${environment.apiUrl}/fridge`, { alerts_per_week: count })
+      .pipe(tap((fridge) => this.accept(fridge)));
+  }
+
   /**
    * Opens a kitchen someone shared. The server trades the join code for the
    * bearer token, sets the ten-year cookie, and we store the token here. A

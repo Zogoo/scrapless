@@ -6,6 +6,11 @@ primary_region = 'fra'
 console_command = '/app/bin/rails console'
 swap_size_mb = 512
 
+# Fly stops an idle machine with SIGINT and kills it after kill_timeout. 60 s
+# lets Solid Queue (shutdown_timeout 50 s) finish a push in flight; anything
+# not yet started stays queued in SQLite until the next wake.
+kill_timeout = 60
+
 # NOTE: `fly console` creates an ephemeral machine WITHOUT the volume mounted.
 # Use `fly ssh console -C '/app/bin/rails console'` on the running web machine
 # where the SQLite volume is available.
@@ -23,6 +28,8 @@ swap_size_mb = 512
   APP_FRONTEND_URL = 'https://scrapless-app.fly.dev'
   # Switch to 'fly' after `rake fly:setup` provisions Tigris storage.
   ACTIVE_STORAGE_SERVICE = 'local'
+  # Runs the Solid Queue supervisor inside Puma (config/puma.rb).
+  SOLID_QUEUE_IN_PUMA = 'true'
 
 [mounts]
   source = 'database_storage'

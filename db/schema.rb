@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_15_212822) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_16_112220) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -87,6 +87,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_212822) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "join_code", null: false
+    t.integer "alerts_per_week", default: 1, null: false
     t.index ["join_code"], name: "index_households_on_join_code", unique: true
     t.index ["token"], name: "index_households_on_token", unique: true
     t.index ["uuid"], name: "index_households_on_uuid", unique: true
@@ -154,6 +155,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_212822) do
     t.index ["household_id"], name: "index_memo_items_on_household_id"
   end
 
+  create_table "notifications", force: :cascade do |t|
+    t.integer "household_id", null: false
+    t.string "iso_week", null: false
+    t.integer "slot", null: false
+    t.date "sent_on", null: false
+    t.json "item_ids", default: [], null: false
+    t.datetime "opened_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["household_id", "iso_week", "slot"], name: "index_notifications_on_household_id_and_iso_week_and_slot", unique: true
+    t.index ["household_id", "sent_on"], name: "index_notifications_on_household_id_and_sent_on", unique: true
+    t.index ["household_id"], name: "index_notifications_on_household_id"
+  end
+
   create_table "product_aliases", force: :cascade do |t|
     t.string "raw_text", null: false
     t.string "canonical_name", null: false
@@ -168,6 +183,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_212822) do
     t.index ["canonical_name"], name: "index_product_aliases_on_canonical_name"
     t.index ["household_id", "raw_text", "merchant"], name: "index_product_aliases_on_household_raw_text_merchant", unique: true
     t.index ["household_id"], name: "index_product_aliases_on_household_id"
+  end
+
+  create_table "push_subscriptions", force: :cascade do |t|
+    t.integer "household_id", null: false
+    t.string "endpoint", null: false
+    t.string "p256dh", null: false
+    t.string "auth", null: false
+    t.string "locale", default: "en", null: false
+    t.datetime "last_delivered_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["endpoint"], name: "index_push_subscriptions_on_endpoint", unique: true
+    t.index ["household_id"], name: "index_push_subscriptions_on_household_id"
   end
 
   create_table "shelf_life_rules", force: :cascade do |t|
@@ -200,6 +228,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_212822) do
   add_foreign_key "items", "captures"
   add_foreign_key "items", "households"
   add_foreign_key "memo_items", "households"
+  add_foreign_key "notifications", "households"
   add_foreign_key "product_aliases", "households"
+  add_foreign_key "push_subscriptions", "households"
   add_foreign_key "suggestion_dismissals", "households"
 end

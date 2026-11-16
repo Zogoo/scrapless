@@ -49,6 +49,48 @@
     </section>
   }
 
+  @if (push.state() !== 'unavailable') {
+    <section class="block">
+      <h2 id="notify-head">{{ 'notify.title' | translate }}</h2>
+      @switch (push.state()) {
+        @case ('on') {
+          <p class="meta">{{ 'notify.on_note' | translate }}</p>
+          <p class="meta" id="budget-head">{{ 'notify.budget' | translate }}</p>
+          <div class="choices" role="group" aria-labelledby="budget-head">
+            @for (count of budgets; track count) {
+              <button
+                type="button"
+                [class.primary]="fridge.fridge()?.alerts_per_week === count"
+                [attr.aria-pressed]="fridge.fridge()?.alerts_per_week === count"
+                (click)="chooseBudget(count)"
+              >
+                {{ 'notify.per_week_' + count | translate }}
+              </button>
+            }
+          </div>
+          <button type="button" class="wide" (click)="toggleNotifications()">
+            {{ 'notify.turn_off' | translate }}
+          </button>
+        }
+        @case ('off') {
+          <p class="meta">{{ 'notify.off_note' | translate }}</p>
+          <button type="button" class="primary wide" (click)="toggleNotifications()">
+            {{ 'notify.turn_on' | translate }}
+          </button>
+        }
+        @case ('blocked') {
+          <p class="meta">{{ 'notify.blocked' | translate }}</p>
+        }
+        @case ('needs_install') {
+          <p class="meta">{{ 'notify.needs_install' | translate }}</p>
+        }
+        @default {
+          <p class="meta">{{ 'notify.unsupported' | translate }}</p>
+        }
+      }
+    </section>
+  }
+
   <section class="block">
     <h2 id="language-head">{{ 'settings.language' | translate }}</h2>
     <div class="choices" role="group" aria-labelledby="language-head">
