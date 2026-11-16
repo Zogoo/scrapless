@@ -40,6 +40,11 @@ RSpec.configure do |config|
   # The cache now backs rate limiting (see config/environments/test.rb), so it
   # has to be reset or one example's requests count against the next one's.
   config.before { Rails.cache.clear }
+
+  # ApplicationController sets I18n.locale per request, and the locale lives on
+  # the thread. Every example shares one thread, so a request sent in German
+  # would leave the next example — in random order — in German too.
+  config.around { |example| I18n.with_locale(I18n.default_locale) { example.run } }
 end
 
 Shoulda::Matchers.configure do |config|
