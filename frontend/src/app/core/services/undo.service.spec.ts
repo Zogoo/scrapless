@@ -28,9 +28,18 @@ describe('UndoService', () => {
     TestBed.resetTestingModule();
   });
 
-  it('offers to take back the tap, then goes away by itself', () => {
+  // WCAG 2.2.1: an Undo on a timer is one some people can never reach.
+  it('keeps the offer to take back the tap until it is closed', () => {
     service.showOutcome(broccoli, 'wasted');
+    vi.advanceTimersByTime(UndoService.SHOW_MS * 10);
     expect(service.notice()?.itemId).toBe(7);
+
+    service.dismiss();
+    expect(service.notice()).toBeNull();
+  });
+
+  it('lets a message with nothing to undo go by itself', () => {
+    service.show({ message: 'Offline' });
 
     vi.advanceTimersByTime(UndoService.SHOW_MS);
     expect(service.notice()).toBeNull();

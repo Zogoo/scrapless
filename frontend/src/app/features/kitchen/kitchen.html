@@ -8,136 +8,176 @@
   @if (loading()) {
     <p class="loading">{{ 'common.loading' | translate }}</p>
   } @else {
-    @for (storage of storages; track storage) {
-      <section class="group">
-        <button
-          type="button"
-          class="group-head"
-          [attr.aria-expanded]="open() === storage"
-          (click)="toggle(storage)"
-        >
-          <span>{{ 'storage.' + storage | translate }}</span>
+    <!-- Every place open on one page: closing the others lost people's place
+         (NN/g, accordions). This row stays in view and jumps to each one. -->
+    <nav class="jump" [attr.aria-label]="'kitchen.jump' | translate">
+      @for (storage of storages; track storage) {
+        <button type="button" (click)="jump(storage)">
+          {{ 'storage.' + storage | translate }}
           <span class="count">{{ groups()[storage].length }}</span>
-          <span aria-hidden="true">{{ open() === storage ? '▾' : '▸' }}</span>
         </button>
+      }
+    </nav>
 
-        @if (open() === storage) {
-          @if (groups()[storage].length === 0) {
-            <p class="lede">{{ 'kitchen.empty_group' | translate }}</p>
-          } @else {
-            <ul>
-              @for (line of groups()[storage]; track line.key) {
-                <li>
-                  @if (editingKey() === line.key) {
-                    <div class="edit">
-                      <input
-                        type="text"
-                        maxlength="120"
-                        [value]="draftName()"
-                        (input)="draftName.set($any($event.target).value)"
-                        (keyup.enter)="saveEdit(line)"
-                      />
-                      <button type="button" class="primary" (click)="saveEdit(line)">
-                        {{ 'common.save' | translate }}
-                      </button>
-                      <button type="button" class="ghost" (click)="editingKey.set(null)">
-                        {{ 'common.cancel' | translate }}
-                      </button>
-                      <button type="button" class="ghost danger" (click)="removeLine(line)">
-                        {{ 'kitchen.remove' | translate }}
-                      </button>
-                    </div>
-                  } @else {
-                    <div class="row">
-                      <button
-                        type="button"
-                        class="name-btn"
-                        [id]="'line-' + line.first.id"
-                        (click)="startEdit(line)"
-                      >
-                        {{ line.first.display_name }}
-                      </button>
-                      <!-- Steps as well as the slider: a drag is not an option for everyone. -->
-                      <button
-                        type="button"
-                        class="step"
-                        [disabled]="level(line) <= 0"
-                        [attr.aria-label]="
-                          'kitchen.less' | translate: { name: line.first.display_name }
-                        "
-                        (click)="step(line, -0.25)"
-                      >
-                        −
-                      </button>
-                      <span class="amount">{{ amount(line) }}</span>
-                      <button
-                        type="button"
-                        class="step"
-                        [disabled]="level(line) >= line.packs.length"
-                        [attr.aria-label]="
-                          'kitchen.more' | translate: { name: line.first.display_name }
-                        "
-                        (click)="step(line, 0.25)"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <!-- One slider, no units. The pack added first sits left, the one
-                         just added sits right, and sliding down drains that right end.
-                         Each band keeps its freshness colour. -->
+    @for (storage of storages; track storage) {
+      <section class="group" [id]="'place-' + storage" [attr.aria-labelledby]="'head-' + storage">
+        <h2 class="group-head" [id]="'head-' + storage">
+          {{ 'storage.' + storage | translate }}
+          <span class="count">{{ groups()[storage].length }}</span>
+        </h2>
+
+        @if (groups()[storage].length === 0) {
+          <p class="lede">{{ 'kitchen.empty_group' | translate }}</p>
+        } @else {
+          <ul>
+            @for (line of groups()[storage]; track line.key) {
+              <li animate.leave="leaving">
+                @if (editingKey() === line.key) {
+                  <div class="edit">
                     <input
-                      type="range"
-                      class="level"
-                      min="0"
-                      [max]="line.packs.length"
-                      step="0.25"
-                      [value]="level(line)"
-                      [style.background-image]="track(line)"
-                      [attr.aria-label]="
-                        'kitchen.how_much' | translate: { name: line.first.display_name }
-                      "
-                      [attr.aria-valuetext]="amount(line)"
-                      (input)="slide(line, $event)"
-                      (change)="commitLevel(line, $event)"
+                      type="text"
+                      maxlength="120"
+                      [value]="draftName()"
+                      (input)="draftName.set($any($event.target).value)"
+                      (keyup.enter)="saveEdit(line)"
                     />
-                    <p class="headline">{{ line.first.headline }}</p>
-                    @if (line.first.added_by_name) {
-                      <p class="by">
-                        {{ 'common.by' | translate: { name: line.first.added_by_name } }}
-                      </p>
-                    }
-                    <div
-                      class="row-actions"
-                      role="group"
-                      [attr.aria-labelledby]="'line-' + line.first.id"
+                    <button type="button" class="primary" (click)="saveEdit(line)">
+                      {{ 'common.save' | translate }}
+                    </button>
+                    <button type="button" class="ghost" (click)="editingKey.set(null)">
+                      {{ 'common.cancel' | translate }}
+                    </button>
+                    <button type="button" class="ghost danger" (click)="removeLine(line)">
+                      {{ 'kitchen.remove' | translate }}
+                    </button>
+                  </div>
+                } @else {
+                  <div class="row">
+                    <button
+                      type="button"
+                      class="name-btn"
+                      [id]="'line-' + line.first.id"
+                      (click)="startEdit(line)"
                     >
-                      <button type="button" (click)="resolve(line.first, 'used')">
-                        ✔ {{ 'today.used' | translate }}
-                      </button>
-                      @if (line.first.storage !== 'freezer') {
-                        <button type="button" (click)="resolve(line.first, 'froze')">
-                          ❄️ {{ 'today.froze' | translate }}
-                        </button>
-                      }
-                      @if (!line.first.opened_on) {
-                        <button type="button" (click)="resolve(line.first, 'opened')">
-                          {{ 'kitchen.opened' | translate }}
-                        </button>
-                      }
-                      <button type="button" class="quiet" (click)="resolve(line.first, 'wasted')">
-                        🗑 {{ 'today.gone' | translate }}
-                      </button>
-                    </div>
+                      {{ line.first.display_name }}
+                    </button>
+                    <!-- Steps as well as the slider: a drag is not an option for everyone. -->
+                    <button
+                      type="button"
+                      class="step"
+                      [disabled]="level(line) <= 0"
+                      [attr.aria-label]="
+                        'kitchen.less' | translate: { name: line.first.display_name }
+                      "
+                      (click)="step(line, -0.25)"
+                    >
+                      −
+                    </button>
+                    <span class="amount">{{ amount(line) }}</span>
+                    <button
+                      type="button"
+                      class="step"
+                      [disabled]="level(line) >= line.packs.length"
+                      [attr.aria-label]="
+                        'kitchen.more' | translate: { name: line.first.display_name }
+                      "
+                      (click)="step(line, 0.25)"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <!-- One slider, no units. The pack added first sits left, the one
+                     just added sits right, and sliding down drains that right end.
+                     Each band keeps its freshness colour. -->
+                  <input
+                    type="range"
+                    class="level"
+                    min="0"
+                    [max]="line.packs.length"
+                    step="0.25"
+                    [value]="level(line)"
+                    [style.background-image]="track(line)"
+                    [attr.aria-label]="
+                      'kitchen.how_much' | translate: { name: line.first.display_name }
+                    "
+                    [attr.aria-valuetext]="amount(line)"
+                    (input)="slide(line, $event)"
+                    (change)="commitLevel(line, $event)"
+                  />
+                  <p class="headline">{{ line.first.headline }}</p>
+                  @if (line.first.added_by_name) {
+                    <p class="by">
+                      {{ 'common.by' | translate: { name: line.first.added_by_name } }}
+                    </p>
                   }
-                </li>
-              }
-            </ul>
-          }
+                  <div
+                    class="row-actions"
+                    role="group"
+                    [attr.aria-labelledby]="'line-' + line.first.id"
+                  >
+                    <button type="button" (click)="resolve(line.first, 'used')">
+                      ✔ {{ 'today.used' | translate }}
+                    </button>
+                    <!-- Where it is, and the way to move it: a sheet, not a drag
+                       (WCAG 2.5.7) and not three more targets per card. -->
+                    <button
+                      type="button"
+                      class="place"
+                      aria-haspopup="dialog"
+                      [attr.aria-label]="
+                        'kitchen.move_label'
+                          | translate
+                            : {
+                                name: line.first.display_name,
+                                place: 'storage.' + line.first.storage | translate,
+                              }
+                      "
+                      (click)="startMove(line.first)"
+                    >
+                      {{ 'storage.' + line.first.storage | translate }} ▾
+                    </button>
+                    @if (!line.first.opened_on) {
+                      <button type="button" (click)="resolve(line.first, 'opened')">
+                        {{ 'kitchen.opened' | translate }}
+                      </button>
+                    }
+                    <button type="button" class="quiet" (click)="resolve(line.first, 'wasted')">
+                      🗑 {{ 'today.gone' | translate }}
+                    </button>
+                  </div>
+                }
+              </li>
+            }
+          </ul>
         }
       </section>
     }
   }
 </section>
+
+<dialog #moveSheet class="sheet" (close)="moving.set(null)" (click)="closeOnBackdrop($event)">
+  @if (moving(); as item) {
+    <h2>{{ 'kitchen.move_title' | translate: { name: item.display_name } }}</h2>
+    <div class="places">
+      @for (storage of storages; track storage) {
+        <button
+          type="button"
+          [disabled]="storage === item.storage"
+          [attr.aria-current]="storage === item.storage ? 'true' : null"
+          (click)="move(item, storage)"
+        >
+          {{ 'storage.' + storage | translate }}
+          @if (storage === item.storage) {
+            <small>{{ 'kitchen.here_now' | translate }}</small>
+          }
+        </button>
+      }
+    </div>
+    <button type="button" class="ghost" (click)="moveSheet.close()">
+      {{ 'common.cancel' | translate }}
+    </button>
+  }
+</dialog>
 
 <button type="button" class="fab" (click)="capture()" [attr.aria-label]="'today.add' | translate">
   +

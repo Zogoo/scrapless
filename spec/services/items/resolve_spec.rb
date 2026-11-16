@@ -26,6 +26,68 @@ RSpec.describe Items::Resolve do
     expect(before).to include("state" => "active")
   end
 
+  describe "moving food somewhere else" do
+    it "keeps the days already spent when bread goes from the fridge to the cupboard" do
+      bread = create(:item, household: household, category: "bakery", acquired_on: Date.current - 3)
+
+      described_class.call(item: bread, outcome: "moved", to: "pantry")
+
+      expect(bread.reload).to have_attributes(storage: "pantry", acquired_on: Date.current - 3)
+      expect(bread.storage_changed_at).to be_present
+      expect(bread.window_start).to be >= bread.acquired_on
+      expect(bread.item_events.last.kind).to eq("moved")
+    end
+
+    # Observed in QA: milk moved to the cupboard read "fine for about 6 months",
+    # the cupboard's generic window, because there is no dairy-in-cupboard rule.
+    it "never gives food more time for moving it out of the fridge" do
+      milk = create(:item, household: household, category: "dairy", window_end: Date.current + 9)
+
+      described_class.call(item: milk, outcome: "moved", to: "pantry")
+
+      expect(milk.reload.window_end).to be <= Date.current + 9
+      expect(milk.window_start).to be <= milk.window_end
+    end
+
+    it "treats a move into the freezer as freezing it" do
+      milk = create(:item, household: household, category: "dairy")
+
+      described_class.call(item: milk, outcome: "moved", to: "freezer")
+
+      expect(milk.reload.storage).to eq("freezer")
+      expect(milk.window_end).to be > Date.current + 100
+      expect(milk.item_events.last.kind).to eq("frozen")
+    end
+
+    it "gives food out of the freezer a thawed window, not a fresh one" do
+      chicken = create(:item, household: household, category: "meat_fish", storage: "freezer",
+                              acquired_on: Date.current - 60, window_end: Date.current + 200)
+
+      described_class.call(item: chicken, outcome: "moved", to: "fridge")
+
+      expect(chicken.reload).to have_attributes(storage: "fridge", window_end: Date.current + 2)
+    end
+
+    it "can be undone back to where it was" do
+      bread = create(:item, household: household, category: "bakery")
+      window = [ bread.window_start, bread.window_end ]
+
+      described_class.call(item: bread, outcome: "moved", to: "freezer")
+      Items::Undo.call(item: bread)
+
+      expect(bread.reload).to have_attributes(storage: "fridge", window_start: window[0], window_end: window[1])
+    end
+
+    it "refuses a place that does not exist, or the one it is already in" do
+      bread = create(:item, household: household)
+
+      expect { described_class.call(item: bread, outcome: "moved", to: "garage") }
+        .to raise_error(described_class::UnknownOutcome)
+      expect { described_class.call(item: bread, outcome: "moved", to: "fridge") }
+        .to raise_error(described_class::UnknownOutcome)
+    end
+  end
+
   it "refuses an outcome it does not know, without calling anything by that name" do
     expect { described_class.call(item: create(:item, household: household), outcome: "destroy") }
       .to raise_error(described_class::UnknownOutcome)

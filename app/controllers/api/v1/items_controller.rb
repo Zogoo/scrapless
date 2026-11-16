@@ -50,10 +50,11 @@ module Api
         head :no_content
       end
 
-      # One tap ends the task. Every outcome is a single POST with no body.
+      # One tap ends the task. Every outcome is a single POST: no body beyond
+      # `days` for a snooze and `to` for a move.
       def resolve
         item = Items::Resolve.call(item: current_household.items.find(params[:id]),
-                                   outcome: params[:outcome], days: params[:days])
+                                   outcome: params[:outcome], days: params[:days], to: params[:to])
         render json: item_json(item.reload)
       end
 
