@@ -1,4 +1,11 @@
-import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import {
+  Component,
+  OnDestroy,
+  OnInit,
+  inject,
+  signal,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { Subject, debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs';
@@ -19,6 +26,7 @@ import { Suggestion } from '../../core/models';
   selector: 'app-memo',
   imports: [FormsModule, TranslatePipe],
   templateUrl: './memo.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './memo.scss',
 })
 export class Memo implements OnInit, OnDestroy {

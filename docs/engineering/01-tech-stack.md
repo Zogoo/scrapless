@@ -23,7 +23,7 @@ Everything here was chosen to be **cheap to run** and **boring to maintain**.
 
 | Concern | Choice |
 |---|---|
-| Framework | Angular 21, standalone components, signals, zoneless |
+| Framework | Angular 22, standalone components, signals, zoneless |
 | i18n | `@ngx-translate/core`, JSON in `src/assets/i18n/` |
 | Tests | **Vitest**, via Angular's built-in `@angular/build:unit-test` builder |
 | Styling | SCSS, plain CSS variables — no UI framework |

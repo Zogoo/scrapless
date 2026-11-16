@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem "rails", "~> 8.1.3", ">= 8.1.3.1"
+gem "rails", "~> 8.1.4"
 # Use sqlite3 as the database for Active Record
 gem "sqlite3", ">= 2.1"
 # Use the Puma web server [https://github.com/puma/puma]
@@ -17,7 +17,7 @@ gem "tzinfo-data", platforms: %i[ windows jruby ]
 gem "bootsnap", require: false
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
-gem "image_processing", "~> 1.2"
+gem "image_processing", "~> 2.2"
 
 # Use Rack CORS for handling Cross-Origin Resource Sharing (CORS), making cross-origin Ajax possible
 # gem "rack-cors"
@@ -37,17 +37,17 @@ group :development, :test do
 end
 
 # --- Scrapless ---
-# json 3.0 made JSON.parse keyword-only, but ActiveSupport::JSON.decode
-# still passes its options hash positionally, so under Ruby 3.4 every
-# JSON request fails to parse and the API returns 400. Pin to 2.x until
-# ActiveSupport catches up.
-gem "json", "~> 2.7"
+# json 3.0 made JSON.parse keyword-only. ActiveSupport::JSON.decode used to
+# pass its options hash positionally, so every JSON request failed to parse
+# and the API returned 400; this was pinned to 2.x until Rails 8.1.4 switched
+# to **options. spec/requests/json_parsing_spec.rb guards the regression.
+gem "json", "~> 3.0"
 gem "jwt"
 gem "bcrypt", "~> 3.1"
 gem "pagy", "~> 43"
 gem "rack-cors"
 gem "csv"
-gem "aws-sdk-s3", "~> 1.220", require: false
+gem "aws-sdk-s3", "~> 1.232", require: false
 
 group :development, :test do
   gem "rspec-rails"
