@@ -8,8 +8,15 @@
  * be read in one sitting.
  *
  * Two strategies, chosen per request:
- *   navigations and static assets -> cache first, revalidate in the background
- *   /api/*                        -> network only, never cached
+ *   content-hashed bundles (main-5OKTYVF2.js) -> cache first: a new build is a new URL
+ *   everything else, navigations included    -> network first, cache only when offline
+ *   /api/*                                    -> network only, never cached
+ *
+ * "Everything else" keeps its URL across deploys: index.html, the translation
+ * files, the manifest. Served cache-first, a deploy paired new code with an
+ * old en.json and the tap grid showed raw keys ("capture.grid.milk"). The
+ * network fetch also skips the browser's HTTP cache (`cache: 'no-cache'`),
+ * which had kept those files for a year.
  *
  * And push: the server sends one notification at a time (see the handlers at
  * the bottom), and a tap opens Today.
@@ -18,14 +25,17 @@
  * from last Tuesday is worse than showing nothing: the entire product promise
  * is that the thing on screen is current.
  */
-const VERSION = 'restlos-look-v1';
+// Bumped when the caching rules change: activate deletes every older cache.
+const VERSION = 'restlos-v2';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest'];
+// Same rule as StaticCacheControl on the server.
+const FINGERPRINTED = /^\/(main|chunk|polyfills|styles)-[A-Za-z0-9_]{8}\.(js|css)$/;
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(VERSION)
-      .then((cache) => cache.addAll(SHELL))
+      .then((cache) => cache.addAll(SHELL.map((url) => new Request(url, { cache: 'no-cache' }))))
       .then(() => self.skipWaiting()),
   );
 });
@@ -46,31 +56,38 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
 
-  // An SPA navigation must resolve to the shell, or a deep link opened offline
-  // gets a browser error page instead of the app.
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request).catch(() => caches.match('/index.html').then((r) => r || Response.error())),
-    );
-    return;
-  }
-
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      const network = fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(VERSION).then((cache) => cache.put(request, copy));
-          }
-          return response;
-        })
-        .catch(() => cached);
-
-      return cached || network;
-    }),
-  );
+  event.respondWith(FINGERPRINTED.test(url.pathname) ? cacheFirst(request) : networkFirst(request));
 });
+
+function remember(request, response) {
+  if (response.ok) {
+    const copy = response.clone();
+    caches.open(VERSION).then((cache) => cache.put(request, copy));
+  }
+  return response;
+}
+
+function cacheFirst(request) {
+  return caches
+    .match(request)
+    .then((cached) => cached || fetch(request).then((r) => remember(request, r)));
+}
+
+// An SPA navigation offline must still resolve to the shell, or a deep link
+// gets a browser error page instead of the app.
+function networkFirst(request) {
+  return fetch(request, { cache: 'no-cache' })
+    .then((response) => remember(request, response))
+    .catch(() =>
+      caches
+        .match(request)
+        .then(
+          (cached) =>
+            cached || (request.mode === 'navigate' ? caches.match('/index.html') : undefined),
+        )
+        .then((response) => response || Response.error()),
+    );
+}
 
 // The server sends { title, body, url, tag }. The tag means a newer notification
 // replaces an older one, so a retried push never shows twice.
