@@ -115,3 +115,24 @@
   margin: 0;
   color: var(--muted);
 }
+
+.suggestions li {
+  display: flex;
+  gap: 0.25rem;
+
+  > button:first-child {
+    flex: 1;
+  }
+}
+
+.suggestions .dismiss {
+  flex: none;
+  width: auto;
+  min-width: var(--tap);
+  align-items: center;
+  justify-content: center;
+}
+
+.clear-done {
+  margin-top: 0.5rem;
+}

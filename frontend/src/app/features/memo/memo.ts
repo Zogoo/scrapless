@@ -2,6 +2,7 @@ import {
   Component,
   OnDestroy,
   OnInit,
+  computed,
   inject,
   signal,
   ChangeDetectionStrategy,
@@ -36,6 +37,7 @@ export class Memo implements OnInit, OnDestroy {
 
   protected readonly items = this.memo.items;
   protected readonly suggestions = this.memo.suggestions;
+  protected readonly doneCount = computed(() => this.items().filter((item) => item.done).length);
   protected readonly typed = signal('');
   protected readonly matches = signal<Suggestion[]>([]);
   protected readonly busy = signal(false);
@@ -93,11 +95,27 @@ export class Memo implements OnInit, OnDestroy {
   }
 
   protected toggle(id: number, done: boolean): void {
-    this.memo.setDone(id, done).subscribe({ next: () => this.refresh() });
+    this.memo
+      .setDone(id, done)
+      .subscribe({ next: () => this.refresh(), error: (err) => this.fail(err) });
   }
 
   protected remove(id: number): void {
-    this.memo.remove(id).subscribe({ next: () => this.refresh() });
+    this.memo.remove(id).subscribe({ next: () => this.refresh(), error: (err) => this.fail(err) });
+  }
+
+  protected dismiss(name: string): void {
+    this.memo.dismiss(name).subscribe({ error: (err) => this.fail(err) });
+  }
+
+  protected clearDone(): void {
+    this.memo.clearDone().subscribe({ next: () => this.refresh(), error: (err) => this.fail(err) });
+  }
+
+  /** Show what went wrong, and the list as it really is now. */
+  private fail(err: { message?: string }): void {
+    this.error.set(err.message ?? '');
+    this.refresh();
   }
 
   /**

@@ -4,17 +4,29 @@ module Memo
   # Three sources, in descending order of how much they know about this
   # household: what it buys and is now out of, what it has ever bought, and a
   # global staples list for a fridge with no history yet.
+  #
+  # Never suggested: anything already on the list, anything the kitchen still
+  # has and has not outlived (a list that says "buy milk" beside a full carton
+  # is noise), and anything this kitchen dismissed.
   class Suggester < ApplicationService
     LIMIT = 12
 
+    # [label key, category, the word a receipt (and the tap grid) uses]. The
+    # label follows the UI's language; the word is how the kitchen holds it, so
+    # "Milk" is not suggested beside a carton of Milch.
     STAPLES = [
-      %w[Milk dairy], %w[Bread bakery], %w[Eggs dairy], %w[Butter dairy],
-      %w[Cheese dairy], %w[Onions produce], %w[Potatoes produce], %w[Tomatoes produce],
-      %w[Bananas produce], %w[Apples produce], %w[Chicken meat_fish], %w[Coffee drinks],
-      %w[Rice pantry], %w[Pasta pantry], %w[Yoghurt dairy], %w[Salad produce]
+      %w[milk dairy Milch], %w[bread bakery Brot], %w[eggs dairy Eier], %w[butter dairy Butter],
+      %w[cheese dairy Käse], %w[onions produce Zwiebeln], %w[potatoes produce Kartoffeln],
+      %w[tomatoes produce Tomaten], %w[bananas produce Bananen], %w[apples produce Äpfel],
+      %w[chicken meat_fish Hähnchen], %w[coffee drinks Kaffee], %w[rice pantry Reis],
+      %w[pasta pantry Nudeln], %w[yoghurt dairy Joghurt], %w[salad produce Salat]
     ].freeze
 
-    Suggestion = Struct.new(:name, :category, :reason, :score, keyword_init: true)
+    # `key` is what "already at home" is checked against; it is the name
+    # itself except for staples.
+    Suggestion = Struct.new(:name, :category, :reason, :score, :key, keyword_init: true) do
+      def at_home_key = (key || name).downcase
+    end
 
     def initialize(household:, query: nil, limit: LIMIT)
       @household = household
@@ -22,9 +34,11 @@ module Memo
       @limit = limit
     end
 
+    # Overdue on this household's own rhythm already means "probably gone", so
+    # those are not held back by the at-home rule; history and staples are.
     def call
-      candidates = (due_to_run_out + previously_bought + staples)
-                   .reject { |s| already_on_memo?(s.name) }
+      candidates = (due_to_run_out.reject { |s| hidden?(s) } +
+                    (previously_bought + staples).reject { |s| hidden?(s) || at_home.include?(s.at_home_key) })
                    .uniq { |s| s.name.downcase }
 
       candidates = matching(candidates) if @query.present?
@@ -44,7 +58,7 @@ module Memo
     end
 
     def boost(suggestion)
-      Suggestion.new(name: suggestion.name, category: suggestion.category,
+      Suggestion.new(name: suggestion.name, category: suggestion.category, key: suggestion.key,
                      reason: suggestion.reason, score: suggestion.score + 1000)
     end
 
@@ -63,8 +77,8 @@ module Memo
         next if elapsed < cadence
 
         overdue = elapsed - cadence
-        Suggestion.new(name: name.titleize, category: category_for(name),
-                       reason: "usually every #{cadence} days, last bought #{elapsed} days ago",
+        Suggestion.new(name: display_name(name), category: category_for(name),
+                       reason: I18n.t("memo.reason.due", cadence: cadence, elapsed: elapsed),
                        score: 100 + [ overdue, 30 ].min)
       end
     end
@@ -72,15 +86,30 @@ module Memo
     def previously_bought
       counts = @household.items.group(:canonical_name).count
       counts.map do |name, count|
-        Suggestion.new(name: name.to_s.titleize, category: category_for(name),
-                       reason: "bought #{count} #{'time'.pluralize(count)} before", score: 40 + [ count, 20 ].min)
+        Suggestion.new(name: display_name(name), category: category_for(name),
+                       reason: I18n.t("memo.reason.bought", count: count), score: 40 + [ count, 20 ].min)
       end
     end
 
     def staples
-      STAPLES.map.with_index do |(name, category), index|
-        Suggestion.new(name: name, category: category, reason: "common", score: 20 - index * 0.1)
+      STAPLES.map.with_index do |(label, category, word), index|
+        Suggestion.new(name: I18n.t("memo.staples.#{label}"), category: category, key: word,
+                       reason: I18n.t("memo.reason.common"), score: 20 - index * 0.1)
       end
+    end
+
+    # Already on the list, or dismissed by this kitchen.
+    def hidden?(suggestion)
+      @hidden ||= (@household.memo_items.open.pluck(:canonical_name).compact +
+                   @household.suggestion_dismissals.pluck(:canonical_name)).to_set(&:downcase)
+      @hidden.include?(suggestion.name.downcase)
+    end
+
+    # Food that is here and has not outlived its window. Past the window we are
+    # no longer sure it is here, so suggesting it again is fair.
+    def at_home
+      @at_home ||= @household.items.active.where(window_end: Date.current..)
+                             .distinct.pluck(:canonical_name).to_set(&:downcase)
     end
 
     def purchase_history
@@ -91,14 +120,17 @@ module Memo
                                       .transform_values { |rows| rows.map(&:last).uniq.sort }
     end
 
+    # The name as last shown in this kitchen ("H-Milch"), not a re-capitalised
+    # canonical key ("H Milch").
+    def display_name(canonical)
+      @display_names ||= @household.items.order(:id).pluck(:canonical_name, :display_name)
+                                   .to_h { |key, shown| [ key, Copy.bare(shown) ] }
+      @display_names[canonical].presence || canonical.to_s.upcase_first
+    end
+
     def category_for(name)
       @categories ||= @household.items.pluck(:canonical_name, :category).to_h
       @categories[name].presence || Categories.guess(name)
-    end
-
-    def already_on_memo?(name)
-      @open_names ||= @household.memo_items.open.pluck(:canonical_name).compact.map(&:downcase)
-      @open_names.include?(name.downcase)
     end
 
     def median(values)

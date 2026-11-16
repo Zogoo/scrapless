@@ -1,10 +1,11 @@
 import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { filter } from 'rxjs/operators';
 
 import { FridgeService } from './core/services/fridge.service';
-import { environment } from '../environments/environment';
+import { UndoService } from './core/services/undo.service';
+import { LocaleService } from './core/services/locale.service';
 
 @Component({
   selector: 'app-root',
@@ -15,8 +16,9 @@ import { environment } from '../environments/environment';
 })
 export class App implements OnInit {
   protected readonly fridge = inject(FridgeService);
+  protected readonly undo = inject(UndoService);
+  private readonly locale = inject(LocaleService);
   private readonly router = inject(Router);
-  private readonly translate = inject(TranslateService);
 
   protected readonly ready = signal(false);
   protected readonly showTabs = signal(false);
@@ -25,7 +27,7 @@ export class App implements OnInit {
   protected readonly showBrand = signal(false);
 
   ngOnInit(): void {
-    this.translate.use(this.preferredLocale());
+    this.locale.use(this.locale.initial());
 
     this.syncChrome(this.router.url);
     // The tab bar is noise on the one screen that exists to have nothing on it.
@@ -46,10 +48,5 @@ export class App implements OnInit {
     this.showTabs.set(!path.startsWith('/welcome'));
     this.showBrand.set(this.showTabs() && !path.startsWith('/add'));
     this.showYou.set(['/today', '/recipes', '/memo', '/kitchen'].includes(path));
-  }
-
-  private preferredLocale(): string {
-    const wanted = navigator.language?.slice(0, 2) ?? environment.defaultLocale;
-    return environment.availableLocales.includes(wanted) ? wanted : environment.defaultLocale;
   }
 }

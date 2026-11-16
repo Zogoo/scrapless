@@ -109,3 +109,12 @@
 .share-link {
   font-size: 0.85rem;
 }
+
+.choices {
+  display: flex;
+  gap: 0.5rem;
+
+  button {
+    flex: 1;
+  }
+}

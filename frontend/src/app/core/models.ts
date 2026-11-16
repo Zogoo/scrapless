@@ -32,6 +32,8 @@ export interface Item {
   opened_on: string | null;
   snoozed_until: string | null;
   high_risk: boolean;
+  /** A Verbrauchsdatum was read off the label. Only then may the UI say "go by the date". */
+  safety_date: boolean;
   added_by_name: string | null;
 }
 
@@ -52,6 +54,7 @@ export interface Today {
   probably_gone: ScoredItem[];
   sweep_count: number;
   as_of: string;
+  has_captured: boolean;
 }
 
 export interface CapturedItem {
@@ -135,7 +138,6 @@ export interface RecipeSuggestions {
 
 export interface CostReport {
   mode: 'live' | 'stub';
-  models: Record<string, { name: string; input_usd_per_m: number; output_usd_per_m: number }>;
   transcribe_usd_per_minute: number;
   totals: {
     calls: number;
@@ -151,5 +153,4 @@ export interface CostReport {
     avg_ms: number;
     usd_per_call: number;
   }[];
-  this_fridge: { calls: number; failures: number; usd: number };
 }

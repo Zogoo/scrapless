@@ -76,6 +76,25 @@ describe('FridgeService', () => {
     expect(service.fridge()?.name).toBe('Quiet Kitchen');
   });
 
+  // Joining used to strand the kitchen this phone was on.
+  it('remembers the kitchen it left, and can go back to it', () => {
+    const own = { ...shared, id: 'own', name: 'Own Kitchen', token: 'own-token' };
+    service.restore().subscribe();
+    http.expectOne(`${environment.apiUrl}/fridge`).flush(own);
+
+    service.join('join-code').subscribe();
+    http.expectOne(`${environment.apiUrl}/fridge/join`).flush(shared);
+    expect(service.previous()).toEqual({ token: 'own-token', name: 'Own Kitchen' });
+
+    service.switchBack().subscribe();
+    const back = http.expectOne(`${environment.apiUrl}/fridge`);
+    expect(back.request.headers.get('Authorization')).toBe('Bearer own-token');
+    back.flush(own);
+
+    expect(service.fridge()?.name).toBe('Own Kitchen');
+    expect(service.previous()).toEqual({ token: 'bearer-secret', name: 'Quiet Kitchen' });
+  });
+
   it('forgets the token when the server does not know the fridge', () => {
     localStorage.setItem('scrapless_token', 'stale-token');
     let result: Fridge | null | undefined;

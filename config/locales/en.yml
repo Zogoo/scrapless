@@ -5,8 +5,19 @@ en:
     unknown_kitchen: "That link doesn't open a kitchen."
     too_many_joins: "That is a lot of tries. Give it an hour."
   record:
+    invalid: "That didn't look right. Check it and try again."
     not_found: "We couldn't find that."
+    conflict: "Someone else just changed that. Here's the latest."
+  items:
+    unknown_outcome: "That isn't something we can do with food."
+    not_undoable: "That one can't be undone any more."
   capture:
+    rejected:
+      no_image: "There was no photo in that."
+      no_audio: "We didn't hear anything."
+      no_text: "Type what you got first."
+      too_large: "That file is too big. Try a smaller photo."
+      too_long: "That's a lot at once. Try a shorter list."
     unreadable: "That one was hard to read. Want to try again, or just tell us the fresh stuff?"
     partial_parse: "We added what we recognised. Couldn't make sense of: %{list}"
     ai_unavailable: "Photo reading is off right now. You can still type or say what you got — that always works."
@@ -22,6 +33,12 @@ en:
     fine:
       one: "fine for about another day"
       other: "fine for about %{count} more days"
+    fine_weeks:
+      one: "fine for about a week"
+      other: "fine for about %{count} weeks"
+    fine_months:
+      one: "fine for about a month"
+      other: "fine for about %{count} months"
     aging:
       one: "about a day left"
       other: "about %{count} days left"
@@ -31,3 +48,28 @@ en:
     today: "worth using today"
     check_it: "%{name} — worth checking"
     probably_gone: "probably gone by now"
+  memo:
+    nothing_heard: "We didn't catch anything. Try again?"
+    reason:
+      due: "usually every %{cadence} days, last bought %{elapsed} days ago"
+      bought:
+        one: "bought once before"
+        other: "bought %{count} times before"
+      common: "often on lists"
+    staples:
+      milk: "Milk"
+      bread: "Bread"
+      eggs: "Eggs"
+      butter: "Butter"
+      cheese: "Cheese"
+      onions: "Onions"
+      potatoes: "Potatoes"
+      tomatoes: "Tomatoes"
+      bananas: "Bananas"
+      apples: "Apples"
+      chicken: "Chicken"
+      coffee: "Coffee"
+      rice: "Rice"
+      pasta: "Pasta"
+      yoghurt: "Yoghurt"
+      salad: "Salad"

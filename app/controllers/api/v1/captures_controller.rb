@@ -4,6 +4,9 @@ module Api
     class CapturesController < ApplicationController
       MAX_IMAGE_BYTES = 8.megabytes
       MAX_AUDIO_BYTES = 12.megabytes
+      # A typed or spoken shop is a few dozen words. Past this it is not a
+      # shopping list, and in live mode every character goes to a paid model.
+      MAX_TEXT_CHARS = 1_000
 
       # Every capture can cost a model call, and there is no account wall in
       # front of this endpoint — a fridge is free to create. So the blast radius
@@ -61,8 +64,8 @@ module Api
 
       def from_image(capture)
         upload = params[:image]
-        return reject("no image") if upload.blank?
-        return reject("image too large") if upload.size > MAX_IMAGE_BYTES
+        return reject(:no_image) if upload.blank?
+        return reject(:too_large) if upload.size > MAX_IMAGE_BYTES
 
         data = upload.read
         capture.image.attach(io: StringIO.new(data), filename: upload.original_filename,
@@ -78,6 +81,7 @@ module Api
       def from_voice(capture)
         transcript = params[:transcript].presence || transcribe(capture)
         return if performed?
+        return reject(:too_long) if transcript.to_s.length > MAX_TEXT_CHARS
 
         capture.transcript = transcript
         lines_from(transcript)
@@ -85,8 +89,8 @@ module Api
 
       def transcribe(capture)
         upload = params[:audio]
-        return reject("no audio") if upload.blank?
-        return reject("audio too large") if upload.size > MAX_AUDIO_BYTES
+        return reject(:no_audio) if upload.blank?
+        return reject(:too_large) if upload.size > MAX_AUDIO_BYTES
 
         data = upload.read
         capture.audio.attach(io: StringIO.new(data), filename: upload.original_filename,
@@ -102,7 +106,8 @@ module Api
       # what it can for free and only the leftovers reach a model.
       def from_text(capture)
         text = params[:text].to_s.strip
-        return reject("no text") if text.blank?
+        return reject(:no_text) if text.blank?
+        return reject(:too_long) if text.length > MAX_TEXT_CHARS
 
         capture.transcript = text
         lines_from(text)
@@ -137,8 +142,8 @@ module Api
         [ [], I18n.t("capture.partial_parse", list: unknown.join(", ")) ]
       end
 
-      def reject(message)
-        render json: { error: message }, status: :unprocessable_content
+      def reject(reason)
+        render json: { error: I18n.t("capture.rejected.#{reason}") }, status: :unprocessable_content
         nil
       end
 

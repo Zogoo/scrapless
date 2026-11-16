@@ -13,7 +13,11 @@ class Item < ApplicationRecord
   belongs_to :capture, optional: true
   has_many :item_events, dependent: :destroy
 
-  validates :display_name, :canonical_name, presence: true
+  # Bounded like memo lines: a name is a few words, and an unbounded one breaks
+  # every list it appears in and is written into the dictionary on rename.
+  validates :display_name, :canonical_name, presence: true, length: { maximum: 120 }
+  validates :category, inclusion: { in: Categories::NAMES + %w[unknown] }
+  validates :quantity, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validates :storage, inclusion: { in: STORAGES }
   validates :state, inclusion: { in: STATES }
   validates :date_label_type, inclusion: { in: DATE_LABEL_TYPES }
@@ -25,7 +29,14 @@ class Item < ApplicationRecord
 
   normalizes :canonical_name, with: ->(n) { n.to_s.strip.downcase.presence }
 
-  def high_risk? = date_label_type == "verbrauchsdatum"
+  # Never told "probably fine" (doc 3 §3.4): a food with a printed safety date,
+  # or one whose category is a safety risk (poultry, fish, prepared, deli) —
+  # unless it is frozen.
+  def high_risk? = safety_date? || (Categories.high_risk?(category) && !frozen_storage?)
+
+  # A Verbrauchsdatum that was actually read off the packet. "Go by the date"
+  # means nothing without one, so only this may say it.
+  def safety_date? = date_label_type == "verbrauchsdatum" && date_label_value.present?
 
   # How far through its life the food is, measured from the day it came home to
   # the far end of the uncertainty band. This is what the decay bar draws, and it

@@ -1,7 +1,7 @@
 import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { FridgeService } from '../../core/services/fridge.service';
 
@@ -23,12 +23,9 @@ import { FridgeService } from '../../core/services/fridge.service';
       <div class="hero">
         <h1 class="logo-heading">
           <picture>
-            <source
-              srcset="/branding/full_logo_dark_opaque.png"
-              media="(prefers-color-scheme: dark)"
-            />
+            <source srcset="/branding/full_logo_dark.png" media="(prefers-color-scheme: dark)" />
             <img
-              src="/branding/full_logo_light_opaque.png"
+              src="/branding/full_logo_light.png"
               [attr.alt]="'brand.name' | translate"
               width="280"
               height="112"
@@ -69,6 +66,7 @@ import { FridgeService } from '../../core/services/fridge.service';
 export class Onboarding {
   private readonly fridge = inject(FridgeService);
   private readonly router = inject(Router);
+  private readonly translate = inject(TranslateService);
 
   protected name = '';
   protected readonly busy = signal(false);
@@ -83,7 +81,7 @@ export class Onboarding {
     this.fridge.create(this.name).subscribe({
       next: () => void this.router.navigate(['/today']),
       error: (err: { message?: string }) => {
-        this.error.set(err.message ?? 'That did not go through.');
+        this.error.set(err.message ?? this.translate.instant('errors.generic'));
         this.busy.set(false);
       },
     });

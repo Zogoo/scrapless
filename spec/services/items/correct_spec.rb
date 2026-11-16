@@ -74,6 +74,28 @@ RSpec.describe Items::Correct do
     expect(item.window_end).to eq(Date.current + 9)
   end
 
+  it "keeps an emoji on a renamed line, the one for its new category" do
+    item = described_class.call(item: misfiled_bread, changes: { display_name: "Bread rolls" })
+
+    expect(item.display_name).to eq("🥖 Bread rolls")
+  end
+
+  # Observed in the second QA pass: "🧀 Käse" renamed "Bergkäse" became 🥛.
+  it "keeps the food's own emoji when the category did not change" do
+    cheese = create(:item, household: household, display_name: "🧀 Käse", category: "dairy")
+
+    expect(described_class.call(item: cheese, changes: { display_name: "Bergkäse" }).display_name)
+      .to eq("🧀 Bergkäse")
+  end
+
+  it "does not stack a second emoji on a name that kept one" do
+    item = create(:item, household: household, display_name: "🍽️ Yuzu", category: "other")
+
+    item = described_class.call(item: item, changes: { display_name: "🍽️ Yuzu kosho" })
+
+    expect(item.display_name).to eq("🍽️ Yuzu kosho")
+  end
+
   it "records what changed" do
     item = described_class.call(item: misfiled_bread, changes: { display_name: "Bread rolls" })
 

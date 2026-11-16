@@ -178,6 +178,28 @@ the fixes. All seven are fixed and covered by specs.
 | **Groq's defaults named Gemini's models**, so every Groq call 404'd and fell through. | Groq uses `llama-4-scout` (price ⚠️ unverified). Models carry their provider, and a spec holds each provider to its own. |
 | **A connect timeout skipped the fallback.** On Ruby 3.4 it is `IO::TimeoutError`, which the client did not rescue. Found while testing the above. | Every transport failure family is `Unavailable`. |
 
+### And what a browser QA pass found
+
+Every screen was driven at phone width, in both themes, with the model stubbed.
+24 issues were found and fixed, then a second pass re-tested all of them and
+found four more, also fixed. The ones that change how the app behaves:
+
+| Area | Now |
+|---|---|
+| **Layout** | The page ends above the fixed tab bar and add button. Before, a phone could not reach Today's "Fine for now", the Kitchen's lower groups, or "Forget this fridge". |
+| **Undo** | Every one-tap outcome (used, gone, half, froze, opened) shows a toast with Undo for six seconds; `POST /items/:id/undo` restores the item for ten minutes. The lists reorder after each tap, so a mis-tap used to be permanent. |
+| **Opened** | Failed with 422 on any food opened before its window began, which is most food. |
+| **Language** | The client never sent `X-Locale`, so every sentence the server wrote was English. It does now; Settings has a language switch. The tap grid shows the UI language but sends the receipt's word, so a tap and a Bon land on one Kitchen line. |
+| **Shop** | No suggestion for food still at home; suggestions can be dismissed (`suggestion_dismissals`); one open line per name; "Clear bought". |
+| **Join** | `POST /fridge/preview` names the kitchen before switching; the phone remembers the kitchen it left and Settings offers the way back. The create and join rate limiters no longer share one counter. |
+| **`/costs`** | Reports only the asking kitchen. The global ledger, provider chain and model table were readable by any free fridge. |
+| **Input** | Item names ≤120 characters, known categories, quantity ≥0; a typed or spoken capture ≤1,000 characters. Validation answers in one translated sentence, not column names. |
+| **Safety badge** | "Go by the date" only when a Verbrauchsdatum was read; a risky category alone is high risk without claiming one. |
+
+One regression was caught only in the browser, which is why `app.config.spec.ts` exists: an
+interceptor that injected `TranslateService` ran on the translation loader's own request and
+booted the app to a blank screen (NG0200). Interceptors now act on API calls only.
+
 ---
 
 ## 13.4c Deployment
@@ -218,7 +240,7 @@ fly deploy --remote-only -a scrapless-app
 
 ## 13.5 Verification
 
-Backend 221 examples, frontend 34, RuboCop and Brakeman clean. Beyond the suites, the running app was
+Backend 274 examples, frontend 47, RuboCop and Brakeman clean. Beyond the suites, the running app was
 driven end to end: fridge created and named, four items added through the tap grid with
 **zero** billed model calls, the shop rewound a week to exercise the risk model, chicken
 correctly suppressed, localStorage cleared and the fridge restored from the cookie alone, and

@@ -10,7 +10,11 @@ module Api
         }
       end
 
+      # Two people adding "milk" to one shared list get one line, not two.
       def create
+        existing = current_household.memo_items.open_line_for(params[:name])
+        return render json: memo_json(existing) if existing
+
         item = current_household.memo_items.create!(
           name: params[:name], note: params[:note].presence, source: source_param,
           added_by_name: actor_name
@@ -23,10 +27,12 @@ module Api
       def dictate
         transcript = params[:transcript].presence || transcribe
         return if performed?
-        return render json: { error: "nothing heard" }, status: :unprocessable_content if transcript.blank?
+        return render json: { error: I18n.t("memo.nothing_heard") }, status: :unprocessable_content if transcript.blank?
 
         names = extract_names(transcript)
-        created = names.map do |name|
+        created = names.filter_map do |name|
+          next if current_household.memo_items.open_line_for(name)
+
           current_household.memo_items.create!(name: name, source: "voice", added_by_name: actor_name)
         end
 
@@ -49,6 +55,18 @@ module Api
         render json: suggestion_list
       end
 
+      # "Stop suggesting this." For a junk line, or something bought once.
+      def dismiss_suggestion
+        current_household.suggestion_dismissals.find_or_create_by!(canonical_name: params.require(:name))
+        render json: suggestion_list
+      end
+
+      # Bought lines pile up otherwise; this clears them in one tap.
+      def clear_done
+        current_household.memo_items.where(done: true).delete_all
+        head :no_content
+      end
+
       private
 
       def suggestion_list
@@ -68,7 +86,7 @@ module Api
 
       def transcribe
         upload = params[:audio]
-        return render json: { error: "no audio" }, status: :unprocessable_content if upload.blank?
+        return render json: { error: I18n.t("capture.rejected.no_audio") }, status: :unprocessable_content if upload.blank?
 
         data = upload.read
         Ai::Transcriber.call(io: StringIO.new(data), filename: upload.original_filename,
@@ -85,7 +103,7 @@ module Api
                   .map { |part| part.strip.squeeze(" ") }
                   .reject(&:blank?)
                   .first(25)
-                  .map { |part| part.sub(/\A(buy|get|kauf|hol)\s+/i, "").capitalize }
+                  .map { |part| part.sub(/\A(buy|get|kauf|hol)\s+/i, "") }
       end
 
       def memo_json(item)

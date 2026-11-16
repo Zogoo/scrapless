@@ -21,20 +21,34 @@ class ProductAlias < ApplicationRecord
   # Exact match first, then the same words in any order — enough to catch
   # "BROKKOLI 500G" against a stored "brokkoli" without a fuzzy-match library.
   #
+  # Takes several spellings of one line — the raw text first, it is the
+  # evidence; then the model's name — and tries every exact match before any
+  # fuzzy one. Each is also tried without its quantities, because tills print
+  # them inline: "H-MILCH 3,5%" is H-Milch and "2 milch" is Milch, exactly.
+  # (One spelling at a time, a fuzzy "2 milch" once beat the exact "Milch";
+  # names before raw text, "Milk" once beat the receipt's "H-MILCH".)
+  #
   # The kitchen's own corrections are tried before the shared dictionary at
   # each step, but an exact shared hit still beats a fuzzy household one.
-  def self.lookup(raw_text, merchant: nil, household: nil)
-    key = normalize_key(raw_text)
-    return nil if key.blank?
+  def self.lookup(texts, merchant: nil, household: nil)
+    keys = Array(texts).flat_map { |text| [ normalize_key(text), without_quantities(normalize_key(text)) ] }
+                       .reject(&:blank?).uniq
+    return nil if keys.empty?
 
     layers = [ household && where(household: household), shared ].compact
+    first_hit(layers, keys) { |layer, key| layer.exact_match(key, merchant) } ||
+      first_hit(layers, keys) { |layer, key| layer.token_match(key) }
+  end
+
+  # "h milch 3 5" -> "h milch"; "babyspinat 260g" -> "babyspinat".
+  def self.without_quantities(key) = key.split.grep_v(/\d/).join(" ")
+
+  def self.first_hit(layers, keys)
     layers.each do |layer|
-      hit = layer.exact_match(key, merchant)
-      return hit if hit
-    end
-    layers.each do |layer|
-      hit = layer.token_match(key)
-      return hit if hit
+      keys.each do |key|
+        hit = yield(layer, key)
+        return hit if hit
+      end
     end
     nil
   end
@@ -59,16 +73,28 @@ class ProductAlias < ApplicationRecord
 
     scored = candidates.map { |entry| [ entry, overlap(entry.raw_text.split, tokens) ] }
                        .reject { |_, score| score.zero? }
-    scored.max_by { |_, score| score }&.first
+    # On a tie, the entry that leaves fewer of its own words unexplained wins:
+    # "milch 1l" is "milch", not "h milch". Before, row order decided.
+    scored.max_by { |entry, score| [ score, -unmatched(entry.raw_text.split, tokens) ] }&.first
   end
 
   # One point per token pair where either is a prefix of the other, so a
   # truncation still counts as agreement.
   def self.overlap(stored, tokens)
-    stored.sum do |s|
-      tokens.count { |t| s.start_with?(t[0, MIN_PREFIX]) || t.start_with?(s[0, MIN_PREFIX]) }
-    end
+    stored.sum { |s| tokens.count { |t| agree?(s, t) } }
   end
+
+  def self.unmatched(stored, tokens)
+    stored.count { |s| tokens.none? { |t| agree?(s, t) } }
+  end
+
+  def self.agree?(stored, token)
+    stored.start_with?(token[0, MIN_PREFIX]) || token.start_with?(stored[0, MIN_PREFIX])
+  end
+
+  # As a person would write it: "H-Milch" stays "H-Milch" (titleize made it
+  # "H Milch"), and a kitchen's own "bread rolls" reads "Bread rolls".
+  def display_name = canonical_name.upcase_first
 
   # Writes to the correcting kitchen's layer only. The shared dictionary is
   # changed by a seed or a reviewed promotion, never by a request.

@@ -51,6 +51,15 @@ RSpec.describe "Api::V1::Items", type: :request do
       expect(headline.downcase).not_to include("expire")
     end
 
+    it "tells a brand-new kitchen it has nothing captured yet" do
+      get "/api/v1/items", headers: headers
+      expect(response.parsed_body["has_captured"]).to be(false)
+
+      create(:capture, household: household)
+      get "/api/v1/items", headers: headers
+      expect(response.parsed_body["has_captured"]).to be(true)
+    end
+
     it "shows only this fridge's food" do
       create(:item, household: create(:household), display_name: "Someone else's")
 
@@ -134,7 +143,43 @@ RSpec.describe "Api::V1::Items", type: :request do
     end
   end
 
+  describe "POST /api/v1/items/:id/undo" do
+    let(:item) { create(:item, household: household) }
+
+    it "takes back the tap just made" do
+      post "/api/v1/items/#{item.id}/resolve", params: { outcome: "wasted" }, headers: headers
+      post "/api/v1/items/#{item.id}/undo", headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["state"]).to eq("active")
+    end
+
+    it "says so, plainly, when there is nothing to undo" do
+      post "/api/v1/items/#{item.id}/undo", headers: headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["error"]).to match(/can't be undone/)
+    end
+
+    it "cannot undo another kitchen's food" do
+      other = create(:item)
+      post "/api/v1/items/#{other.id}/undo", headers: headers
+
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
   describe "POST /api/v1/items/level" do
+    # Two phones on one kitchen moving the same slider at once.
+    it "answers a conflicting change with a retryable 409, not a crash" do
+      allow(Inventory::SetLevel).to receive(:call).and_raise(ActiveRecord::StaleObjectError)
+
+      post "/api/v1/items/level", params: { ids: [ 1 ], level: 1 }, headers: headers
+
+      expect(response).to have_http_status(:conflict)
+      expect(response.parsed_body).to include("retryable" => true, "error" => /latest/)
+    end
+
     it "sets how much is left across every pack on one Kitchen line" do
       old = create(:item, :at_risk, household: household)
       fresh = create(:item, household: household)
@@ -151,6 +196,25 @@ RSpec.describe "Api::V1::Items", type: :request do
       post "/api/v1/items/level", params: { ids: [ 1 ] }, headers: headers
 
       expect(response).to have_http_status(:bad_request)
+    end
+  end
+
+  describe "PATCH /api/v1/items/:id input limits" do
+    let(:item) { create(:item, household: household) }
+
+    # Observed in QA: a 5,000-character name, category "weapons" and quantity
+    # -5 were all stored.
+    [
+      [ "an endless name", { display_name: "x" * 121 } ],
+      [ "a made-up category", { category: "weapons" } ],
+      [ "a negative quantity", { quantity: -5 } ]
+    ].each do |label, change|
+      it "refuses #{label}, in a plain sentence" do
+        patch "/api/v1/items/#{item.id}", params: { item: change }, headers: headers, as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["error"]).to eq(I18n.t("record.invalid"))
+      end
     end
   end
 

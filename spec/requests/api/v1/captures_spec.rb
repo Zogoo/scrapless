@@ -184,4 +184,26 @@ RSpec.describe "Api::V1::Captures", type: :request do
       expect(response).to have_http_status(:unauthorized)
     end
   end
+
+  describe "input limits" do
+    # In live mode every character of an unknown line goes to a paid model.
+    it "refuses a typed shop longer than a shopping list" do
+      post "/api/v1/captures", params: { source: "text", text: "milch, " * 200 }, headers: headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["error"]).to eq(I18n.t("capture.rejected.too_long"))
+    end
+
+    it "refuses an endless spoken transcript too" do
+      post "/api/v1/captures", params: { source: "voice", transcript: "brot " * 300 }, headers: headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "answers in German when the phone asks for German" do
+      post "/api/v1/captures", params: { source: "text", text: "" }, headers: headers.merge("X-Locale" => "de")
+
+      expect(response.parsed_body["error"]).to eq("Schreib erst, was du gekauft hast.")
+    end
+  end
 end

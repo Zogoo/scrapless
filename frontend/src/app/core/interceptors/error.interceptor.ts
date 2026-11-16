@@ -1,5 +1,9 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { TranslateService } from '@ngx-translate/core';
 import { catchError, throwError } from 'rxjs';
+
+import { isApiRequest } from './is-api';
 
 /**
  * Turns a transport failure into a sentence a person can act on.
@@ -7,8 +11,12 @@ import { catchError, throwError } from 'rxjs';
  * Never an error code and never a stack: doc 4 §4.13 forbids "OCR confidence
  * below threshold" in favour of "that one was hard to read".
  */
-export const errorInterceptor: HttpInterceptorFn = (req, next) =>
-  next(req).pipe(
+export const errorInterceptor: HttpInterceptorFn = (req, next) => {
+  if (!isApiRequest(req)) return next(req);
+
+  const translate = inject(TranslateService);
+
+  return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       const body = error.error as { error?: string | string[]; retryable?: boolean } | null;
       const record = body && typeof body === 'object' ? body : null;
@@ -21,15 +29,17 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) =>
 
       return throwError(() => ({
         status: error.status,
-        message: message || fallbackFor(error.status),
+        message: message || translate.instant(fallbackKey(error.status)),
         retryable,
       }));
     }),
   );
+};
 
-function fallbackFor(status: number): string {
-  if (status === 0) return "You're offline. This will keep working when you're back.";
-  if (status === 413) return 'That photo was a bit big. Try again.';
-  if (status >= 500) return 'Our end had a wobble. Try that again?';
-  return 'That did not go through.';
+/** A sentence for when the server sent none, in the app's language. */
+function fallbackKey(status: number): string {
+  if (status === 0) return 'errors.offline';
+  if (status === 413) return 'errors.too_big';
+  if (status >= 500) return 'errors.server';
+  return 'errors.generic';
 }

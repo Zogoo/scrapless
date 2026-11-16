@@ -32,7 +32,8 @@
     "calm_body": "Your kitchen's in good shape.",
     "empty_title": "Nothing in here yet.",
     "empty_body": "Next time you shop, point the camera at the receipt.",
-    "add": "Add food"
+    "add": "Add food",
+    "first_capture": "Add what you have now"
   },
   "capture": {
     "title": "What did you get?",
@@ -72,7 +73,29 @@
     },
     "pick_photo": "Pick a photo",
     "pick_photo_hint": "One you already took",
-    "remove_line": "Remove {{name}}"
+    "remove_line": "Remove {{name}}",
+    "grid": {
+      "milk": "Milk",
+      "bread": "Bread",
+      "eggs": "Eggs",
+      "butter": "Butter",
+      "cheese": "Cheese",
+      "broccoli": "Broccoli",
+      "spinach": "Spinach",
+      "carrots": "Carrots",
+      "tomatoes": "Tomatoes",
+      "potatoes": "Potatoes",
+      "onions": "Onions",
+      "bananas": "Bananas",
+      "apples": "Apples",
+      "chicken": "Chicken",
+      "mince": "Mince",
+      "fish": "Fish",
+      "yoghurt": "Yoghurt",
+      "salad": "Salad",
+      "pasta": "Pasta",
+      "coffee": "Coffee"
+    }
   },
   "memo": {
     "title": "Shopping",
@@ -82,7 +105,9 @@
     "listening": "Listening…",
     "empty": "Nothing on the list yet.",
     "suggested": "You usually need",
-    "shared": "One list for this kitchen. Everyone who opened the share link sees the same lines."
+    "shared": "One list for this kitchen. Everyone who opened the share link sees the same lines.",
+    "dismiss": "Stop suggesting {{name}}",
+    "clear_done": "Clear bought ({{count}})"
   },
   "recipes": {
     "title": "Recipes",
@@ -99,7 +124,10 @@
     "title": "Kitchen",
     "empty_group": "Nothing in here.",
     "opened": "Opened it",
-    "how_much": "How much {{name}} is left"
+    "how_much": "How much {{name}} is left",
+    "less": "Less {{name}}",
+    "more": "More {{name}}",
+    "remove": "Remove from kitchen"
   },
   "storage": {
     "fridge": "Fridge",
@@ -131,7 +159,7 @@
     "share_care": "Anyone with this link can open the kitchen.",
     "qr_alt": "QR code that opens this kitchen",
     "costs": "What the AI has cost",
-    "stub_mode": "Running offline with sample data — no API key set, so nothing has been billed.",
+    "stub_mode": "Sample mode: photos and voice use example answers, so nothing new is billed.",
     "calls": "Calls",
     "spend": "Spend",
     "total_spend": "Total",
@@ -140,7 +168,18 @@
     "forget": "Forget this fridge",
     "forget_note": "Deletes everything we hold for this fridge, on this phone and on every phone that opened it. There is no undo.",
     "forget_confirm": "Yes, delete it all",
-    "failures": "{{count}} calls failed — check the API key and that the account has credit."
+    "failures": "{{count}} reads did not go through. You can always type or say what you got.",
+    "language": "Language",
+    "jobs": {
+      "receipt_extract": "Reading photos",
+      "shelf_photo_extract": "Reading food photos",
+      "text_parse": "Understanding new words",
+      "memo_parse": "Shopping list",
+      "recipe_suggest": "Recipe ideas",
+      "transcribe": "Voice"
+    },
+    "other_kitchen": "Your other kitchen",
+    "switch_back": "Back to {{name}}"
   },
   "common": {
     "loading": "One moment…",
@@ -150,7 +189,8 @@
     "save": "Save",
     "delete": "Delete",
     "retry": "Try again",
-    "by": "by {{name}}"
+    "by": "by {{name}}",
+    "delete_named": "Delete {{name}}"
   },
   "join": {
     "title": "Open this kitchen",
@@ -159,6 +199,22 @@
     "open": "Open this kitchen",
     "opening": "Opening…",
     "invalid": "That link doesn't open a kitchen.",
-    "too_many": "That is a lot of tries. Give it an hour."
+    "too_many": "That is a lot of tries. Give it an hour.",
+    "title_named": "Open {{name}}?"
+  },
+  "undo": {
+    "action": "Undo",
+    "used": "{{name}}: used",
+    "wasted": "Thanks, noted.",
+    "partial": "{{name}}: half left",
+    "froze": "{{name}} is in the freezer",
+    "opened": "{{name}}: opened",
+    "snooze": "{{name}}: asked again later"
+  },
+  "errors": {
+    "offline": "You're offline. This will keep working when you're back.",
+    "too_big": "That photo was a bit big. Try again.",
+    "server": "Our end had a wobble. Try that again?",
+    "generic": "That did not go through."
   }
 }

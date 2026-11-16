@@ -32,7 +32,8 @@
     "calm_body": "Deine Küche ist gut in Schuss.",
     "empty_title": "Hier ist noch nichts.",
     "empty_body": "Halt beim nächsten Einkauf die Kamera auf den Bon.",
-    "add": "Essen hinzufügen"
+    "add": "Essen hinzufügen",
+    "first_capture": "Jetzt eintragen, was da ist"
   },
   "capture": {
     "title": "Was hast du geholt?",
@@ -72,7 +73,29 @@
     },
     "pick_photo": "Foto auswählen",
     "pick_photo_hint": "Eins, das du schon hast",
-    "remove_line": "{{name}} entfernen"
+    "remove_line": "{{name}} entfernen",
+    "grid": {
+      "milk": "Milch",
+      "bread": "Brot",
+      "eggs": "Eier",
+      "butter": "Butter",
+      "cheese": "Käse",
+      "broccoli": "Brokkoli",
+      "spinach": "Spinat",
+      "carrots": "Karotten",
+      "tomatoes": "Tomaten",
+      "potatoes": "Kartoffeln",
+      "onions": "Zwiebeln",
+      "bananas": "Bananen",
+      "apples": "Äpfel",
+      "chicken": "Hähnchen",
+      "mince": "Hackfleisch",
+      "fish": "Fisch",
+      "yoghurt": "Joghurt",
+      "salad": "Salat",
+      "pasta": "Nudeln",
+      "coffee": "Kaffee"
+    }
   },
   "memo": {
     "title": "Einkauf",
@@ -82,7 +105,9 @@
     "listening": "Ich höre…",
     "empty": "Noch nichts auf der Liste.",
     "suggested": "Brauchst du meistens",
-    "shared": "Eine Liste für diese Küche. Wer den Link geöffnet hat, sieht dieselben Zeilen."
+    "shared": "Eine Liste für diese Küche. Wer den Link geöffnet hat, sieht dieselben Zeilen.",
+    "dismiss": "{{name}} nicht mehr vorschlagen",
+    "clear_done": "Gekauftes entfernen ({{count}})"
   },
   "recipes": {
     "title": "Rezepte",
@@ -99,7 +124,10 @@
     "title": "Küche",
     "empty_group": "Hier ist nichts.",
     "opened": "Geöffnet",
-    "how_much": "Wie viel {{name}} noch da ist"
+    "how_much": "Wie viel {{name}} noch da ist",
+    "less": "Weniger {{name}}",
+    "more": "Mehr {{name}}",
+    "remove": "Aus der Küche entfernen"
   },
   "storage": {
     "fridge": "Kühlschrank",
@@ -131,7 +159,7 @@
     "share_care": "Wer den Link hat, kann die Küche öffnen.",
     "qr_alt": "QR-Code, der diese Küche öffnet",
     "costs": "Was die KI gekostet hat",
-    "stub_mode": "Läuft offline mit Beispieldaten — kein API-Key gesetzt, also nichts abgerechnet.",
+    "stub_mode": "Beispielmodus: Fotos und Sprache nutzen Beispielantworten, es wird nichts Neues berechnet.",
     "calls": "Aufrufe",
     "spend": "Kosten",
     "total_spend": "Gesamt",
@@ -140,7 +168,18 @@
     "forget": "Kühlschrank vergessen",
     "forget_note": "Löscht alles, was wir zu diesem Kühlschrank haben — auf diesem Handy und auf jedem, das ihn geöffnet hat. Kein Zurück.",
     "forget_confirm": "Ja, alles löschen",
-    "failures": "{{count}} Aufrufe fehlgeschlagen — prüf den API-Key und das Guthaben."
+    "failures": "{{count}} Lesevorgänge haben nicht geklappt. Du kannst jederzeit tippen oder sagen, was du gekauft hast.",
+    "language": "Sprache",
+    "jobs": {
+      "receipt_extract": "Fotos lesen",
+      "shelf_photo_extract": "Lebensmittelfotos lesen",
+      "text_parse": "Neue Wörter verstehen",
+      "memo_parse": "Einkaufsliste",
+      "recipe_suggest": "Rezeptideen",
+      "transcribe": "Sprache"
+    },
+    "other_kitchen": "Deine andere Küche",
+    "switch_back": "Zurück zu {{name}}"
   },
   "common": {
     "loading": "Einen Moment…",
@@ -150,7 +189,8 @@
     "save": "Speichern",
     "delete": "Löschen",
     "retry": "Nochmal",
-    "by": "von {{name}}"
+    "by": "von {{name}}",
+    "delete_named": "{{name}} löschen"
   },
   "join": {
     "title": "Diese Küche öffnen",
@@ -159,6 +199,22 @@
     "open": "Küche öffnen",
     "opening": "Wird geöffnet…",
     "invalid": "Dieser Link öffnet keine Küche.",
-    "too_many": "Das sind viele Versuche. Probier es in einer Stunde nochmal."
+    "too_many": "Das sind viele Versuche. Probier es in einer Stunde nochmal.",
+    "title_named": "{{name}} öffnen?"
+  },
+  "undo": {
+    "action": "Rückgängig",
+    "used": "{{name}}: verbraucht",
+    "wasted": "Danke — notiert.",
+    "partial": "{{name}}: Hälfte übrig",
+    "froze": "{{name}} ist im Gefrierfach",
+    "opened": "{{name}}: geöffnet",
+    "snooze": "{{name}}: später nochmal"
+  },
+  "errors": {
+    "offline": "Du bist offline. Sobald du wieder online bist, geht es weiter.",
+    "too_big": "Das Foto war etwas groß. Versuch es noch einmal.",
+    "server": "Bei uns hat es kurz gehakt. Noch einmal?",
+    "generic": "Das hat nicht geklappt."
   }
 }

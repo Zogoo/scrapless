@@ -15,6 +15,7 @@ import { FridgeService, kitchenShareUrl } from '../../core/services/fridge.servi
 import { ActorService } from '../../core/services/actor.service';
 import { CaptureService } from '../../core/services/capture.service';
 import { InstallService } from '../../core/services/install.service';
+import { LocaleService } from '../../core/services/locale.service';
 import { qrImageSrc } from '../../core/qr-image';
 import { CostReport } from '../../core/models';
 
@@ -29,6 +30,7 @@ export class Settings implements OnInit {
   protected readonly fridge = inject(FridgeService);
   protected readonly actor = inject(ActorService);
   protected readonly install = inject(InstallService);
+  protected readonly locale = inject(LocaleService);
   private readonly captures = inject(CaptureService);
   private readonly router = inject(Router);
 
@@ -66,6 +68,23 @@ export class Settings implements OnInit {
         setTimeout(() => this.saved.set(false), 2000);
       },
     });
+  }
+
+  /** Each language named in itself, as language pickers do. */
+  protected readonly languageNames: Record<string, string> = { en: 'English', de: 'Deutsch' };
+
+  protected readonly previous = signal(this.fridge.previous());
+
+  protected switchBack(): void {
+    this.fridge.switchBack().subscribe({
+      next: () => void this.router.navigate(['/today']),
+      error: () => void this.router.navigate(['/today']),
+    });
+  }
+
+  protected chooseLocale(code: string): void {
+    this.locale.use(code);
+    this.fridge.setLocale(code).subscribe();
   }
 
   protected saveActor(): void {

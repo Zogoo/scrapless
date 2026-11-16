@@ -3,7 +3,7 @@ module Api
     # Create a fridge, look at it, rename it, or open one that was shared.
     # That is the whole account system.
     class FridgesController < ApplicationController
-      skip_before_action :authenticate!, only: %i[create join]
+      skip_before_action :authenticate!, only: %i[create join preview]
 
       # Unauthenticated, and the door to the only expensive endpoint. A per-fridge
       # capture limit is no defence when fridges are free to mint, so the minting
@@ -11,12 +11,15 @@ module Api
       #
       # A speed bump, not a wall: it is cache-backed, so a restart resets it.
       # The durable protection is Ai::Budget, which counts real spend.
-      rate_limit to: 10, within: 1.hour, only: :create,
+      # Named, because an unnamed limiter's counter is per controller: joining a
+      # few kitchens used to count against the fridge-creation limit too.
+      rate_limit to: 10, within: 1.hour, only: :create, name: "create",
                  with: -> { render json: { error: I18n.t("auth.too_many_fridges") },
                                    status: :too_many_requests }
 
-      # Joining is free, but the code is a capability, so guessing is capped.
-      rate_limit to: 30, within: 1.hour, only: :join,
+      # Joining is free, but the code is a capability, so guessing is capped —
+      # and previewing a code shares the cap, or it would be a free oracle.
+      rate_limit to: 30, within: 1.hour, only: %i[join preview], name: "join",
                  with: -> { render json: { error: I18n.t("auth.too_many_joins") },
                                    status: :too_many_requests }
 
@@ -50,13 +53,22 @@ module Api
       # does, and the phone stores it. A phone that already had a kitchen
       # switches: the cookie is overwritten with the shared one.
       def join
-        code = params[:join_code].to_s
-        household = code.present? && code.length <= 64 ? Household.find_by(join_code: code) : nil
-        return render json: { error: I18n.t("auth.unknown_kitchen") }, status: :not_found unless household
+        household = shared_household
+        return render_unknown_kitchen unless household
 
         refresh_cookie(household)
         household.touch_seen!
         render json: household_json(household)
+      end
+
+      # The kitchen's name, before anything changes on this phone, so the join
+      # page can say "Open Quiet Kitchen?" — or that the link is dead — instead
+      # of offering a button that fails. Name only: no token, no cookie.
+      def preview
+        household = shared_household
+        return render_unknown_kitchen unless household
+
+        render json: { name: household.name }
       end
 
       def show
@@ -80,6 +92,15 @@ module Api
       end
 
       private
+
+      def shared_household
+        code = params[:join_code].to_s
+        Household.find_by(join_code: code) if code.present? && code.length <= 64
+      end
+
+      def render_unknown_kitchen
+        render json: { error: I18n.t("auth.unknown_kitchen") }, status: :not_found
+      end
 
       def locale_param
         value = params[:locale].to_s

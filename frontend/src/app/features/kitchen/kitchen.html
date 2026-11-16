@@ -10,7 +10,12 @@
   } @else {
     @for (storage of storages; track storage) {
       <section class="group">
-        <button type="button" class="group-head" (click)="toggle(storage)">
+        <button
+          type="button"
+          class="group-head"
+          [attr.aria-expanded]="open() === storage"
+          (click)="toggle(storage)"
+        >
           <span>{{ 'storage.' + storage | translate }}</span>
           <span class="count">{{ groups()[storage].length }}</span>
           <span aria-hidden="true">{{ open() === storage ? '▾' : '▸' }}</span>
@@ -27,6 +32,7 @@
                     <div class="edit">
                       <input
                         type="text"
+                        maxlength="120"
                         [value]="draftName()"
                         (input)="draftName.set($any($event.target).value)"
                         (keyup.enter)="saveEdit(line)"
@@ -37,13 +43,44 @@
                       <button type="button" class="ghost" (click)="editingKey.set(null)">
                         {{ 'common.cancel' | translate }}
                       </button>
+                      <button type="button" class="ghost danger" (click)="removeLine(line)">
+                        {{ 'kitchen.remove' | translate }}
+                      </button>
                     </div>
                   } @else {
                     <div class="row">
-                      <button type="button" class="name-btn" (click)="startEdit(line)">
+                      <button
+                        type="button"
+                        class="name-btn"
+                        [id]="'line-' + line.first.id"
+                        (click)="startEdit(line)"
+                      >
                         {{ line.first.display_name }}
                       </button>
+                      <!-- Steps as well as the slider: a drag is not an option for everyone. -->
+                      <button
+                        type="button"
+                        class="step"
+                        [disabled]="level(line) <= 0"
+                        [attr.aria-label]="
+                          'kitchen.less' | translate: { name: line.first.display_name }
+                        "
+                        (click)="step(line, -0.25)"
+                      >
+                        −
+                      </button>
                       <span class="amount">{{ amount(line) }}</span>
+                      <button
+                        type="button"
+                        class="step"
+                        [disabled]="level(line) >= line.packs.length"
+                        [attr.aria-label]="
+                          'kitchen.more' | translate: { name: line.first.display_name }
+                        "
+                        (click)="step(line, 0.25)"
+                      >
+                        +
+                      </button>
                     </div>
                     <!-- One slider, no units. The pack added first sits left, the one
                          just added sits right, and sliding down drains that right end.
@@ -55,7 +92,7 @@
                       [max]="line.packs.length"
                       step="0.25"
                       [value]="level(line)"
-                      [style.background]="track(line)"
+                      [style.background-image]="track(line)"
                       [attr.aria-label]="
                         'kitchen.how_much' | translate: { name: line.first.display_name }
                       "
@@ -69,7 +106,11 @@
                         {{ 'common.by' | translate: { name: line.first.added_by_name } }}
                       </p>
                     }
-                    <div class="row-actions">
+                    <div
+                      class="row-actions"
+                      role="group"
+                      [attr.aria-labelledby]="'line-' + line.first.id"
+                    >
                       <button type="button" (click)="resolve(line.first, 'used')">
                         ✔ {{ 'today.used' | translate }}
                       </button>
@@ -83,6 +124,9 @@
                           {{ 'kitchen.opened' | translate }}
                         </button>
                       }
+                      <button type="button" class="quiet" (click)="resolve(line.first, 'wasted')">
+                        🗑 {{ 'today.gone' | translate }}
+                      </button>
                     </div>
                   }
                 </li>

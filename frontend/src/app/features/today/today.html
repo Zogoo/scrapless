@@ -1,6 +1,6 @@
 <section class="today">
   <header class="head">
-    <h1>{{ today()?.as_of | date: 'EEEE' }}</h1>
+    <h1>{{ weekday() }}</h1>
   </header>
 
   @if (install.shouldOffer()) {
@@ -38,16 +38,21 @@
       </picture>
       <h2>{{ 'today.empty_title' | translate }}</h2>
       <p>{{ 'today.empty_body' | translate }}</p>
+      @if (!today()?.has_captured) {
+        <button type="button" class="primary" (click)="capture()">
+          {{ 'today.first_capture' | translate }}
+        </button>
+      }
     </div>
-  } @else {
+  } @else if (today()) {
     @if (today()!.use_first.length > 0) {
       <h2 class="section-head">{{ 'today.use_first' | translate }}</h2>
 
       @for (item of today()!.use_first; track item.id) {
         <article class="card rescue" [class.high-risk]="item.high_risk">
           <div class="line">
-            <h3>{{ item.display_name }}</h3>
-            @if (item.high_risk) {
+            <h3 [id]="'item-' + item.id">{{ item.display_name }}</h3>
+            @if (item.safety_date) {
               <span class="badge">{{ 'today.safety_date' | translate }}</span>
             }
           </div>
@@ -68,7 +73,7 @@
             <span [style.width]="barWidth(item)"></span>
           </div>
 
-          <div class="actions">
+          <div class="actions" role="group" [attr.aria-labelledby]="'item-' + item.id">
             <button type="button" [disabled]="busyId() === item.id" (click)="resolve(item, 'used')">
               ✔ {{ 'today.used' | translate }}
             </button>
@@ -112,7 +117,12 @@
     }
 
     @if (today()!.fine_for_now.length > 0) {
-      <button type="button" class="rest-toggle" (click)="expandRest.set(!expandRest())">
+      <button
+        type="button"
+        class="rest-toggle"
+        [attr.aria-expanded]="expandRest()"
+        (click)="expandRest.set(!expandRest())"
+      >
         {{ 'today.fine_for_now' | translate }}
         <span class="count">{{ today()!.fine_for_now.length }}</span>
         <span aria-hidden="true">{{ expandRest() ? '▾' : '▸' }}</span>

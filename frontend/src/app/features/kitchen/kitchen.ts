@@ -11,6 +11,7 @@ import { forkJoin } from 'rxjs';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { ItemsService } from '../../core/services/items.service';
+import { UndoService } from '../../core/services/undo.service';
 import { Outcome, ScoredItem, Storage } from '../../core/models';
 import { KitchenLine, formatLevel, toLines, trackBackground } from './kitchen-line';
 
@@ -29,6 +30,7 @@ import { KitchenLine, formatLevel, toLines, trackBackground } from './kitchen-li
 export class Kitchen implements OnInit {
   private readonly items = inject(ItemsService);
   private readonly router = inject(Router);
+  private readonly undo = inject(UndoService);
 
   protected readonly loading = signal(true);
   protected readonly error = signal('');
@@ -120,19 +122,49 @@ export class Kitchen implements OnInit {
 
   /** Committed on release, not on every pixel of the drag. */
   protected commitLevel(line: KitchenLine, event: Event): void {
-    const level = Number((event.target as HTMLInputElement).value);
+    this.setLevel(line, Number((event.target as HTMLInputElement).value));
+  }
+
+  /** The same change as the slider, for anyone who cannot or will not drag. */
+  protected step(line: KitchenLine, delta: number): void {
+    this.setLevel(line, Math.min(line.packs.length, Math.max(0, this.level(line) + delta)));
+  }
+
+  private setLevel(line: KitchenLine, level: number): void {
     const ids = line.packs.map((pack) => pack.id);
+    this.preview.set({ key: line.key, level });
 
     this.items.level(ids, level).subscribe({
       next: () => this.items.load().subscribe({ next: () => this.preview.set(null) }),
-      error: (err: { message?: string }) => {
-        this.preview.set(null);
-        this.error.set(err.message ?? '');
-      },
+      error: (err: { message?: string }) => this.fail(err),
     });
   }
 
   protected resolve(item: ScoredItem, outcome: Outcome): void {
-    this.items.resolve(item.id, outcome).subscribe({ next: () => this.load() });
+    this.items.resolve(item.id, outcome).subscribe({
+      next: () => {
+        this.undo.showOutcome(item, outcome);
+        this.load();
+      },
+      error: (err: { message?: string }) => this.fail(err),
+    });
+  }
+
+  /** For a line read wrong, not eaten or binned: it is not waste, so it is deleted. */
+  protected removeLine(line: KitchenLine): void {
+    forkJoin(line.packs.map((pack) => this.items.remove(pack.id))).subscribe({
+      next: () => {
+        this.editingKey.set(null);
+        this.load();
+      },
+      error: (err: { message?: string }) => this.fail(err),
+    });
+  }
+
+  /** Say what went wrong, then show what is true now — another phone may have won. */
+  private fail(err: { message?: string }): void {
+    this.preview.set(null);
+    this.load();
+    this.error.set(err.message ?? '');
   }
 }

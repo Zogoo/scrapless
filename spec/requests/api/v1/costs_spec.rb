@@ -19,28 +19,34 @@ RSpec.describe "Api::V1::Costs", type: :request do
     expect(body["mode"]).to eq("stub")
   end
 
-  it "says which model each job is pointed at, for every provider in the chain" do
+  # Observed in QA: a fridge with no calls saw the global ledger ("Calls 10").
+  # Fridges are free to make, so that was everyone's usage, for anyone.
+  it "reports only this kitchen's calls" do
+    AiCall.create!(household: create(:household), purpose: "receipt_extract", model: "gpt-5-mini",
+                   cost_micros: 2425)
+    AiCall.create!(household: nil, purpose: "text_parse", model: "gpt-5-nano", cost_micros: 60)
+
     get "/api/v1/costs", headers: fridge_headers(household)
     body = response.parsed_body
 
-    expect(body["chain"]).to eq([ "openai" ])
-    expect(body["models"]["openai"]["receipt_extract"]["name"]).to eq("gpt-5-mini")
+    expect(body["totals"]).to include("calls" => 0, "usd" => 0.0)
+    expect(body["by_purpose"]).to be_empty
   end
 
-  # A fallback that nobody can see is a cost surprise waiting to happen.
-  it "reports which provider served each call, and how often it fell back" do
-    AiCall.create!(household: household, purpose: "receipt_extract", model: "gpt-5-mini",
-                   provider: "openai", attempt: 0, success: false)
-    AiCall.create!(household: household, purpose: "receipt_extract", model: "gemini-2.5-flash",
-                   provider: "gemini", attempt: 1, cost_micros: 800)
+  it "does not publish the operator's provider chain or model table" do
+    get "/api/v1/costs", headers: fridge_headers(household)
+
+    expect(response.parsed_body.keys).to contain_exactly("mode", "transcribe_usd_per_minute", "totals", "by_purpose")
+  end
+
+  # A refused call cost nothing and read nothing; counting it would make a
+  # receipt look cheaper than it is.
+  it "prices a receipt over the reads that worked" do
+    AiCall.create!(household: household, purpose: "receipt_extract", model: "gpt-5-mini", cost_micros: 2400)
+    AiCall.create!(household: household, purpose: "receipt_extract", model: "gpt-5-mini", success: false)
 
     get "/api/v1/costs", headers: fridge_headers(household)
-    body = response.parsed_body
 
-    expect(body["fallbacks"]).to eq(1)
-    expect(body["by_provider"]).to contain_exactly(
-      { "provider" => "openai", "calls" => 1, "usd" => 0.0, "failures" => 1 },
-      { "provider" => "gemini", "calls" => 1, "usd" => 0.0008, "failures" => 0 }
-    )
+    expect(response.parsed_body["by_purpose"].first["usd_per_call"]).to eq(0.0024)
   end
 end

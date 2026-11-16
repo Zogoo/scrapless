@@ -103,6 +103,10 @@
     margin: 0.75rem 0 0.35rem;
   }
 
+  .primary {
+    margin-top: 1.25rem;
+  }
+
   p {
     margin: 0;
     color: var(--muted);
@@ -158,20 +162,4 @@
   margin: 0.5rem 0 0;
   color: var(--muted);
   font-size: 0.85rem;
-}
-
-.fab {
-  position: fixed;
-  right: 1rem;
-  bottom: calc(72px + 1rem + env(safe-area-inset-bottom));
-  width: 3.75rem;
-  height: 3.75rem;
-  border-radius: var(--radius);
-  border: none;
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-size: 2rem;
-  line-height: 1;
-  box-shadow: 0 4px 16px rgb(0 0 0 / 18%);
-  z-index: 5;
 }

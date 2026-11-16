@@ -20,28 +20,35 @@ import { analyseFrame, toLuma } from '../../core/vision/frame-analysis';
 
 type Mode = 'choose' | 'camera' | 'voice' | 'manual' | 'review';
 
-/** Twenty perishables, big buttons, no typing (doc 2 §2.7). */
-const TAP_GRID = [
-  '🥛 Milk',
-  '🥖 Bread',
-  '🥚 Eggs',
-  '🧈 Butter',
-  '🧀 Cheese',
-  '🥦 Broccoli',
-  '🥬 Spinach',
-  '🥕 Carrots',
-  '🍅 Tomatoes',
-  '🥔 Potatoes',
-  '🧅 Onions',
-  '🍌 Bananas',
-  '🍎 Apples',
-  '🍗 Chicken',
-  '🥩 Mince',
-  '🐟 Fish',
-  '🥣 Yoghurt',
-  '🥗 Salad',
-  '🍝 Pasta',
-  '☕ Coffee',
+/**
+ * Twenty perishables, big buttons, no typing (doc 2 §2.7).
+ *
+ * The label is in the UI's language; what is sent is the word the receipt
+ * prints. Receipts here are German, so a tap and a Bon for the same food land
+ * on one Kitchen line — an English grid used to make "Broccoli" beside
+ * "Brokkoli". Every word is in the seeded dictionary, so a tap costs nothing.
+ */
+export const TAP_GRID: readonly { emoji: string; key: string; word: string }[] = [
+  { emoji: '🥛', key: 'milk', word: 'Milch' },
+  { emoji: '🥖', key: 'bread', word: 'Brot' },
+  { emoji: '🥚', key: 'eggs', word: 'Eier' },
+  { emoji: '🧈', key: 'butter', word: 'Butter' },
+  { emoji: '🧀', key: 'cheese', word: 'Käse' },
+  { emoji: '🥦', key: 'broccoli', word: 'Brokkoli' },
+  { emoji: '🥬', key: 'spinach', word: 'Spinat' },
+  { emoji: '🥕', key: 'carrots', word: 'Karotten' },
+  { emoji: '🍅', key: 'tomatoes', word: 'Tomaten' },
+  { emoji: '🥔', key: 'potatoes', word: 'Kartoffeln' },
+  { emoji: '🧅', key: 'onions', word: 'Zwiebeln' },
+  { emoji: '🍌', key: 'bananas', word: 'Bananen' },
+  { emoji: '🍎', key: 'apples', word: 'Äpfel' },
+  { emoji: '🍗', key: 'chicken', word: 'Hähnchen' },
+  { emoji: '🥩', key: 'mince', word: 'Hackfleisch' },
+  { emoji: '🐟', key: 'fish', word: 'Fisch' },
+  { emoji: '🥣', key: 'yoghurt', word: 'Joghurt' },
+  { emoji: '🥗', key: 'salad', word: 'Salat' },
+  { emoji: '🍝', key: 'pasta', word: 'Nudeln' },
+  { emoji: '☕', key: 'coffee', word: 'Kaffee' },
 ];
 
 @Component({
@@ -284,7 +291,7 @@ export class Capture implements OnDestroy {
    */
   protected submitManual(): void {
     const typed = this.manualText().trim();
-    const tapped = this.picked().map((n) => n.replace(/^\P{L}+/u, '').trim());
+    const tapped = this.picked();
     const all = [...tapped, ...(typed ? [typed] : [])].join(', ');
 
     if (!all) return;

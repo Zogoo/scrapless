@@ -40,6 +40,32 @@
     </button>
   </section>
 
+  @if (previous(); as back) {
+    <section class="block">
+      <h2>{{ 'settings.other_kitchen' | translate }}</h2>
+      <button type="button" class="wide" (click)="switchBack()">
+        {{ 'settings.switch_back' | translate: { name: back.name } }}
+      </button>
+    </section>
+  }
+
+  <section class="block">
+    <h2 id="language-head">{{ 'settings.language' | translate }}</h2>
+    <div class="choices" role="group" aria-labelledby="language-head">
+      @for (code of locale.available; track code) {
+        <button
+          type="button"
+          [class.primary]="locale.current() === code"
+          [attr.aria-pressed]="locale.current() === code"
+          [attr.lang]="code"
+          (click)="chooseLocale(code)"
+        >
+          {{ languageNames[code] }}
+        </button>
+      }
+    </div>
+  </section>
+
   @if (shareLink(); as link) {
     <section class="block share">
       <h2>{{ 'settings.share_title' | translate }}</h2>
@@ -90,7 +116,7 @@
            is free when in fact every call is being refused. The ledger counts
            failures; the screen has to show them, or it under-reports in the one
            place built not to. -->
-      @if (report.totals.failures > 0) {
+      @if (report.mode === 'live' && report.totals.failures > 0) {
         <p class="failures">
           {{ 'settings.failures' | translate: { count: report.totals.failures } }}
         </p>
@@ -123,7 +149,7 @@
           <tbody>
             @for (row of report.by_purpose; track row.purpose) {
               <tr>
-                <td>{{ row.purpose }}</td>
+                <td>{{ 'settings.jobs.' + row.purpose | translate }}</td>
                 <td>{{ row.calls }}</td>
                 <td>${{ row.usd | number: '1.4-6' }}</td>
               </tr>

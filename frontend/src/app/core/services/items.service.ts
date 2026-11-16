@@ -21,6 +21,11 @@ export class ItemsService {
     return this.http.post<Item>(`${this.url}/${id}/resolve`, { outcome, days });
   }
 
+  /** Takes back the last tap on this food, if it was just now. */
+  undo(id: number): Observable<Item> {
+    return this.http.post<Item>(`${this.url}/${id}/undo`, {});
+  }
+
   /** One slider per Kitchen line: `level` runs 0..ids.length, oldest drained first. */
   level(ids: number[], level: number): Observable<{ items: Item[] }> {
     return this.http.post<{ items: Item[] }>(`${this.url}/level`, { ids, level });

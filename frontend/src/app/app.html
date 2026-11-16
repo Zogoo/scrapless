@@ -31,9 +31,18 @@
     </header>
   }
 
-  <main>
+  <main [class.with-tabs]="showTabs()">
     <router-outlet />
   </main>
+
+  @if (undo.notice(); as notice) {
+    <div class="toast" role="status" aria-live="polite">
+      <span>{{ notice.message }}</span>
+      @if (notice.itemId !== undefined) {
+        <button type="button" (click)="undo.undo()">{{ 'undo.action' | translate }}</button>
+      }
+    </div>
+  }
 
   @if (showTabs()) {
     <!-- Four tabs: home, recipes, the shopping list, the kitchen. -->
