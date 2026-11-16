@@ -146,6 +146,11 @@ export class FridgeService {
    * Goes back to the kitchen this phone left, and remembers the one it is
    * leaving, so the two can be swapped back and forth. The server re-stamps
    * the cookie from the bearer token on the very next request.
+   *
+   * Resolves to null, staying put, when the other kitchen no longer exists —
+   * someone forgot it from another phone. It is then no longer offered. (This
+   * used to fall back to the cookie, land on the same kitchen, and offer
+   * "Back to" the kitchen already open.) Offline, nothing changes and it throws.
    */
   switchBack(): Observable<Fridge | null> {
     const back = this.previous();
@@ -160,10 +165,31 @@ export class FridgeService {
       return of(null);
     }
     this.current.set(null);
-    return this.restore();
+    return this.restore().pipe(
+      tap((fridge) => {
+        if (fridge || !leaving) return;
+        this.accept(leaving);
+        this.dropPrevious();
+      }),
+      catchError((error: unknown) => {
+        if (leaving) {
+          this.accept(leaving);
+          this.remember(back);
+        }
+        return throwError(() => error);
+      }),
+    );
   }
 
-  private remember(fridge: Fridge): void {
+  private dropPrevious(): void {
+    try {
+      localStorage.removeItem(PREVIOUS_KEY);
+    } catch {
+      /* nothing kept */
+    }
+  }
+
+  private remember(fridge: PreviousKitchen): void {
     try {
       localStorage.setItem(
         PREVIOUS_KEY,

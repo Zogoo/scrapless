@@ -49,7 +49,11 @@
       <h2 class="section-head">{{ 'today.use_first' | translate }}</h2>
 
       @for (item of today()!.use_first; track item.id) {
-        <article class="card rescue" [class.high-risk]="item.high_risk">
+        <article
+          class="card rescue"
+          [class.high-risk]="item.high_risk"
+          [class.picked]="picked().includes(item.id)"
+        >
           <div class="line">
             <h3 [id]="'item-' + item.id">{{ item.display_name }}</h3>
             @if (item.safety_date) {

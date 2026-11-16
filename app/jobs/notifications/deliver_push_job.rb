@@ -29,7 +29,8 @@ module Notifications
       payload = Message.call(notification: notification, locale: subscription.locale)
       return unless payload
 
-      send_push(subscription, payload)
+      # The number on the app icon (navigator.setAppBadge), counted as the bell does.
+      send_push(subscription, payload.merge(unread: Inbox.unread(household: notification.household)))
       subscription.touch(:last_delivered_at)
     rescue WebPush::ExpiredSubscription, WebPush::InvalidSubscription
       subscription.destroy

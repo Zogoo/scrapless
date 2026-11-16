@@ -34,6 +34,16 @@ RSpec.describe Notifications::Message do
     expect(message([ spinach ])).to be_nil
   end
 
+  # The bell shows what was said, even after the food is gone.
+  it "uses the foods it is given" do
+    spinach.update!(state: "rescued", resolved_at: Time.current)
+    notification = create(:notification, household: household, item_ids: [ spinach.id ])
+
+    payload = described_class.call(notification: notification, locale: "en", items: [ spinach ])
+
+    expect(payload[:body]).to eq("Spinat wants using tonight.")
+  end
+
   # Never "use it tonight" for food where that could be unsafe (doc 4 §4.13).
   it "only suggests checking high-risk food" do
     chicken = create(:item, household: household, display_name: "Hähnchen", category: "meat_fish")

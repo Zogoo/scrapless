@@ -1,0 +1,74 @@
+<button
+  type="button"
+  class="bell"
+  aria-controls="bell-panel"
+  [attr.aria-expanded]="open()"
+  [attr.aria-label]="
+    notifications.unread()
+      ? ('bell.label_unread' | translate: { count: notifications.unread() })
+      : ('bell.label' | translate)
+  "
+  (click)="toggle()"
+>
+  <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+    <path
+      fill="currentColor"
+      d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"
+    />
+  </svg>
+  @if (notifications.unread()) {
+    <span class="count" aria-hidden="true">{{ notifications.unread() }}</span>
+  }
+</button>
+
+@if (open()) {
+  <div class="backdrop" (click)="close()"></div>
+  <section id="bell-panel" class="panel" role="dialog" aria-labelledby="bell-title" tabindex="-1">
+    <header>
+      <h2 id="bell-title">{{ 'bell.title' | translate }}</h2>
+      @if (notifications.unread()) {
+        <button type="button" class="quiet" (click)="notifications.readAll()">
+          {{ 'bell.read_all' | translate }}
+        </button>
+      }
+    </header>
+
+    @if (notifications.list().length) {
+      <ul>
+        @for (entry of notifications.list(); track entry.id) {
+          <li>
+            <button
+              type="button"
+              class="entry"
+              [class.unread]="entry.unread"
+              [class.done]="!entry.live"
+              (click)="choose(entry)"
+            >
+              <span class="dot" aria-hidden="true"></span>
+              <span class="text">
+                <span class="body">{{ entry.body }}</span>
+                <small>
+                  {{ when(entry) }}
+                  @if (!entry.live) {
+                    · {{ 'bell.done' | translate }}
+                  }
+                </small>
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="empty">{{ 'bell.empty' | translate }}</p>
+    }
+
+    @if (push.state() === 'off') {
+      <footer>
+        <p>{{ 'bell.push_offer' | translate }}</p>
+        <button type="button" class="primary" [disabled]="push.busy()" (click)="turnOnPush()">
+          {{ (push.busy() ? 'common.loading' : 'bell.push_turn_on') | translate }}
+        </button>
+      </footer>
+    }
+  </section>
+}

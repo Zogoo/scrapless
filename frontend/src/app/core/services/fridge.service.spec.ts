@@ -96,6 +96,43 @@ describe('FridgeService', () => {
     expect(service.previous()).toEqual({ token: 'bearer-secret', name: 'Quiet Kitchen' });
   });
 
+  function onSharedHavingLeft(own: Fridge): void {
+    service.restore().subscribe();
+    http.expectOne(`${environment.apiUrl}/fridge`).flush(own);
+    service.join('join-code').subscribe();
+    http.expectOne(`${environment.apiUrl}/fridge/join`).flush(shared);
+  }
+
+  // Found in QA: the old kitchen had been forgotten on another phone, the cookie
+  // brought this one back, and Settings offered "Back to" the kitchen already open.
+  it('stays put, and stops offering it, when the other kitchen is gone', () => {
+    onSharedHavingLeft({ ...shared, id: 'own', name: 'Own Kitchen', token: 'own-token' });
+    let result: Fridge | null | undefined;
+
+    service.switchBack().subscribe((found) => (result = found));
+    http
+      .expectOne(`${environment.apiUrl}/fridge`)
+      .flush({ error: 'no fridge' }, { status: 401, statusText: 'Unauthorized' });
+
+    expect(result).toBeNull();
+    expect(service.fridge()?.name).toBe('Quiet Kitchen');
+    expect(service.token).toBe('bearer-secret');
+    expect(service.previous()).toBeNull();
+  });
+
+  it('changes nothing when switching fails offline', () => {
+    onSharedHavingLeft({ ...shared, id: 'own', name: 'Own Kitchen', token: 'own-token' });
+    let failed = false;
+
+    service.switchBack().subscribe({ error: () => (failed = true) });
+    http.expectOne(`${environment.apiUrl}/fridge`).error(new ProgressEvent('error'));
+
+    expect(failed).toBe(true);
+    expect(service.fridge()?.name).toBe('Quiet Kitchen');
+    expect(service.token).toBe('bearer-secret');
+    expect(service.previous()).toEqual({ token: 'own-token', name: 'Own Kitchen' });
+  });
+
   it('forgets the token when the server does not know the fridge', () => {
     localStorage.setItem('scrapless_token', 'stale-token');
     let result: Fridge | null | undefined;

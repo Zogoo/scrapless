@@ -5,21 +5,27 @@ module Notifications
   # out — and if nothing is left, nothing is sent. High-risk food is never
   # "use it tonight", only "worth checking" (doc 4 §4.13; Copy.headline does the
   # same on Today).
+  #
+  # The bell shows the same words later, so it passes the foods it found itself:
+  # what was said stays readable after the food is gone.
   class Message < ApplicationService
     TAG = "scrapless-rescue" # one at a time: a newer notification replaces an older one
 
-    def initialize(notification:, locale:)
+    def self.url_for(notification) = "/today?n=#{notification.id}"
+
+    def initialize(notification:, locale:, items: nil)
       @notification = notification
       @locale = locale
+      @items = items
     end
 
     def call
-      items = still_here
+      items = @items || still_here
       return if items.empty?
 
       I18n.with_locale(@locale) do
         { title: I18n.t("notifications.title"), body: body(items), tag: TAG,
-          url: "/today?n=#{@notification.id}" }
+          url: self.class.url_for(@notification) }
       end
     end
 

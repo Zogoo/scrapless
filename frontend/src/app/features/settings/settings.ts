@@ -76,11 +76,22 @@ export class Settings implements OnInit {
   protected readonly languageNames: Record<string, string> = { en: 'English', de: 'Deutsch' };
 
   protected readonly previous = signal(this.fridge.previous());
+  /** Why the switch did not happen, when it did not. */
+  protected readonly switchNote = signal('');
 
   protected switchBack(): void {
+    this.switchNote.set('');
     this.fridge.switchBack().subscribe({
-      next: () => void this.router.navigate(['/today']),
-      error: () => void this.router.navigate(['/today']),
+      next: (fridge) => {
+        if (fridge) {
+          void this.router.navigate(['/today']);
+          return;
+        }
+        // Forgotten from another phone: this one stays where it is.
+        this.previous.set(null);
+        this.switchNote.set('settings.switch_gone');
+      },
+      error: () => this.switchNote.set('settings.switch_failed'),
     });
   }
 

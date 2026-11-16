@@ -110,8 +110,8 @@ analysis in [doc 14](14-mvp-cost-model.md).
 | Not built | Why |
 |---|---|
 | **Rescue ideas** ("what can I cook with this") | Out of the five-feature scope. It is the top of §13.4 — without it the Used/Wasted buttons have no reason to be pressed. |
-| **Email fallback for notifications** | Doc 5 §5.7 wants one for the ~25–30% of German users who will never get push (iPhone without Home Screen install, or a no). Kitchens have no email address, so there is nowhere to send it. Web Push is built — see §13.4b, *notifications*. |
-| **An adaptive notification budget** | Doc 5 §5.5 lowers a kitchen's budget after two ignored notifications. `notifications.opened_at` records the taps; nothing reads it yet. Send time is the fixed 17:00–20:00 window, not learned. |
+| **Email fallback for notifications** | Doc 5 §5.7 wants one for the ~25–30% of German users who will never get push (iPhone without Home Screen install, or a no). Kitchens have no email address, so there is nowhere to send it. Web Push and the in-app bell are built — see §13.4b, *notifications*; the bell is still a surface only for someone who opens the app. |
+| **An adaptive notification budget** | Doc 5 §5.5 lowers a kitchen's budget after two ignored notifications. `notifications.opened_at` records the taps (from the lock screen or the bell — it is also the kitchen's "read"); nothing reads it yet. Send time is the fixed 17:00–20:00 window, not learned. |
 | **Email/digital receipt import** | Doc 2 §2.4b promotes it to v1 P0 as the only capture path immune to forgetting. Significant work — retailer accounts, an ingest address, parsing. |
 | **The two German checksums** | Doc 12 §12.1's `Summe` reconciliation and VAT-class subtotals are the confidence score that replaces the vendor's. `RECEIPT_LINE.vat_class` is captured in the prompt but not reconciled, so `parse_confidence` is currently just the share of lines that resolved. **This is the largest accuracy gap.** |
 | **The second-pass tier** | ~15% of receipts should escalate to a stronger model. Not implemented: cheaper than doc 12's design and less accurate. |
@@ -127,8 +127,9 @@ analysis in [doc 14](14-mvp-cost-model.md).
    what converts a list into a reason to open the app. Should have been feature six.
 2. **The Summe checksum.** Turns `parse_confidence` from a guess into a measurement, and it is
    free — the number is already printed on every German receipt.
-3. **The email fallback and the adaptive budget.** Web Push and the weekly ledger exist
-   (§13.4b); the ~25–30% who will never get push still have to remember to open the app.
+3. **The email fallback and the adaptive budget.** Web Push, the bell and the weekly ledger
+   exist (§13.4b); the ~25–30% who will never get push still have to remember to open the
+   app before the bell can tell them anything.
 4. **Printed-date capture**, so the safety carve-out has an input.
 5. **The 200-receipt corpus**, then decide `gpt-5-mini` vs `gpt-4o-mini` on measured
    line-level F1 — see [doc 14 §14.5](14-mvp-cost-model.md#145-model-choice--measured-against-the-bill).
@@ -247,6 +248,19 @@ notification is never spent on food that is probably eaten.
   before permission), and inside the tap, because Safari refuses a prompt that is not.
   Settings has the switch and the budget. iPhone Safari gets the Home Screen instruction,
   since push exists there only for an installed app.
+- **Every kitchen gets the notification; push is only one way to see it.** The tick writes the
+  row for every kitchen with budget, subscribed or not, VAPID keys or not, and queues pushes
+  only where there are phones and keys. The bell in the app bar lists the last 14 days
+  (`GET /api/v1/notifications`, worded in the phone's language by the same `Message`).
+  **Read is per kitchen** (`opened_at`): once anyone opens one, it is read on every phone,
+  because the food is shared. The badge counts only unread notifications whose food is still
+  active, so it points at food to use, never at food already gone (doc 4 §4.9 forbids the
+  guilt counter); with the budget at 3 it cannot climb past 3. Tapping one — in the bell or on
+  the lock screen — opens `/today?n=<id>`, which marks it read and outlines its foods. The
+  bell is never polled (a poll would keep the sleeping machine awake): it reloads on landing
+  on a kitchen, on returning to the foreground, on a language change, and when the service
+  worker reports a push. The push payload carries the unread count for `setAppBadge`. Rows
+  older than 60 days are deleted by the tick.
 
 **Verified end to end in the docker-compose stack, with a real push through FCM.** A Chrome
 subscribed from Settings, a tick delivered "Spinat and Brokkoli want using tonight." to its
@@ -257,8 +271,14 @@ found two deploy breakers, both fixed: the `openssl` gem (a `web-push` dependenc
 `libssl-dev` in both Dockerfiles, and `WEB_CONCURRENCY=1` put Puma 8 in cluster mode, where
 the Solid Queue plugin crashed boot — `fly.toml` now runs single mode (`0`).
 
+**The bell was verified in the browser at phone width** against the local server with no push
+keys and no subscription: the real `Dispatch` wrote the evening's row, the badge counted 1
+(last week's, whose yogurt was used up, showed as "used up" and did not count), tapping it
+outlined both foods and cleared the badge, a cold open of `/today?n=…` kept it cleared while
+the boot load crossed the read, and the German UI got German words from the server.
+
 ⚠️ **Still not verified:** a phone (Android via FCM, iPhone via APNs from the Home Screen),
-the tap on a real lock-screen notification, and Fly's scheduled machine.
+the tap on a real lock-screen notification, the app-icon badge, and Fly's scheduled machine.
 
 ---
 
@@ -272,8 +292,9 @@ Secrets (`RAILS_MASTER_KEY`, `SECRET_KEY_BASE`, `OPENAI_API_KEY`, `AI_MODE`,
 `AI_DAILY_BUDGET_USD`) are Fly secrets, piped to `fly secrets import` on stdin so no value
 reaches an argument list or a log.
 
-**Notifications need three more secrets and the clock, once.** Without the keys the feature
-is simply off: the client is told there is no key and offers nothing.
+**Notifications need three more secrets and the clock, once.** Without the keys push is
+off — the client is told there is no key and offers no switch — but the bell still works, as
+long as the clock ticks.
 
 ```sh
 # VAPID keys and the tick token, generated locally and piped in, never typed as arguments

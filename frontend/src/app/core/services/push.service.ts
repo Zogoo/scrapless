@@ -112,13 +112,6 @@ export class PushService {
     }
   }
 
-  /** The notification was tapped; `id` comes from the URL it opened. */
-  opened(id: string): void {
-    this.http.post(`${environment.apiUrl}/notifications/${id}/opened`, {}).subscribe({
-      error: () => undefined, // a lost count, not a lost feature
-    });
-  }
-
   /** True when the capture review should ask. */
   shouldAsk(): boolean {
     const state = this.state();

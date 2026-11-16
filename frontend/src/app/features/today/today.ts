@@ -1,6 +1,7 @@
 import {
   Component,
   OnInit,
+  DestroyRef,
   computed,
   inject,
   signal,
@@ -8,12 +9,13 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { ItemsService } from '../../core/services/items.service';
 import { InstallService } from '../../core/services/install.service';
 import { UndoService } from '../../core/services/undo.service';
 import { LocaleService } from '../../core/services/locale.service';
-import { PushService } from '../../core/services/push.service';
+import { NotificationsService } from '../../core/services/notifications.service';
 import { Outcome, ScoredItem } from '../../core/models';
 
 /**
@@ -34,7 +36,8 @@ export class Today implements OnInit {
   private readonly items = inject(ItemsService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private readonly push = inject(PushService);
+  private readonly notifications = inject(NotificationsService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly undo = inject(UndoService);
   private readonly translate = inject(TranslateService);
   private readonly locale = inject(LocaleService);
@@ -52,6 +55,8 @@ export class Today implements OnInit {
   protected readonly error = signal('');
   protected readonly expandRest = signal(false);
   protected readonly busyId = signal<number | null>(null);
+  /** The foods the notification that opened this page was about. */
+  protected readonly picked = signal<number[]>([]);
 
   protected readonly isEmpty = computed(() => {
     const today = this.today();
@@ -71,23 +76,47 @@ export class Today implements OnInit {
 
   ngOnInit(): void {
     this.load();
-    this.countOpenedNotification();
+    // Not the snapshot: tapping a notification in the bell while already on
+    // Today reuses this page and only changes the query.
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => void this.openNotification(params.get('n')));
   }
 
-  /** A tapped notification opens /today?n=<id>; count it once, then drop the id. */
-  private countOpenedNotification(): void {
-    const id = this.route.snapshot.queryParamMap.get('n');
+  /**
+   * A tapped notification opens /today?n=<id>, from the lock screen or the bell:
+   * count it read for the kitchen, point at its food, then drop the id.
+   */
+  private async openNotification(id: string | null): Promise<void> {
     if (!id || !/^\d+$/.test(id)) return;
 
-    this.push.opened(id);
     void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+    const n = Number(id);
+    this.notifications.read(n);
+    if (!this.notifications.find(n)) await this.notifications.load();
+    this.picked.set(this.notifications.find(n)?.item_ids ?? []);
+    this.scrollToPicked();
+  }
+
+  /** Once both the page and the notification are in, bring its first food into view. */
+  private scrollToPicked(): void {
+    const first = this.picked()[0];
+    if (first === undefined || !this.today()) return;
+    setTimeout(() =>
+      document
+        .getElementById(`item-${first}`)
+        ?.scrollIntoView({ block: 'center', behavior: 'smooth' }),
+    );
   }
 
   protected load(): void {
     this.loading.set(true);
     this.error.set(''); // a retry that works must not keep the old failure on screen
     this.items.load().subscribe({
-      next: () => this.loading.set(false),
+      next: () => {
+        this.loading.set(false);
+        this.scrollToPicked();
+      },
       error: (err: { message?: string }) => {
         this.error.set(err.message ?? this.translate.instant('errors.generic'));
         this.loading.set(false);

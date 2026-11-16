@@ -31,7 +31,13 @@ Rails.application.routes.draw do
       resource :push_subscription, only: %i[create destroy] do
         get :key
       end
-      post "notifications/:id/opened", to: "notifications#opened", as: :notification_opened
+      resources :notifications, only: :index do
+        post :read, on: :member
+        post :read_all, on: :collection
+      end
+      # The first push build called it "opened"; a phone still running that
+      # bundle after a deploy keeps counting.
+      post "notifications/:id/opened", to: "notifications#read"
 
       post "recipes/suggest", to: "recipes#suggest"
     end

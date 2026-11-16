@@ -63,7 +63,28 @@ RSpec.describe Notifications::Dispatch do
     expect(dispatch).to be_empty
   end
 
-  it "does nothing without push keys" do
-    with_env("VAPID_PRIVATE_KEY" => nil) { expect(dispatch).to be_empty }
+  # The bell is the surface for a phone that never allowed push (doc 4 §4.9).
+  it "still notifies a kitchen with no phone subscribed, in the bell only" do
+    household.push_subscriptions.destroy_all
+
+    expect { dispatch }.to change(household.notifications, :count).by(1)
+    expect(enqueued_jobs).to be_empty
+  end
+
+  it "still notifies without push keys, in the bell only" do
+    with_env("VAPID_PRIVATE_KEY" => nil) do
+      expect { dispatch }.to change(household.notifications, :count).by(1)
+    end
+    expect(enqueued_jobs).to be_empty
+  end
+
+  it "forgets notifications nobody will look at again" do
+    old = create(:notification, household: household, sent_on: Date.new(2026, 8, 1))
+    recent = create(:notification, household: household, sent_on: Date.new(2026, 11, 2))
+
+    dispatch
+
+    expect(Notification.exists?(old.id)).to be(false)
+    expect(Notification.exists?(recent.id)).to be(true)
   end
 end

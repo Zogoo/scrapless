@@ -10,19 +10,24 @@ module Notifications
   #
   # The window is three hours, so a late or missed tick still delivers; the
   # unique indexes on Notification make a repeated tick send nothing.
+  #
+  # Every kitchen gets the notification, push or not: it always lands in the
+  # bell, and push is only how it also reaches a lock screen. Without that, a
+  # phone that never allowed push (or an iPhone not on the Home Screen) would
+  # have no way to hear about the food at all (doc 4 §4.9).
   class Dispatch < ApplicationService
     SEND_HOURS = 17...20
+    # The budget looks at one week and the bell at two; older rows are dead weight.
+    KEEP = 60.days
 
     def initialize(at: Time.current)
       @at = at
     end
 
     def call
-      return [] unless Vapid.configured?
+      Notification.where(sent_on: ...(@at.to_date - KEEP)).delete_all
 
-      Household.where(id: PushSubscription.select(:household_id))
-               .where(alerts_per_week: 1..)
-               .find_each.filter_map { |household| spend(household) }
+      Household.where(alerts_per_week: 1..).find_each.filter_map { |household| spend(household) }
     end
 
     private
@@ -41,7 +46,7 @@ module Notifications
 
       notification = household.notifications.create!(iso_week: week, slot: spent + 1, sent_on: today,
                                                      item_ids: picks.map { |scored| scored.item.id })
-      household.push_subscriptions.ids.each { |id| DeliverPushJob.perform_later(notification.id, id) }
+      push(notification, household)
       notification
     rescue ActiveRecord::RecordNotUnique
       nil # another tick spent this slot first
@@ -49,6 +54,12 @@ module Notifications
       # One kitchen's bad data must not cost every later kitchen its evening.
       Rails.error.report(e, context: { household_id: household.id })
       nil
+    end
+
+    def push(notification, household)
+      return unless Vapid.configured?
+
+      household.push_subscriptions.ids.each { |id| DeliverPushJob.perform_later(notification.id, id) }
     end
   end
 end

@@ -30,6 +30,26 @@ RSpec.describe Notifications::DeliverPushJob do
     expect(subscription.reload.last_delivered_at).to be_present
   end
 
+  # The app icon's number, counted as the bell counts it.
+  it "tells the phone how many are unread" do
+    allow(WebPush).to receive(:payload_send)
+    create(:notification, household: household, item_ids: [ item.id ], sent_on: Date.new(2026, 11, 16), slot: 2)
+
+    perform
+
+    expect(WebPush).to have_received(:payload_send) do |args|
+      expect(JSON.parse(args[:message])).to include("unread" => 2)
+    end
+  end
+
+  it "remembers the delivery" do
+    allow(WebPush).to receive(:payload_send)
+
+    perform
+
+    expect(subscription.reload.last_delivered_at).to be_present
+  end
+
   it "forgets a phone that unsubscribed" do
     allow(WebPush).to receive(:payload_send).and_raise(push_error(WebPush::ExpiredSubscription, 410))
 
