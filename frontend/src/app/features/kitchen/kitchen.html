@@ -66,7 +66,7 @@
                     }}</span>
                   </div>
                   <!-- One slider, five stops. The pack added first sits left, the one
-                     just added sits right, and sliding down drains that right end.
+                     just added sits right, and sliding down drains that left band.
                      0% uses the line. Each band keeps its freshness colour. -->
                   <input
                     type="range"
@@ -80,7 +80,7 @@
                       'kitchen.how_much' | translate: { name: line.first.display_name }
                     "
                     [attr.aria-valuetext]="'kitchen.percent' | translate: { count: percent(line) }"
-                    (pointerdown)="openFromSlider(line)"
+                    (pointerdown)="beginGesture(line)"
                     (input)="slide(line, $event)"
                     (change)="commitLevel(line, $event)"
                   />

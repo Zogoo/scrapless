@@ -31,7 +31,10 @@ export class ItemsService {
     return this.http.post<Item>(`${this.url}/${id}/undo`, {});
   }
 
-  /** One slider per Kitchen line: `level` runs 0..ids.length, oldest drained first. */
+  /**
+   * One slider per Kitchen line: `level` runs 0..ids.length.
+   * Lowering drains the oldest pack first; raising refills that pack first.
+   */
   level(ids: number[], level: number): Observable<{ items: Item[] }> {
     return this.http.post<{ items: Item[] }>(`${this.url}/level`, { ids, level });
   }

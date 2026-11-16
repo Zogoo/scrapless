@@ -49,17 +49,18 @@ export function toLines(items: ScoredItem[]): KitchenLine[] {
 }
 
 /**
- * How a level spreads over the packs. Oldest added is filled first, so lowering
- * drains the most recently added pack and raising refills that pack before any
- * older one. Mirrors Inventory::SetLevel. Returned oldest → newest, left → right.
+ * How a level spreads over the packs. Newest added is filled first, so lowering
+ * drains the older pack (the left band) and raising refills that pack before any
+ * newer one. Mirrors Inventory::SetLevel. Returned oldest → newest, left → right.
  */
 export function segments(line: KitchenLine, level = line.level): Segment[] {
   let remaining = Math.max(0, Math.min(level, line.packs.length));
-  return line.packs.map((pack) => {
+  const newestFirst = [...line.packs].reverse().map((pack) => {
     const amount = Math.min(remaining, 1);
     remaining -= amount;
     return { id: pack.id, phase: pack.phase, amount };
   });
+  return newestFirst.reverse();
 }
 
 const PHASE_TOKEN: Record<ScoredItem['phase'], string> = {
@@ -70,8 +71,8 @@ const PHASE_TOKEN: Record<ScoredItem['phase'], string> = {
 };
 
 /**
- * The slider track: one coloured band per pack. Left is the pack added first,
- * right is the one just added (the end lowering drains), then empty. Colour is
+ * The slider track: one coloured band per pack. Left is the pack added first
+ * (the band lowering drains), right is the one just added, then empty. Colour is
  * that pack's freshness, not its age. Length carries the meaning (see styles.scss).
  */
 export function trackBackground(line: KitchenLine, level = line.level): string {

@@ -4,6 +4,16 @@ RSpec.describe Items::Undo do
   let(:household) { create(:household) }
   let(:item) { create(:item, household: household, amount_left: 1.0) }
 
+  it "puts an opened pack back to the dates from before that move" do
+    window = [ item.window_start, item.window_end ]
+
+    Items::Resolve.call(item: item, outcome: "opened")
+    described_class.call(item: item)
+
+    expect(item.reload.opened_on).to be_nil
+    expect([ item.window_start, item.window_end ]).to eq(window)
+  end
+
   it "puts a food back exactly as it was before the tap" do
     window = [ item.window_start, item.window_end ]
     Items::Resolve.call(item: item, outcome: "froze")

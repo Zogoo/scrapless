@@ -67,24 +67,24 @@ describe('toLines', () => {
 });
 
 describe('segments', () => {
-  it('keeps the earlier pack and drains the most recently added one on the right', () => {
+  it('drains the older pack on the left before the newer one', () => {
     const [line] = toLines([old, fresh]);
 
     expect(segments(line, 1.25).map((s) => [s.id, s.amount])).toEqual([
-      [1, 1],
-      [2, 0.25],
+      [1, 0.25],
+      [2, 1],
     ]);
   });
 
-  it('refills the newest drained pack before the older one', () => {
+  it('refills the older not-yet-full pack before the newer one', () => {
     const [line] = toLines([
-      pack({ id: 1, amount_left: 1, phase: 'at_risk' }),
-      pack({ id: 2, amount_left: 0.25, phase: 'fresh' }),
+      pack({ id: 1, amount_left: 0.25, phase: 'at_risk' }),
+      pack({ id: 2, amount_left: 1, phase: 'fresh' }),
     ]);
 
     expect(segments(line, 1.75).map((s) => [s.id, s.amount])).toEqual([
-      [1, 1],
-      [2, 0.75],
+      [1, 0.75],
+      [2, 1],
     ]);
   });
 });
@@ -94,7 +94,7 @@ describe('trackBackground', () => {
     const [line] = toLines([old, fresh]);
 
     expect(trackBackground(line)).toBe(
-      'linear-gradient(to right, var(--at-risk) 0% 50%, var(--fresh) 50% 75%, var(--surface-sunken) 75% 100%)',
+      'linear-gradient(to right, var(--at-risk) 0% 25%, var(--fresh) 25% 75%, var(--surface-sunken) 75% 100%)',
     );
   });
 });
