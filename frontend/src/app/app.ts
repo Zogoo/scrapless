@@ -1,4 +1,13 @@
-import { Component, OnInit, effect, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { filter } from 'rxjs/operators';
@@ -28,11 +37,16 @@ export class App implements OnInit {
   /** Brand bar matches the restlos shell. Capture keeps the camera full-bleed. */
   protected readonly showBrand = signal(false);
 
+  /** Only the id: a rename or a budget change is the same kitchen. */
+  private readonly kitchenId = computed(() => this.fridge.fridge()?.id ?? null);
+
   constructor() {
     // Whenever this phone lands on a kitchen — boot, join, switching back, a new
     // one after forgetting — re-tell the server where to send notifications.
+    // Untracked: the request's interceptors read the kitchen signal, which
+    // would otherwise make every rename re-register the phone.
     effect(() => {
-      if (this.fridge.fridge()?.id) void this.push.refresh();
+      if (this.kitchenId()) untracked(() => void this.push.refresh());
     });
   }
 

@@ -35,6 +35,8 @@ export class PushService {
   private publicKey: string | null = null;
 
   readonly state = signal<PushState>('unavailable');
+  /** Subscribing waits on the browser's push service: seconds on a fresh profile. */
+  readonly busy = signal(false);
 
   /**
    * Works out the state and, when subscribed, tells the server again. That
@@ -72,6 +74,7 @@ export class PushService {
     this.markAsked();
     if (permission !== 'granted') return this.set(permission === 'denied' ? 'blocked' : 'off');
 
+    this.busy.set(true);
     try {
       const registration = await this.registration();
       if (!registration) return this.set('unsupported');
@@ -86,20 +89,27 @@ export class PushService {
       return this.set('on');
     } catch {
       return this.set('off');
+    } finally {
+      this.busy.set(false);
     }
   }
 
   async disable(): Promise<PushState> {
-    const subscription = await this.subscription();
-    if (subscription) {
-      await firstValueFrom(
-        this.http.delete(`${environment.apiUrl}/push_subscription`, {
-          body: { endpoint: subscription.endpoint },
-        }),
-      ).catch(() => undefined); // the server forgets dead endpoints on its own
-      await subscription.unsubscribe();
+    this.busy.set(true);
+    try {
+      const subscription = await this.subscription();
+      if (subscription) {
+        await firstValueFrom(
+          this.http.delete(`${environment.apiUrl}/push_subscription`, {
+            body: { endpoint: subscription.endpoint },
+          }),
+        ).catch(() => undefined); // the server forgets dead endpoints on its own
+        await subscription.unsubscribe();
+      }
+      return this.set('off');
+    } finally {
+      this.busy.set(false);
     }
-    return this.set('off');
   }
 
   /** The notification was tapped; `id` comes from the URL it opened. */

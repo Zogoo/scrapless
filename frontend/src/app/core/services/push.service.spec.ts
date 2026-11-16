@@ -94,10 +94,12 @@ describe('PushService', () => {
 
     const state = service.enable();
     const post = await vi.waitFor(() => http.expectOne(SUBSCRIBE_URL));
+    expect(service.busy()).toBe(true); // the button says "One moment…" meanwhile
     expect(post.request.body.endpoint).toBe(subscription.endpoint);
     post.flush(null, { status: 201, statusText: 'Created' });
 
     expect(await state).toBe('on');
+    expect(service.busy()).toBe(false);
     expect(pushManager.subscribe).toHaveBeenCalledWith(
       expect.objectContaining({ userVisibleOnly: true }),
     );

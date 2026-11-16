@@ -45,4 +45,8 @@ pidfile ENV["PIDFILE"] if ENV["PIDFILE"]
 if ENV["SOLID_QUEUE_IN_PUMA"]
   plugin :solid_queue
   solid_queue_mode :async
+  # The plugin starts Solid Queue in Puma's parent process, so in cluster mode
+  # the app must be loaded there too, or boot fails on `SolidQueue`. fly.toml
+  # runs single mode (WEB_CONCURRENCY=0), where this changes nothing.
+  preload_app!
 end

@@ -248,8 +248,17 @@ notification is never spent on food that is probably eaten.
   Settings has the switch and the budget. iPhone Safari gets the Home Screen instruction,
   since push exists there only for an installed app.
 
-⚠️ **Not verified on a real phone.** The specs stub the push service; delivery through FCM or
-APNs, the lock-screen tap, and Fly's scheduled machine have not been exercised end to end.
+**Verified end to end in the docker-compose stack, with a real push through FCM.** A Chrome
+subscribed from Settings, a tick delivered "Spinat and Brokkoli want using tonight." to its
+service worker, a second tick sent nothing, opening `/today?n=1` recorded the tap, and a
+browser-side unsubscribe was cleaned up when FCM refused the stale endpoint. The production
+image was booted with Solid Queue inside Puma and stopped with SIGINT, as Fly does. That run
+found two deploy breakers, both fixed: the `openssl` gem (a `web-push` dependency) needs
+`libssl-dev` in both Dockerfiles, and `WEB_CONCURRENCY=1` put Puma 8 in cluster mode, where
+the Solid Queue plugin crashed boot — `fly.toml` now runs single mode (`0`).
+
+⚠️ **Still not verified:** a phone (Android via FCM, iPhone via APNs from the Home Screen),
+the tap on a real lock-screen notification, and Fly's scheduled machine.
 
 ---
 

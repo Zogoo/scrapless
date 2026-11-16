@@ -68,14 +68,24 @@
               </button>
             }
           </div>
-          <button type="button" class="wide" (click)="toggleNotifications()">
-            {{ 'notify.turn_off' | translate }}
+          <button
+            type="button"
+            class="wide"
+            [disabled]="push.busy()"
+            (click)="toggleNotifications()"
+          >
+            {{ (push.busy() ? 'common.loading' : 'notify.turn_off') | translate }}
           </button>
         }
         @case ('off') {
           <p class="meta">{{ 'notify.off_note' | translate }}</p>
-          <button type="button" class="primary wide" (click)="toggleNotifications()">
-            {{ 'notify.turn_on' | translate }}
+          <button
+            type="button"
+            class="primary wide"
+            [disabled]="push.busy()"
+            (click)="toggleNotifications()"
+          >
+            {{ (push.busy() ? 'common.loading' : 'notify.turn_on') | translate }}
           </button>
         }
         @case ('blocked') {

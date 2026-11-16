@@ -1,8 +1,9 @@
 FROM ruby:3.4.10-slim
 
+# libssl-dev: web-push needs the openssl gem, and Bundler compiles it.
 RUN apt-get update -qq && \
     apt-get install -y --no-install-recommends \
-      build-essential libsqlite3-dev curl \
+      build-essential libsqlite3-dev libssl-dev curl \
       git && \
     rm -rf /var/lib/apt/lists/*
 # git is required by bundler-audit to fetch the ruby-advisory-db.

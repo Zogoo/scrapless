@@ -23,7 +23,9 @@ kill_timeout = 60
   RAILS_LOG_TO_STDOUT = 'true'
   RAILS_MAX_THREADS = '3'
   RAILS_SERVE_STATIC_FILES = 'true'
-  WEB_CONCURRENCY = '1'
+  # 0 = Puma single mode: one process. Puma 8 reads 1 as cluster mode with one
+  # worker, which costs a second process and boots no app in the parent.
+  WEB_CONCURRENCY = '0'
   DATABASE_PATH = '/mnt/database_storage/production.sqlite3'
   APP_FRONTEND_URL = 'https://scrapless-app.fly.dev'
   # Switch to 'fly' after `rake fly:setup` provisions Tigris storage.
