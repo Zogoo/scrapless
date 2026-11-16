@@ -17,6 +17,32 @@ RSpec.describe Items::Resolve do
     expect(milk.window_start).to be <= milk.window_end
   end
 
+  # The slider's open rebuilt the window from the category table and then
+  # capped it, so a pack due tomorrow and a pack due in two weeks both became
+  # "3 days". The cap applies only when it is sooner than the end already there.
+  it "keeps an end that is sooner than the opened cap, and undo puts the dates back" do
+    milk = create(:item, household: household, category: "dairy", acquired_on: Date.current - 10,
+                         window_start: Date.current - 4, window_end: Date.current + 1)
+    was = [ milk.window_start, milk.window_end ]
+
+    described_class.call(item: milk, outcome: "opened")
+
+    expect(milk.reload).to have_attributes(opened_on: Date.current, window_end: was[1])
+
+    Items::Undo.call(item: milk)
+
+    expect(milk.reload).to have_attributes(opened_on: nil, window_start: was[0], window_end: was[1])
+  end
+
+  it "does not rewrite the dates of a pack that is already open" do
+    milk = create(:item, household: household, category: "dairy", opened_on: Date.current - 2,
+                         window_start: Date.current - 2, window_end: Date.current + 1)
+
+    described_class.call(item: milk, outcome: "opened")
+
+    expect(milk.reload).to have_attributes(opened_on: Date.current - 2, window_end: Date.current + 1)
+  end
+
   it "records the item as it was, so the tap can be undone" do
     item = create(:item, household: household)
 
