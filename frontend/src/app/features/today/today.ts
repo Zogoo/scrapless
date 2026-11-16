@@ -1,4 +1,11 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -19,6 +26,7 @@ import { Outcome, ScoredItem } from '../../core/models';
   selector: 'app-today',
   imports: [TranslatePipe],
   templateUrl: './today.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './today.scss',
 })
 export class Today implements OnInit {

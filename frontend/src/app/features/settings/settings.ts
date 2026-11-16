@@ -1,4 +1,11 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
@@ -16,6 +23,7 @@ import { CostReport } from '../../core/models';
   selector: 'app-settings',
   imports: [FormsModule, DecimalPipe, TranslatePipe],
   templateUrl: './settings.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './settings.scss',
 })
 export class Settings implements OnInit {

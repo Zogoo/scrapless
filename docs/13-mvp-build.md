@@ -240,7 +240,7 @@ fly deploy --remote-only -a scrapless-app
 
 ## 13.5 Verification
 
-Backend 273 examples, frontend 47, RuboCop and Brakeman clean. Beyond the suites, the running app was
+Backend 274 examples, frontend 47, RuboCop and Brakeman clean. Beyond the suites, the running app was
 driven end to end: fridge created and named, four items added through the tap grid with
 **zero** billed model calls, the shop rewound a week to exercise the risk model, chicken
 correctly suppressed, localStorage cleared and the fridge restored from the cookie alone, and

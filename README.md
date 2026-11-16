@@ -3,7 +3,7 @@
 A mobile-web app that tells a household what food it has and what is about to die,
 with as close to zero manual input as possible.
 
-Rails 8.1 API + Angular 21 PWA, SQLite, one Fly.io machine. The product research that
+Rails 8.1 API + Angular 22 PWA, SQLite, one Fly.io machine. The product research that
 decides what this is and is not lives in [`docs/`](docs/README.md); the MVP build itself
 is documented in [docs/13-mvp-build.md](docs/13-mvp-build.md), and what it costs to run
 in [docs/14-mvp-cost-model.md](docs/14-mvp-cost-model.md).

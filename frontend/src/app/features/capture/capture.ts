@@ -1,4 +1,12 @@
-import { Component, ElementRef, OnDestroy, inject, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  inject,
+  signal,
+  viewChild,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -47,6 +55,7 @@ export const TAP_GRID: readonly { emoji: string; key: string; word: string }[] =
   selector: 'app-capture',
   imports: [FormsModule, TranslatePipe],
   templateUrl: './capture.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './capture.scss',
 })
 export class Capture implements OnDestroy {

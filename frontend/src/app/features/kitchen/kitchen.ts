@@ -1,4 +1,11 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -17,6 +24,7 @@ import { KitchenLine, formatLevel, toLines, trackBackground } from './kitchen-li
   selector: 'app-kitchen',
   imports: [TranslatePipe],
   templateUrl: './kitchen.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './kitchen.scss',
 })
 export class Kitchen implements OnInit {

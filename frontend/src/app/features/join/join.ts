@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -13,6 +13,7 @@ import { FridgeService, joinCodeFromLocation } from '../../core/services/fridge.
   selector: 'app-join',
   imports: [TranslatePipe],
   styleUrl: './join.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="join">
       <div class="hero">
