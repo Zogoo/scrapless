@@ -11,20 +11,21 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { ItemsService } from '../../core/services/items.service';
 import { InstallService } from '../../core/services/install.service';
-import { UndoService } from '../../core/services/undo.service';
 import { LocaleService } from '../../core/services/locale.service';
-import { Outcome, ScoredItem } from '../../core/models';
+import { ScoredItem } from '../../core/models';
+import { ItemLine } from '../../shared/item-line/item-line';
+import { lineFor } from '../../shared/item-line/line';
 
 /**
  * The product. Answers exactly one question: what should I do about food today?
  *
  * Everything here is shaped by the 5-second glance budget in doc 2 §2.2 — three
- * cards at most, the decay read from a bar rather than a colour, and both
- * actions inside thumb reach.
+ * cards at most. Those cards are the Kitchen line. The fine-for-now list and
+ * the probably-gone note stay as they are.
  */
 @Component({
   selector: 'app-today',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, ItemLine],
   templateUrl: './today.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './today.scss',
@@ -32,7 +33,6 @@ import { Outcome, ScoredItem } from '../../core/models';
 export class Today implements OnInit {
   private readonly items = inject(ItemsService);
   private readonly router = inject(Router);
-  private readonly undo = inject(UndoService);
   private readonly translate = inject(TranslateService);
   private readonly locale = inject(LocaleService);
   protected readonly install = inject(InstallService);
@@ -48,7 +48,8 @@ export class Today implements OnInit {
   });
   protected readonly error = signal('');
   protected readonly expandRest = signal(false);
-  protected readonly busyId = signal<number | null>(null);
+  /** The filter already picked this pack. It is not grouped with its siblings. */
+  protected readonly lineFor = lineFor;
 
   protected readonly isEmpty = computed(() => {
     const today = this.today();
@@ -78,21 +79,6 @@ export class Today implements OnInit {
       error: (err: { message?: string }) => {
         this.error.set(err.message ?? this.translate.instant('errors.generic'));
         this.loading.set(false);
-      },
-    });
-  }
-
-  protected resolve(item: ScoredItem, outcome: Outcome): void {
-    this.busyId.set(item.id);
-    this.items.resolve(item.id, outcome).subscribe({
-      next: () => {
-        this.busyId.set(null);
-        this.undo.showOutcome(item, outcome);
-        this.load();
-      },
-      error: (err: { message?: string }) => {
-        this.error.set(err.message ?? this.translate.instant('errors.generic'));
-        this.busyId.set(null);
       },
     });
   }

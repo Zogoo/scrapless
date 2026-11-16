@@ -23,6 +23,16 @@ export interface Segment {
   amount: number;
 }
 
+/** One row a screen already chose. Home's filter picks single packs; it does not regroup them. */
+export function lineFor(item: ScoredItem): KitchenLine {
+  return {
+    key: `${item.storage}:${item.id}`,
+    packs: [item],
+    first: item,
+    level: item.amount_left,
+  };
+}
+
 export function lineKey(item: ScoredItem): string {
   return `${item.storage}:${item.canonical_name}`;
 }

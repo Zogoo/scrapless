@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import { ScoredItem } from '../../core/models';
-import { levelFromPercent, levelPercent, segments, toLines, trackBackground } from './kitchen-line';
+import {
+  levelFromPercent,
+  levelPercent,
+  lineFor,
+  segments,
+  toLines,
+  trackBackground,
+} from './line';
 
 function pack(overrides: Partial<ScoredItem>): ScoredItem {
   return {
@@ -38,6 +45,19 @@ function pack(overrides: Partial<ScoredItem>): ScoredItem {
 
 const old = pack({ id: 1, window_end: '2026-11-14', phase: 'at_risk', amount_left: 0.5 });
 const fresh = pack({ id: 2, window_end: '2026-11-20', phase: 'fresh' });
+
+describe('lineFor', () => {
+  it('keeps the one pack the filter already selected', () => {
+    const item = pack({ id: 9, amount_left: 0.5 });
+
+    expect(lineFor(item)).toMatchObject({
+      key: 'fridge:9',
+      packs: [item],
+      first: item,
+      level: 0.5,
+    });
+  });
+});
 
 describe('toLines', () => {
   it('folds two packs into one line, oldest added first, actions on the soonest-dying', () => {
