@@ -7,6 +7,12 @@ interface InstallPromptEvent extends Event {
 
 const DISMISSED_KEY = 'scrapless_install_dismissed';
 
+/** iPhone or iPad. iPadOS 13+ reports as a Mac, so touch points are the giveaway. */
+export function isIosDevice(): boolean {
+  const ua = navigator.userAgent;
+  return /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+}
+
 /**
  * "Add to home screen".
  *
@@ -38,9 +44,7 @@ export class InstallService {
   }
 
   get isIos(): boolean {
-    const ua = navigator.userAgent;
-    // iPadOS 13+ reports as a Mac, so touch points are the giveaway.
-    return /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    return isIosDevice();
   }
 
   isStandalone(): boolean {

@@ -20,9 +20,12 @@ class Household < ApplicationRecord
   has_many :memo_items, dependent: :destroy
   has_many :product_aliases, dependent: :destroy
   has_many :suggestion_dismissals, dependent: :destroy
+  has_many :push_subscriptions, dependent: :destroy
+  has_many :notifications, dependent: :destroy
 
   validates :name, presence: true, length: { maximum: 60 }
   validates :uuid, :token, :join_code, presence: true, uniqueness: true
+  validates :alerts_per_week, inclusion: { in: 0..Notification::MAX_PER_WEEK }
 
   before_validation :assign_identity, on: :create
 
@@ -39,6 +42,11 @@ class Household < ApplicationRecord
       code = SecureRandom.urlsafe_base64(16)
       break code unless exists?(join_code: code)
     end
+  end
+
+  # The kitchen's own clock: notifications go out at its dinner time, not ours.
+  def local_now(at = Time.current)
+    at.in_time_zone(ActiveSupport::TimeZone[timezone] || ActiveSupport::TimeZone["Europe/Berlin"])
   end
 
   def touch_seen!

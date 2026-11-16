@@ -78,7 +78,8 @@ module Api
       def update
         current_household.update!(
           name: params[:name].presence || current_household.name,
-          locale: locale_param || current_household.locale
+          locale: locale_param || current_household.locale,
+          alerts_per_week: params.fetch(:alerts_per_week, current_household.alerts_per_week)
         )
         render json: household_json(current_household)
       end

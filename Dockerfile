@@ -11,9 +11,10 @@ RUN npm run build -- --configuration=production
 # Stage 2: Build the Rails backend
 FROM ruby:${RUBY_VERSION}-slim AS production
 
+# libssl-dev: web-push needs the openssl gem, and Bundler compiles it.
 RUN apt-get update -qq && \
     apt-get install -y --no-install-recommends \
-      build-essential libsqlite3-dev curl \
+      build-essential libsqlite3-dev libssl-dev curl \
       libjemalloc2 && \
     rm -rf /var/lib/apt/lists/*
 

@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { environment } from '../../../environments/environment';
 import { CaptureReview } from '../../core/models';
+import { PushService } from '../../core/services/push.service';
 import { Capture } from './capture';
 
 function reviewOf(...ids: number[]): CaptureReview {
@@ -76,5 +77,46 @@ describe('Capture review', () => {
       .flush(null, { status: 503, statusText: 'Service Unavailable' });
 
     expect(sheet.review()?.items.map((item) => item.id)).toEqual([1, 2]);
+  });
+
+  // Asked after the first foods land (doc 2 §2.7), never at onboarding.
+  describe('the notification question', () => {
+    function renderReview() {
+      const fixture = TestBed.createComponent(Capture);
+      const component = fixture.componentInstance as unknown as ReviewSheet & {
+        mode: { set(value: string): void };
+      };
+      component.review.set(reviewOf(1));
+      component.mode.set('review');
+      fixture.detectChanges();
+      return fixture;
+    }
+
+    beforeEach(() => localStorage.clear());
+
+    it('is asked on the review when this phone could say yes', () => {
+      TestBed.inject(PushService).state.set('off');
+
+      expect(renderReview().nativeElement.querySelector('.notify-ask')).not.toBeNull();
+    });
+
+    it('is not asked where the answer is already known', () => {
+      TestBed.inject(PushService).state.set('blocked');
+
+      expect(renderReview().nativeElement.querySelector('.notify-ask')).toBeNull();
+    });
+
+    it('goes away on "Not now" and stays away', () => {
+      const push = TestBed.inject(PushService);
+      push.state.set('off');
+      const fixture = renderReview();
+
+      const buttons = fixture.nativeElement.querySelectorAll('.notify-actions button');
+      (buttons[1] as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.notify-ask')).toBeNull();
+      expect(push.shouldAsk()).toBe(false);
+    });
   });
 });

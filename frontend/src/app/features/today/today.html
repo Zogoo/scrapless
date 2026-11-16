@@ -49,7 +49,11 @@
       <h2 class="section-head">{{ 'today.use_first' | translate }}</h2>
 
       @for (item of today()!.use_first; track item.id) {
-        <app-item-line [line]="lineFor(item)" (failed)="error.set($event)" />
+        <app-item-line
+          [line]="lineFor(item)"
+          [class.picked]="picked().includes(item.id)"
+          (failed)="error.set($event)"
+        />
       }
     } @else if (allCalm()) {
       <div class="calm">

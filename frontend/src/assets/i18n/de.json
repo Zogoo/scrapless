@@ -181,7 +181,9 @@
       "transcribe": "Sprache"
     },
     "other_kitchen": "Deine andere Küche",
-    "switch_back": "Zurück zu {{name}}"
+    "switch_back": "Zurück zu {{name}}",
+    "switch_gone": "Diese Küche gibt es nicht mehr – sie wurde auf einem anderen Handy gelöscht. Du bist weiter in dieser.",
+    "switch_failed": "Wechseln hat nicht geklappt. Prüf deine Verbindung und versuch es noch einmal."
   },
   "common": {
     "loading": "Einen Moment…",
@@ -219,5 +221,35 @@
     "too_big": "Das Foto war etwas groß. Versuch es noch einmal.",
     "server": "Bei uns hat es kurz gehakt. Noch einmal?",
     "generic": "Das hat nicht geklappt."
+  },
+  "notify": {
+    "title": "Benachrichtigungen",
+    "ask_title": "Ein kurzer Hinweis, wenn etwas weg sollte?",
+    "ask_body": "Gegen Abendessen, höchstens einmal pro Woche und nur, wenn sich etwas lohnt. Sonst nichts.",
+    "needs_install": "Auf dem iPhone restlos zuerst zum Home-Bildschirm hinzufügen (Teilen, dann „Zum Home-Bildschirm“). Danach unter Du die Benachrichtigungen einschalten.",
+    "got_it": "Verstanden",
+    "turn_on": "Benachrichtigungen einschalten",
+    "turn_off": "Auf diesem Handy ausschalten",
+    "on_note": "Dieses Handy bekommt es zusätzlich auf den Sperrbildschirm.",
+    "off_note": "Bekomm es zusätzlich auf den Sperrbildschirm dieses Handys.",
+    "budget": "Höchstens, für die ganze Küche:",
+    "per_week_1": "Einmal pro Woche",
+    "per_week_2": "Zweimal pro Woche",
+    "per_week_3": "3-mal pro Woche",
+    "blocked": "Benachrichtigungen sind für diese Seite blockiert. In den Website-Einstellungen des Browsers kannst du sie wieder erlauben.",
+    "unsupported": "Dieser Browser kann keine Benachrichtigungen anzeigen.",
+    "bell_note": "Wenn Lebensmittel verbraucht werden wollen, erscheint das gegen Abend unter der Glocke – auf jedem Handy der Küche."
+  },
+  "bell": {
+    "title": "Benachrichtigungen",
+    "label": "Benachrichtigungen",
+    "label_unread": "Benachrichtigungen, {{count}} ungelesen",
+    "read_all": "Alle als gelesen markieren",
+    "empty": "Gerade braucht nichts deine Aufmerksamkeit.",
+    "done": "erledigt",
+    "today": "Heute",
+    "yesterday": "Gestern",
+    "push_offer": "Bekomm sie auch auf den Sperrbildschirm.",
+    "push_turn_on": "Einschalten"
   }
 }

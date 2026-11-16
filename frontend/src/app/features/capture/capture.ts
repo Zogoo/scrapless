@@ -14,6 +14,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { CaptureService } from '../../core/services/capture.service';
 import { ItemsService } from '../../core/services/items.service';
 import { SpeechService, speechTag } from '../../core/services/speech.service';
+import { PushService } from '../../core/services/push.service';
 import { CaptureReview } from '../../core/models';
 import { AutoShutter, ShutterStatus } from '../../core/vision/auto-shutter';
 import { analyseFrame, toLuma } from '../../core/vision/frame-analysis';
@@ -79,6 +80,9 @@ export class Capture implements OnDestroy {
   protected readonly picked = signal<string[]>([]);
   protected readonly removingId = signal<number | null>(null);
   protected readonly tapGrid = TAP_GRID;
+  protected readonly push = inject(PushService);
+  /** Hides the notification question as soon as it is answered either way. */
+  protected readonly notifyAnswered = signal(false);
 
   private stream: MediaStream | null = null;
   private timer: number | null = null;
@@ -343,6 +347,18 @@ export class Capture implements OnDestroy {
         this.removingId.set(null);
       },
     });
+  }
+
+  /**
+   * Asked here, right after the first foods land, not at onboarding: doc 2
+   * §2.7 puts every permission after the value moment, and an empty kitchen
+   * has nothing to notify about. `enable()` asks the browser straight away,
+   * still inside this tap.
+   */
+  protected answerNotify(yes: boolean): void {
+    this.notifyAnswered.set(true);
+    if (yes) void this.push.enable();
+    else this.push.markAsked();
   }
 
   protected done(): void {

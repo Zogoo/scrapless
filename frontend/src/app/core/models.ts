@@ -4,6 +4,8 @@ export interface Fridge {
   token: string;
   join_code: string;
   locale: string;
+  /** Notifications a week this kitchen accepts, 0–3 (doc 3 R5). */
+  alerts_per_week: number;
   created_at: string;
   stats?: { items: number; captures: number; memo_open: number };
 }

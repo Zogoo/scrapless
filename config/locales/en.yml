@@ -73,3 +73,11 @@ en:
       pasta: "Pasta"
       yoghurt: "Yoghurt"
       salad: "Salad"
+  notifications:
+    title: "Worth using tonight"
+    use:
+      one: "%{names} wants using tonight."
+      other: "%{names} want using tonight."
+    check: "%{names} — worth a look tonight."
+    and: "%{first} and %{second}"
+    too_many: "That is a lot of tries. Give it an hour."

@@ -45,6 +45,12 @@
   color: var(--ink);
 }
 
+/* What the notification that opened Today was about. */
+app-item-line.picked {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .calm {
   padding: 2.5rem 1rem;
   text-align: center;

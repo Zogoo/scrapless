@@ -64,3 +64,6 @@ group :test do
   gem "shoulda-matchers"
   gem "database_cleaner-active_record"
 end
+
+gem "solid_queue", "~> 1.7"
+gem "web-push", "~> 3.1"

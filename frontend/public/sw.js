@@ -30,6 +30,10 @@ const VERSION = 'restlos-v2';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest'];
 // Same rule as StaticCacheControl on the server.
 const FINGERPRINTED = /^\/(main|chunk|polyfills|styles)-[A-Za-z0-9_]{8}\.(js|css)$/;
+// The dev server names its chunks the same way but does not mean it: after a
+// restart a cached chunk asked for dependencies Vite no longer had, and the
+// page stayed blank. Network first still caches, so offline still works here.
+const DEV = self.location.hostname === 'localhost';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -56,7 +60,9 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
 
-  event.respondWith(FINGERPRINTED.test(url.pathname) ? cacheFirst(request) : networkFirst(request));
+  event.respondWith(
+    FINGERPRINTED.test(url.pathname) && !DEV ? cacheFirst(request) : networkFirst(request),
+  );
 });
 
 function remember(request, response) {
@@ -89,8 +95,10 @@ function networkFirst(request) {
     );
 }
 
-// The server sends { title, body, url, tag }. The tag means a newer notification
-// replaces an older one, so a retried push never shows twice.
+// The server sends { title, body, url, tag, unread }. The tag means a newer
+// notification replaces an older one, so a retried push never shows twice.
+// `unread` is the bell's count: it goes on the app icon, and an open app is
+// told to reload its bell.
 self.addEventListener('push', (event) => {
   let data = {};
   try {
@@ -100,13 +108,25 @@ self.addEventListener('push', (event) => {
   }
   if (!data.title) return;
 
+  const badge =
+    Number.isInteger(data.unread) && self.navigator.setAppBadge
+      ? self.navigator.setAppBadge(data.unread).catch(() => undefined)
+      : Promise.resolve();
+  const tellOpenApps = self.clients
+    .matchAll({ type: 'window' })
+    .then((windows) => windows.forEach((client) => client.postMessage({ type: 'push' })));
+
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      tag: data.tag,
-      icon: '/branding/app_icon_light.png',
-      data: { url: data.url },
-    }),
+    Promise.all([
+      self.registration.showNotification(data.title, {
+        body: data.body,
+        tag: data.tag,
+        icon: '/branding/app_icon_light.png',
+        data: { url: data.url },
+      }),
+      badge,
+      tellOpenApps,
+    ]),
   );
 });
 

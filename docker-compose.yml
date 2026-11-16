@@ -25,6 +25,12 @@ services:
       # clickable, zero spend. Set it (or put it in .env) to go live.
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       AI_MODE: ${AI_MODE:-auto}
+      # Notifications are off until both VAPID keys are set (doc 13 §13.4c has
+      # the one-liner that makes them). The tick token is for
+      # POST /internal/notifications/tick; unset, every tick is refused.
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      NOTIFY_TICK_TOKEN: ${NOTIFY_TICK_TOKEN:-}
     volumes:
       - .:/app
       - bundle_cache:/usr/local/bundle

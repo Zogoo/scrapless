@@ -15,7 +15,7 @@ Everything here was chosen to be **cheap to run** and **boring to maintain**.
 | CORS | `rack-cors`, active only when `CORS_ORIGINS` is set |
 | Files | Active Storage → Disk (test/dev) and S3 service `fly` (MinIO dev, Tigris prod) |
 | Mail | Action Mailer → Mailpit in dev, SMTP in production |
-| Background work | Active Job `:async` adapter — no Redis, no Sidekiq |
+| Background work | Active Job. Solid Queue in production (inside Puma, its own SQLite file); `:async` in development, `:test` in specs — no Redis, no Sidekiq |
 | Tests | RSpec, FactoryBot, Faker, shoulda-matchers |
 | Quality | rubocop-rails-omakase, Brakeman, bundler-audit |
 
@@ -57,6 +57,13 @@ SQLite is the database — **design accordingly**:
 - Keep transactions short.
 - No Postgres-only features: no `jsonb` operators, no array columns, no `ILIKE`
   (use `LIKE`, which is already case-insensitive for ASCII in SQLite).
+
+### Scheduled work
+
+The machine sleeps, so **nothing scheduled inside it runs**: Solid Queue's `recurring.yml`
+and any in-process timer only fire while something else keeps it awake. Work that must
+happen at a time is triggered from outside (an hourly Fly machine POSTs an internal
+endpoint, see doc 13 §13.4c) and made idempotent in the database.
 
 ### Cold starts
 

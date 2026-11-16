@@ -73,3 +73,11 @@ de:
       pasta: "Nudeln"
       yoghurt: "Joghurt"
       salad: "Salat"
+  notifications:
+    title: "Heute Abend verbrauchen"
+    use:
+      one: "%{names} am besten heute Abend verbrauchen."
+      other: "%{names} am besten heute Abend verbrauchen."
+    check: "%{names} — heute Abend kurz prüfen."
+    and: "%{first} und %{second}"
+    too_many: "Das waren viele Versuche. Probier es in einer Stunde noch einmal."
