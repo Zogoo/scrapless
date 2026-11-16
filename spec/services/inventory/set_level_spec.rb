@@ -19,6 +19,15 @@ RSpec.describe Inventory::SetLevel do
     expect(new_milk.reload.amount_left).to eq(0.5)
   end
 
+  it "treats a line slid to 0% as every pack used" do
+    described_class.call(household: household, ids: ids, level: 0)
+
+    expect(old_milk.reload.state).to eq("rescued")
+    expect(old_milk.item_events.last.kind).to eq("used")
+    expect(new_milk.reload.state).to eq("rescued")
+    expect(new_milk.item_events.last.kind).to eq("used")
+  end
+
   it "treats a pack slid to empty as used, not deleted" do
     remaining = described_class.call(household: household, ids: ids, level: 0.75)
 

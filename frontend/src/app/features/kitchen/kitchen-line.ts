@@ -11,7 +11,7 @@ export interface KitchenLine {
   key: string;
   /** Oldest added first (lowest id). The slider fills this order, left to right. */
   packs: ScoredItem[];
-  /** Soonest-dying pack: the headline and the Used / Froze / Opened buttons. */
+  /** Soonest-dying pack: the headline, and the pack a slider touch marks opened. */
   first: ScoredItem;
   /** Total left across packs, 0..packs.length. */
   level: number;
@@ -91,13 +91,21 @@ export function trackBackground(line: KitchenLine, level = line.level): string {
   return `linear-gradient(to right, ${stops.join(', ')})`;
 }
 
-const FRACTIONS: Record<number, string> = { 0.25: '¼', 0.5: '½', 0.75: '¾' };
+/** The only stops the Kitchen slider has. */
+export const PERCENT_STEP = 25;
 
-/** "1½", "¾", "2" — an amount, never a unit. */
-export function formatLevel(level: number): string {
-  const quarters = Math.round(level * 4) / 4;
-  const whole = Math.floor(quarters);
-  const fraction = FRACTIONS[quarters - whole] ?? '';
-  if (!fraction) return String(whole);
-  return whole === 0 ? fraction : `${whole}${fraction}`;
+function snapPercent(percent: number): number {
+  const snapped = Math.round(percent / PERCENT_STEP) * PERCENT_STEP;
+  return Math.min(100, Math.max(0, snapped));
+}
+
+/** Where the thumb sits: 0, 25, 50, 75, or 100, for the whole line. */
+export function levelPercent(level: number, packCount: number): number {
+  if (packCount <= 0) return 0;
+  return snapPercent((level / packCount) * 100);
+}
+
+/** The level the server stores for one of those five stops. 0 uses the line up. */
+export function levelFromPercent(percent: number, packCount: number): number {
+  return (snapPercent(percent) / 100) * packCount;
 }

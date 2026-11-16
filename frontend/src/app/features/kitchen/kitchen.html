@@ -61,46 +61,26 @@
                     >
                       {{ line.first.display_name }}
                     </button>
-                    <!-- Steps as well as the slider: a drag is not an option for everyone. -->
-                    <button
-                      type="button"
-                      class="step"
-                      [disabled]="level(line) <= 0"
-                      [attr.aria-label]="
-                        'kitchen.less' | translate: { name: line.first.display_name }
-                      "
-                      (click)="step(line, -0.25)"
-                    >
-                      −
-                    </button>
-                    <span class="amount">{{ amount(line) }}</span>
-                    <button
-                      type="button"
-                      class="step"
-                      [disabled]="level(line) >= line.packs.length"
-                      [attr.aria-label]="
-                        'kitchen.more' | translate: { name: line.first.display_name }
-                      "
-                      (click)="step(line, 0.25)"
-                    >
-                      +
-                    </button>
+                    <span class="amount">{{
+                      'kitchen.percent' | translate: { count: percent(line) }
+                    }}</span>
                   </div>
-                  <!-- One slider, no units. The pack added first sits left, the one
+                  <!-- One slider, five stops. The pack added first sits left, the one
                      just added sits right, and sliding down drains that right end.
-                     Each band keeps its freshness colour. -->
+                     0% uses the line. Each band keeps its freshness colour. -->
                   <input
                     type="range"
                     class="level"
                     min="0"
-                    [max]="line.packs.length"
-                    step="0.25"
-                    [value]="level(line)"
+                    max="100"
+                    step="25"
+                    [value]="percent(line)"
                     [style.background-image]="track(line)"
                     [attr.aria-label]="
                       'kitchen.how_much' | translate: { name: line.first.display_name }
                     "
-                    [attr.aria-valuetext]="amount(line)"
+                    [attr.aria-valuetext]="'kitchen.percent' | translate: { count: percent(line) }"
+                    (pointerdown)="openFromSlider(line)"
                     (input)="slide(line, $event)"
                     (change)="commitLevel(line, $event)"
                   />
@@ -115,9 +95,6 @@
                     role="group"
                     [attr.aria-labelledby]="'line-' + line.first.id"
                   >
-                    <button type="button" (click)="resolve(line.first, 'used')">
-                      ✔ {{ 'today.used' | translate }}
-                    </button>
                     <!-- Where it is, and the way to move it: a sheet, not a drag
                        (WCAG 2.5.7) and not three more targets per card. -->
                     <button
@@ -136,11 +113,6 @@
                     >
                       {{ 'storage.' + line.first.storage | translate }} ▾
                     </button>
-                    @if (!line.first.opened_on) {
-                      <button type="button" (click)="resolve(line.first, 'opened')">
-                        {{ 'kitchen.opened' | translate }}
-                      </button>
-                    }
                     <button type="button" class="quiet" (click)="resolve(line.first, 'wasted')">
                       🗑 {{ 'today.gone' | translate }}
                     </button>
