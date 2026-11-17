@@ -42,7 +42,7 @@
   white-space: nowrap;
 }
 
-/* The thumb is Pac-Man. The mouth is one wedge on the right, not a row of notches. */
+/* The thumb is Pac-Man. Unopened, the mouth is a line. Opened, it faces the track. */
 .slider {
   position: relative;
   --thumb: 26px;
@@ -80,6 +80,24 @@
 
   .eye {
     fill: var(--surface);
+  }
+
+  /* Two pellets on the track, just ahead of the mouth. */
+  .dots {
+    position: absolute;
+    top: 50%;
+    right: calc(100% + 2px);
+    display: flex;
+    gap: 3px;
+    transform: translateY(-50%);
+  }
+
+  .dot {
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentColor;
   }
 }
 

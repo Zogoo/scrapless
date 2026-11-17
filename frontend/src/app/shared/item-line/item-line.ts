@@ -60,6 +60,11 @@ export class ItemLine {
   private openingId: number | null = null;
   private openInFlight = false;
   private afterOpen: (() => void) | null = null;
+  /**
+   * The open this drag has decided, while the line still has the old one.
+   * The first move opens the mouth. An undone open closes it.
+   */
+  private readonly openedNow = signal<{ id: number; open: boolean } | null>(null);
 
   protected readonly storages: Storage[] = ['fridge', 'freezer', 'pantry'];
 
@@ -84,14 +89,34 @@ export class ItemLine {
   }
 
   /**
-   * How far the mouth is open. The closed line is 100%. Each step below that
-   * is one wider wedge from the right, and the fourth takes the circle.
+   * Unopened is the closed mouth. Opened faces the track: a full pack is the
+   * classic mouth, and each step down opens that same mouth wider. The fourth
+   * takes the circle.
    */
   protected bites(): number {
-    const wedges = Math.round((100 - this.percent()) / 25);
-    if (wedges < 0) return 0;
-    if (wedges > 4) return 4;
-    return wedges;
+    if (!this.opened()) return 0;
+    const steps = Math.round((100 - this.percent()) / 25);
+    const clamped = Math.min(4, Math.max(0, steps));
+    return clamped === 0 ? 1 : clamped;
+  }
+
+  /** Closed until this slider opens the soonest pack. An undone open closes it. */
+  protected opened(): boolean {
+    const pack = this.line().first;
+    const now = this.openedNow();
+    const saved = pack.opened_on != null;
+    const open = now && now.id === pack.id && now.open !== saved ? now.open : saved;
+    const gesture = this.gesture;
+    const preview = this.preview();
+    // Back at the percent that opened it, the mouth closes before the reply.
+    if (
+      gesture?.openSent &&
+      preview?.key === gesture.key &&
+      preview.percent === gesture.startPercent
+    ) {
+      return false;
+    }
+    return open;
   }
 
   /** The thumb went down. Nothing is opened until the percent actually changes. */
@@ -129,12 +154,14 @@ export class ItemLine {
 
     gesture.openSent = true;
     this.openingId = pack.id;
+    this.openedNow.set({ id: pack.id, open: true });
     this.openInFlight = true;
     this.items.openFromSlider(pack.id, gesture.startPercent).subscribe({
       next: () => this.settleOpen(),
       error: () => {
         gesture.openSent = false;
         if (this.openingId === pack.id) this.openingId = null;
+        this.openedNow.set({ id: pack.id, open: false });
         this.settleOpen();
       },
     });
@@ -167,6 +194,9 @@ export class ItemLine {
     if (!gesture) return;
 
     if (percent !== gesture.startPercent) this.openOnFirstMove();
+    if (gesture.openSent && percent === gesture.startPercent) {
+      this.openedNow.set({ id: gesture.packId, open: false });
+    }
     this.gesture = null;
 
     if (percent === gesture.startPercent) this.preview.set(null);
@@ -207,7 +237,12 @@ export class ItemLine {
         // pack. A later release in the same sitting counts: the open is already
         // saved, so this drag did not send it. A pack that was open beforehand
         // comes back still open, and stays quiet.
-        if (item.opened_on == null) this.accidental.set(true);
+        if (item.opened_on == null) {
+          this.accidental.set(true);
+          this.openedNow.set({ id: gesture.packId, open: false });
+        } else {
+          this.openedNow.set({ id: gesture.packId, open: true });
+        }
         writeAmount();
       },
       error: (err: { message?: string }) => this.fail(err),

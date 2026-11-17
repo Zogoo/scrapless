@@ -56,12 +56,12 @@ function sliderOpen(start: number) {
   return { outcome: 'opened', source: 'slider', start_percent: start };
 }
 
-// One mouth, facing right. 100% is the closed line. Each stop opens that
-// same wedge: 90°, then 180°, then 270°. At 0% nothing is left to draw.
+// Mouth faces the track (left). Unopened is a closed line. Opened starts at
+// the classic wedge and opens wider: 180°, then 270°. At 0% nothing is left.
 const mouth = {
-  1: 'M 12 12 L 19.071 4.929 A 10 10 0 1 0 19.071 19.071 Z',
-  2: 'M 12 12 L 12 2 A 10 10 0 0 0 12 22 Z',
-  3: 'M 12 12 L 4.929 4.929 A 10 10 0 0 0 4.929 19.071 Z',
+  1: 'M 12 12 L 4.929 4.929 A 10 10 0 1 1 4.929 19.071 Z',
+  2: 'M 12 12 L 12 2 A 10 10 0 0 1 12 22 Z',
+  3: 'M 12 12 L 19.071 4.929 A 10 10 0 0 1 19.071 19.071 Z',
 };
 
 describe('Item line', () => {
@@ -209,7 +209,7 @@ describe('Item line', () => {
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
   });
 
-  it('draws a closed mouth on a full circle', () => {
+  it('draws a closed mouth and one eye while the pack is unopened', () => {
     const fixture = TestBed.createComponent(ItemLine);
     fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
     const translate = TestBed.inject(TranslateService);
@@ -224,48 +224,68 @@ describe('Item line', () => {
     expect(bite?.getAttribute('aria-label')).toBe('Unopened');
     expect(bite?.querySelectorAll('circle.body')).toHaveLength(1);
     expect(bite?.querySelectorAll('.eye')).toHaveLength(1);
-    expect(bite?.querySelectorAll('.mouth')).toHaveLength(1);
+    expect(bite?.querySelector('.mouth')?.getAttribute('x2')).toBe('2');
     expect(bite?.querySelector('path')).toBeNull();
+    expect(bite?.querySelectorAll('.dot')).toHaveLength(0);
     expect(root.querySelector('.slider')?.getAttribute('style')).toContain('--p: 100');
   });
 
-  it('opens that mouth one wedge per step, from the right', () => {
+  it('faces the track once opened, with two dots ahead of a wider mouth', () => {
     const fixture = TestBed.createComponent(ItemLine);
     const translate = TestBed.inject(TranslateService);
     translate.setTranslation('en', { kitchen: { lock_closed: 'Unopened', lock_open: 'Opened' } });
     translate.use('en');
 
-    const show = (amount: number) => {
-      fixture.componentRef.setInput('line', toLines([pack(1, amount)])[0]);
+    const show = (amount: number, openedOn: string | null = '2026-11-12') => {
+      fixture.componentRef.setInput(
+        'line',
+        toLines([pack(1, amount, 'milk', '2026-11-20', openedOn)])[0],
+      );
       fixture.detectChanges();
       return fixture.nativeElement as HTMLElement;
     };
 
-    const one = show(0.75);
-    expect(one.querySelector('.bite')?.getAttribute('data-bites')).toBe('1');
-    expect(one.querySelector('.bite')?.getAttribute('aria-label')).toBe('Opened');
-    expect(one.querySelectorAll('path')).toHaveLength(1);
-    expect(one.querySelector('path')?.getAttribute('d')).toBe(mouth[1]);
-    expect(one.querySelector('.eye')).not.toBeNull();
-    expect(one.querySelector('.mouth')).toBeNull();
+    const classic = show(1);
+    expect(classic.querySelector('.bite')?.getAttribute('data-bites')).toBe('1');
+    expect(classic.querySelector('.bite')?.getAttribute('aria-label')).toBe('Opened');
+    expect(classic.querySelectorAll('path')).toHaveLength(1);
+    expect(classic.querySelector('path')?.getAttribute('d')).toBe(mouth[1]);
+    expect(classic.querySelectorAll('.dot')).toHaveLength(2);
+    expect(classic.querySelector('.eye')).not.toBeNull();
+    expect(classic.querySelector('.mouth')).toBeNull();
 
-    const two = show(0.5);
-    expect(two.querySelector('path')?.getAttribute('d')).toBe(mouth[2]);
-    expect(two.querySelector('.eye')).not.toBeNull();
+    const half = show(0.75);
+    expect(half.querySelector('path')?.getAttribute('d')).toBe(mouth[1]);
+    expect(half.querySelectorAll('.dot')).toHaveLength(2);
 
-    const three = show(0.25);
-    expect(three.querySelector('path')?.getAttribute('d')).toBe(mouth[3]);
-    expect(three.querySelector('.eye')).toBeNull();
+    const wider = show(0.5);
+    expect(wider.querySelector('path')?.getAttribute('d')).toBe(mouth[2]);
+    expect(wider.querySelectorAll('.dot')).toHaveLength(2);
+    expect(wider.querySelector('.eye')).not.toBeNull();
+
+    const widest = show(0.25);
+    expect(widest.querySelector('path')?.getAttribute('d')).toBe(mouth[3]);
+    expect(widest.querySelectorAll('.dot')).toHaveLength(2);
+    expect(widest.querySelector('.eye')).toBeNull();
 
     const gone = show(0);
     expect(gone.querySelector('.bite')?.getAttribute('data-bites')).toBe('4');
     expect(gone.querySelector('.bite')?.getAttribute('aria-label')).toBe('Opened');
     expect(gone.querySelector('svg')).toBeNull();
+    expect(gone.querySelectorAll('.dot')).toHaveLength(0);
+
+    const shut = show(0.5, null);
+    expect(shut.querySelector('.bite')?.getAttribute('data-bites')).toBe('0');
+    expect(shut.querySelector('.mouth')).not.toBeNull();
+    expect(shut.querySelectorAll('.dot')).toHaveLength(0);
   });
 
-  it('opens the mouth on the first move', () => {
+  it('opens the mouth toward the track on the first move', () => {
     const fixture = TestBed.createComponent(ItemLine);
     fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('en', { kitchen: { lock_closed: 'Unopened', lock_open: 'Opened' } });
+    translate.use('en');
     fixture.detectChanges();
     const screen = fixture.componentInstance as unknown as ItemLineScreen;
 
@@ -274,12 +294,14 @@ describe('Item line', () => {
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.bite')?.getAttribute('data-bites')).toBe('1');
+    expect(root.querySelector('.bite')?.getAttribute('aria-label')).toBe('Opened');
     expect(root.querySelector('path')?.getAttribute('d')).toBe(mouth[1]);
+    expect(root.querySelectorAll('.dot')).toHaveLength(2);
     expect(root.querySelector('.slider')?.getAttribute('style')).toContain('--p: 75');
     http.expectOne(`${environment.apiUrl}/items/1/resolve`).flush({});
   });
 
-  it('closes the mouth again when the thumb returns to full', () => {
+  it('closes the mouth and removes the dots when the thumb slides back to unopened', () => {
     const fixture = TestBed.createComponent(ItemLine);
     fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
     fixture.detectChanges();
@@ -287,18 +309,18 @@ describe('Item line', () => {
 
     screen.slide(slider(50));
     fixture.detectChanges();
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('.bite')?.getAttribute('data-bites'),
-    ).toBe('2');
+    expect(fixture.nativeElement.querySelectorAll('.dot')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelector('path')?.getAttribute('d')).toBe(mouth[2]);
 
     screen.slide(slider(100));
     fixture.detectChanges();
 
-    const bite = (fixture.nativeElement as HTMLElement).querySelector('.bite');
+    const bite = fixture.nativeElement.querySelector('.bite');
     expect(bite?.getAttribute('data-bites')).toBe('0');
     expect(bite?.querySelector('circle.body')).not.toBeNull();
     expect(bite?.querySelector('.mouth')).not.toBeNull();
     expect(bite?.querySelector('path')).toBeNull();
+    expect(bite?.querySelectorAll('.dot')).toHaveLength(0);
     http.expectOne(`${environment.apiUrl}/items/1/resolve`).flush({});
   });
 
@@ -320,9 +342,12 @@ describe('Item line', () => {
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
     fixture.detectChanges();
 
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('.accidental')?.textContent,
-    ).toContain('Accidental touch. This is unopened again.');
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.accidental')?.textContent).toContain(
+      'Accidental touch. This is unopened again.',
+    );
+    expect(root.querySelector('.bite')?.getAttribute('data-bites')).toBe('0');
+    expect(root.querySelectorAll('.dot')).toHaveLength(0);
   });
 
   // A new pack, opened on the previous release, then put back to full. This
@@ -350,9 +375,12 @@ describe('Item line', () => {
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
     fixture.detectChanges();
 
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('.accidental')?.textContent,
-    ).toContain('Accidental touch. This is unopened again.');
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.accidental')?.textContent).toContain(
+      'Accidental touch. This is unopened again.',
+    );
+    expect(root.querySelector('.mouth')).not.toBeNull();
+    expect(root.querySelectorAll('.dot')).toHaveLength(0);
   });
 
   it('does not warn when a pack that was already open comes back to the start', () => {
@@ -372,7 +400,10 @@ describe('Item line', () => {
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
     fixture.detectChanges();
 
-    expect((fixture.nativeElement as HTMLElement).querySelector('.accidental')).toBeNull();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.accidental')).toBeNull();
+    expect(root.querySelector('path')?.getAttribute('d')).toBe(mouth[1]);
+    expect(root.querySelectorAll('.dot')).toHaveLength(2);
   });
 
   // Bread to the cupboard is one request; the server decides what that does
