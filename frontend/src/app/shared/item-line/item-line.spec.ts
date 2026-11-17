@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { provideTranslateService } from '@ngx-translate/core';
+import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { environment } from '../../../environments/environment';
@@ -199,6 +199,48 @@ describe('Item line', () => {
     expect(req.request.body).toEqual({ ids: [1], level: 1 });
     req.flush({ items: [] });
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
+  });
+
+  it('warns when this drag opened the pack and then came back', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('en', {
+      kitchen: { accidental_open: 'Accidental touch. This is unopened again.' },
+    });
+    translate.use('en');
+    const screen = fixture.componentInstance as unknown as ItemLineScreen;
+
+    screen.slide(slider(50));
+    screen.commitLevel(slider(100));
+
+    http.expectOne(`${environment.apiUrl}/items/1/resolve`).flush({});
+    http.expectOne(`${environment.apiUrl}/items/1/revert_open`).flush({});
+    http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
+    fixture.detectChanges();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.accidental')?.textContent,
+    ).toContain('Accidental touch. This is unopened again.');
+  });
+
+  it('does not warn when a pack that was already open comes back to the start', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput(
+      'line',
+      toLines([pack(1, 1, 'milk', '2026-11-20', '2026-11-12')])[0],
+    );
+    const screen = fixture.componentInstance as unknown as ItemLineScreen;
+
+    screen.slide(slider(50));
+    screen.commitLevel(slider(100));
+
+    http.expectNone(`${environment.apiUrl}/items/1/resolve`);
+    http.expectOne(`${environment.apiUrl}/items/1/revert_open`).flush({});
+    http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('.accidental')).toBeNull();
   });
 
   // Bread to the cupboard is one request; the server decides what that does

@@ -28,6 +28,9 @@
   (input)="slide($event)"
   (change)="commitLevel($event)"
 />
+@if (accidental()) {
+  <p class="accidental" role="status">{{ 'kitchen.accidental_open' | translate }}</p>
+}
 <p class="headline">{{ line().first.headline }}</p>
 @if (line().first.added_by_name) {
   <p class="by">{{ 'common.by' | translate: { name: line().first.added_by_name } }}</p>

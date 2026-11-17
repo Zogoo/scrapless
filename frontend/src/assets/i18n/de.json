@@ -131,7 +131,8 @@
     "jump": "Orte in der Küche",
     "move_label": "{{name}} ist im {{place}}. Woanders hin",
     "move_title": "Wo ist {{name}} jetzt?",
-    "here_now": "gerade hier"
+    "here_now": "gerade hier",
+    "accidental_open": "Aus Versehen berührt. Wieder ungeöffnet."
   },
   "storage": {
     "fridge": "Kühlschrank",

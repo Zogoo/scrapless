@@ -44,6 +44,8 @@ export class ItemLine {
   private readonly undo = inject(UndoService);
 
   protected readonly moving = signal<ScoredItem | null>(null);
+  /** Set when this drag opened the pack and then came back to where it started. */
+  protected readonly accidental = signal(false);
   private readonly moveSheet = viewChild<ElementRef<HTMLDialogElement>>('moveSheet');
   private readonly preview = signal<{ key: string; percent: number } | null>(null);
   /**
@@ -84,6 +86,7 @@ export class ItemLine {
     if (this.gesture?.key === line.key) return;
 
     const pack = line.first;
+    this.accidental.set(false);
     this.gesture = {
       key: line.key,
       packId: pack.id,
@@ -185,7 +188,12 @@ export class ItemLine {
     }
 
     this.items.revertSliderOpen(gesture.packId, percent).subscribe({
-      next: () => writeAmount(),
+      next: () => {
+        // Only the open this drag just made. A pack that was already open
+        // changes its amount and stays quiet.
+        if (gesture.openSent && percent === gesture.startPercent) this.accidental.set(true);
+        writeAmount();
+      },
       error: (err: { message?: string }) => this.fail(err),
     });
   }
