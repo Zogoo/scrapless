@@ -1,14 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ScoredItem } from '../../core/models';
-import {
-  levelFromPercent,
-  levelPercent,
-  lineFor,
-  segments,
-  toLines,
-  trackBackground,
-} from './line';
+import { levelFromPercent, levelPercent, lineFor, segments, toLines, trackBars } from './line';
 
 function pack(overrides: Partial<ScoredItem>): ScoredItem {
   return {
@@ -109,29 +102,50 @@ describe('segments', () => {
   });
 });
 
-describe('trackBackground', () => {
-  it('paints the newest pack at the left edge and the oldest against the thumb', () => {
+describe('trackBars', () => {
+  it('puts the newest pack at the left edge and the oldest against the thumb', () => {
     const [line] = toLines([old, fresh]);
 
-    expect(trackBackground(line)).toBe(
-      'linear-gradient(to right, var(--fresh) 0% 50%, var(--at-risk) 50% 75%, var(--surface-sunken) 75% 100%)',
-    );
+    expect(trackBars(line)).toEqual({
+      fill: 75,
+      bars: [
+        { id: 2, phase: 'fresh', amount: 1 },
+        { id: 1, phase: 'at_risk', amount: 0.5 },
+      ],
+    });
+  });
+
+  it('keeps two packs of one colour as two bars', () => {
+    const [line] = toLines([pack({ id: 1, phase: 'fresh' }), pack({ id: 2, phase: 'fresh' })]);
+
+    expect(trackBars(line).bars).toEqual([
+      { id: 2, phase: 'fresh', amount: 1 },
+      { id: 1, phase: 'fresh', amount: 1 },
+    ]);
   });
 
   it('eats the older pack from the thumb side when the level drops', () => {
     const [line] = toLines([old, fresh]);
 
-    expect(trackBackground(line, 1)).toBe(
-      'linear-gradient(to right, var(--fresh) 0% 50%, var(--surface-sunken) 50% 100%)',
-    );
+    expect(trackBars(line, 1)).toEqual({
+      fill: 50,
+      bars: [{ id: 2, phase: 'fresh', amount: 1 }],
+    });
   });
 
-  it('keeps a single pack as one band from the left edge', () => {
+  it('keeps a single pack as one bar from the left edge', () => {
     const line = lineFor(pack({ id: 9, phase: 'aging', amount_left: 0.75 }));
 
-    expect(trackBackground(line)).toBe(
-      'linear-gradient(to right, var(--aging) 0% 75%, var(--surface-sunken) 75% 100%)',
-    );
+    expect(trackBars(line)).toEqual({
+      fill: 75,
+      bars: [{ id: 9, phase: 'aging', amount: 0.75 }],
+    });
+  });
+
+  it('draws nothing when the line is used up', () => {
+    const [line] = toLines([old, fresh]);
+
+    expect(trackBars(line, 0)).toEqual({ fill: 0, bars: [] });
   });
 });
 

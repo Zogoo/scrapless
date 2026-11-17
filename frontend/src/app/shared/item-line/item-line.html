@@ -11,9 +11,9 @@
   }
   <span class="amount">{{ 'kitchen.percent' | translate: { count: percent() } }}</span>
 </div>
-<!-- One slider, five stops. Newest pack at the left edge, oldest flush
-     against the thumb, and sliding down eats that older band. 0% uses the
-     line. Each band keeps its freshness colour. -->
+<!-- One slider, five stops. Each pack is its own rounded bar: newest at the
+     left edge, oldest flush against the thumb, a gap between them. Sliding
+     down eats that older bar. 0% uses the line. Empty track stays sunken. -->
 <div class="slider" [style.--p]="percent()">
   <input
     type="range"
@@ -22,13 +22,20 @@
     max="100"
     step="25"
     [value]="percent()"
-    [style.background-image]="track()"
     [attr.aria-label]="'kitchen.how_much' | translate: { name: line().first.display_name }"
     [attr.aria-valuetext]="'kitchen.percent' | translate: { count: percent() }"
     (pointerdown)="beginGesture()"
     (input)="slide($event)"
     (change)="commitLevel($event)"
   />
+  @let drawn = bars();
+  @if (drawn.bars.length > 0) {
+    <span class="bands" aria-hidden="true" [style.width.%]="drawn.fill">
+      @for (bar of drawn.bars; track bar.id) {
+        <span class="band" [attr.data-phase]="bar.phase" [style.flex-grow]="bar.amount"></span>
+      }
+    </span>
+  }
   <!-- Unopened: a closed line and one eye. Opened: the mouth faces the track and two dots sit just ahead. -->
   <span
     class="bite"

@@ -204,6 +204,23 @@ describe('Item line', () => {
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
   });
 
+  it('draws one bar per pack, even when both are the same colour', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('en', { kitchen: { lock_closed: 'Unopened', lock_open: 'Opened' } });
+    translate.use('en');
+    fixture.componentRef.setInput('line', toLines([pack(1), pack(2)])[0]);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const bands = root.querySelectorAll('.band');
+    expect(bands).toHaveLength(2);
+    expect(bands[0].getAttribute('data-phase')).toBe('fresh');
+    expect(bands[1].getAttribute('data-phase')).toBe('fresh');
+    expect(root.querySelector('.bands')?.getAttribute('style')).toContain('width: 100%');
+    expect((root.querySelector('.level') as HTMLElement).style.backgroundImage).toBe('');
+  });
+
   it('draws a closed mouth and one eye while the pack is unopened', () => {
     const fixture = TestBed.createComponent(ItemLine);
     fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
