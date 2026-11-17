@@ -12,6 +12,7 @@ Rails.application.routes.draw do
       resources :items, only: %i[index show update destroy] do
         post :resolve, on: :member
         post :undo, on: :member
+        post :revert_open, on: :member
         post :level, on: :collection
       end
 

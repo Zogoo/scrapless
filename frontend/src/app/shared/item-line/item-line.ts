@@ -47,9 +47,9 @@ export class ItemLine {
   private readonly moveSheet = viewChild<ElementRef<HTMLDialogElement>>('moveSheet');
   private readonly preview = signal<{ key: string; percent: number } | null>(null);
   /**
-   * One drag. `dates` is the window before the first move. A release back at
-   * the starting percent undoes the open, which writes that window back. An
-   * already-open pack is not reopened: the drag may change its amount only.
+   * One drag. `dates` is the window before the first move. Releasing at the
+   * percent that opened the pack undoes that open, including one already
+   * saved. A pack that was open before this drag only changes its amount.
    */
   private gesture: Gesture | null = null;
   private openingId: number | null = null;
@@ -113,7 +113,7 @@ export class ItemLine {
     gesture.openSent = true;
     this.openingId = pack.id;
     this.openInFlight = true;
-    this.items.resolve(pack.id, 'opened').subscribe({
+    this.items.openFromSlider(pack.id, gesture.startPercent).subscribe({
       next: () => this.settleOpen(),
       error: () => {
         gesture.openSent = false;
@@ -138,9 +138,10 @@ export class ItemLine {
   }
 
   /**
-   * Committed on release. Back at the starting percent, the open is taken
-   * back: the remembered dates return and opened clears. A new percent keeps
-   * the open and writes the amount. 0% still uses the line.
+   * Committed on release. If this slider is what opened the pack, releasing
+   * at the percent that drag started from undoes the open, even when it was
+   * already saved. Any other percent keeps the open and writes the amount.
+   * A pack that was already open only changes its amount. 0% still uses the line.
    */
   protected commitLevel(event: Event): void {
     this.beginGesture();
@@ -151,34 +152,42 @@ export class ItemLine {
     if (percent !== gesture.startPercent) this.openOnFirstMove();
     this.gesture = null;
 
-    if (percent === gesture.startPercent) {
-      this.preview.set(null);
-      this.restoreIfCancelled(gesture);
+    if (percent === gesture.startPercent) this.preview.set(null);
+
+    const run = () => this.finishRelease(gesture, percent);
+    if (this.openInFlight) this.afterOpen = run;
+    else run();
+  }
+
+  /**
+   * Asks the server whenever the pack is open. The server puts the window
+   * back only when this percent is the one that opened it. The amount is
+   * written after that, so the two updates do not land on the row together.
+   */
+  private finishRelease(gesture: Gesture, percent: number): void {
+    const opened = gesture.openSent || gesture.dates.opened_on != null;
+    const writeAmount = () => {
+      if (percent === gesture.startPercent) {
+        this.preview.set(null);
+        this.openingId = null;
+        // The open was taken back, so the line has to be read again. A release
+        // that never opened anything has nothing new to read.
+        if (opened) this.items.load().subscribe();
+        return;
+      }
+
+      this.setLevel(levelFromPercent(percent, this.line().packs.length));
+    };
+
+    if (!opened) {
+      writeAmount();
       return;
     }
 
-    this.setLevel(levelFromPercent(percent, this.line().packs.length));
-  }
-
-  /** Undo writes back the window stored before the first move. */
-  private restoreIfCancelled(gesture: Gesture): void {
-    const run = () => {
-      if (!gesture.openSent) return;
-
-      this.items.undo(gesture.packId).subscribe({
-        next: () =>
-          this.items.load().subscribe({
-            next: () => {
-              this.preview.set(null);
-              this.openingId = null;
-            },
-          }),
-        error: (err: { message?: string }) => this.fail(err),
-      });
-    };
-
-    if (this.openInFlight) this.afterOpen = run;
-    else run();
+    this.items.revertSliderOpen(gesture.packId, percent).subscribe({
+      next: () => writeAmount(),
+      error: (err: { message?: string }) => this.fail(err),
+    });
   }
 
   private setLevel(level: number): void {
@@ -236,7 +245,7 @@ export class ItemLine {
   }
 }
 
-/** Dates from before a drag's first move. Undo puts these back if it is cancelled. */
+/** Dates from before a drag's first move. A cancelled open puts these back. */
 interface Gesture {
   key: string;
   packId: number;

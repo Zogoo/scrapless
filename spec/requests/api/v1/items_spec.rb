@@ -183,6 +183,48 @@ RSpec.describe "Api::V1::Items", type: :request do
     end
   end
 
+  describe "POST /api/v1/items/:id/revert_open" do
+    it "puts the unopened window back when the slider returns to where it started" do
+      potato = create(:item, household: household, category: "produce", display_name: "Potato",
+                             canonical_name: "potato", acquired_on: Date.current,
+                             window_start: Date.current + 4, window_end: Date.current + 9)
+
+      post "/api/v1/items/#{potato.id}/resolve",
+           params: { outcome: "opened", source: "slider", start_percent: 100 }, headers: headers
+      post "/api/v1/items/level", params: { ids: [ potato.id ], level: 0.5 }, headers: headers
+      post "/api/v1/items/#{potato.id}/revert_open", params: { percent: 100 }, headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to include("opened_on" => nil,
+                                              "window_start" => (Date.current + 4).iso8601,
+                                              "window_end" => (Date.current + 9).iso8601)
+    end
+
+    it "requires the percent the thumb was released at" do
+      potato = create(:item, household: household)
+
+      post "/api/v1/items/#{potato.id}/revert_open", headers: headers
+
+      expect(response).to have_http_status(:bad_request)
+    end
+
+    it "refuses a kitchen that has not signed in" do
+      potato = create(:item, household: household)
+
+      post "/api/v1/items/#{potato.id}/revert_open", params: { percent: 100 }
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "cannot restore another kitchen's food" do
+      other = create(:item)
+
+      post "/api/v1/items/#{other.id}/revert_open", params: { percent: 100 }, headers: headers
+
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
   describe "POST /api/v1/items/level" do
     # Two phones on one kitchen moving the same slider at once.
     it "answers a conflicting change with a retryable 409, not a crash" do

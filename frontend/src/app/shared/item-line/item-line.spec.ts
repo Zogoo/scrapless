@@ -51,6 +51,11 @@ function slider(percent: number): Event {
   return { target: { value: String(percent) } } as unknown as Event;
 }
 
+/** What the first move of a drag sends. `start` is the percent before that move. */
+function sliderOpen(start: number) {
+  return { outcome: 'opened', source: 'slider', start_percent: start };
+}
+
 describe('Item line', () => {
   let http: HttpTestingController;
 
@@ -84,8 +89,11 @@ describe('Item line', () => {
     screen.commitLevel(slider(50));
 
     const opened = http.expectOne(`${environment.apiUrl}/items/1/resolve`);
-    expect(opened.request.body).toEqual({ outcome: 'opened' });
+    expect(opened.request.body).toEqual(sliderOpen(100));
     opened.flush({});
+    const revert = http.expectOne(`${environment.apiUrl}/items/1/revert_open`);
+    expect(revert.request.body).toEqual({ percent: 50 });
+    revert.flush({});
     const req = http.expectOne(`${environment.apiUrl}/items/level`);
     expect(req.request.body).toEqual({ ids: [1, 2], level: 1 });
     req.flush({ items: [] });
@@ -97,7 +105,12 @@ describe('Item line', () => {
 
     screen.commitLevel(slider(0));
 
-    http.expectOne(`${environment.apiUrl}/items/1/resolve`).flush({});
+    const opened = http.expectOne(`${environment.apiUrl}/items/1/resolve`);
+    expect(opened.request.body).toEqual(sliderOpen(75));
+    opened.flush({});
+    const revert = http.expectOne(`${environment.apiUrl}/items/1/revert_open`);
+    expect(revert.request.body).toEqual({ percent: 0 });
+    revert.flush({});
     const req = http.expectOne(`${environment.apiUrl}/items/level`);
     expect(req.request.body).toEqual({ ids: [1, 2], level: 0 });
     req.flush({ items: [] });
@@ -111,7 +124,7 @@ describe('Item line', () => {
 
     screen.slide(slider(75));
     const req = http.expectOne(`${environment.apiUrl}/items/2/resolve`);
-    expect(req.request.body).toEqual({ outcome: 'opened' });
+    expect(req.request.body).toEqual(sliderOpen(100));
     req.flush({});
 
     screen.slide(slider(50));
@@ -126,10 +139,11 @@ describe('Item line', () => {
     screen.commitLevel(slider(100));
 
     const opened = http.expectOne(`${environment.apiUrl}/items/1/resolve`);
-    expect(opened.request.body).toEqual({ outcome: 'opened' });
+    expect(opened.request.body).toEqual(sliderOpen(100));
     opened.flush({});
-    const undo = http.expectOne(`${environment.apiUrl}/items/1/undo`);
-    undo.flush({});
+    const revert = http.expectOne(`${environment.apiUrl}/items/1/revert_open`);
+    expect(revert.request.body).toEqual({ percent: 100 });
+    revert.flush({});
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
     http.expectNone(`${environment.apiUrl}/items/level`);
   });
@@ -141,6 +155,9 @@ describe('Item line', () => {
     http.expectOne(`${environment.apiUrl}/items/1/resolve`).flush({});
     screen.commitLevel(slider(50));
 
+    const revert = http.expectOne(`${environment.apiUrl}/items/1/revert_open`);
+    expect(revert.request.body).toEqual({ percent: 50 });
+    revert.flush({});
     const req = http.expectOne(`${environment.apiUrl}/items/level`);
     expect(req.request.body).toEqual({ ids: [1, 2], level: 1 });
     req.flush({ items: [] });
@@ -155,11 +172,33 @@ describe('Item line', () => {
     screen.commitLevel(slider(50));
 
     http.expectNone(`${environment.apiUrl}/items/1/resolve`);
+    const revert = http.expectOne(`${environment.apiUrl}/items/1/revert_open`);
+    expect(revert.request.body).toEqual({ percent: 50 });
+    revert.flush({});
     const req = http.expectOne(`${environment.apiUrl}/items/level`);
     expect(req.request.body).toEqual({ ids: [1, 2], level: 1 });
     req.flush({ items: [] });
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
     http.expectNone(`${environment.apiUrl}/items/1/undo`);
+  });
+
+  // The open was saved on an earlier drag, so this one starts at half. Letting
+  // go back at 100% — where that earlier drag began — asks to undo the open.
+  it('undoes a saved open when a later release is back at the starting percent', () => {
+    const potato = pack(1, 0.5, 'potato', '2026-11-20', '2026-11-17');
+    const screen = mount(toLines([potato])[0]);
+
+    screen.slide(slider(100));
+    screen.commitLevel(slider(100));
+
+    http.expectNone(`${environment.apiUrl}/items/1/resolve`);
+    const revert = http.expectOne(`${environment.apiUrl}/items/1/revert_open`);
+    expect(revert.request.body).toEqual({ percent: 100 });
+    revert.flush({});
+    const req = http.expectOne(`${environment.apiUrl}/items/level`);
+    expect(req.request.body).toEqual({ ids: [1], level: 1 });
+    req.flush({ items: [] });
+    http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
   });
 
   // Bread to the cupboard is one request; the server decides what that does

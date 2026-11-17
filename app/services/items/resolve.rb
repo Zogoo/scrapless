@@ -16,11 +16,13 @@ module Items
     TRACKED = %w[state resolved_at quantity amount_left storage storage_changed_at
                  window_start window_end confidence opened_on snoozed_until].freeze
 
-    def initialize(item:, outcome:, days: nil, to: nil)
+    def initialize(item:, outcome:, days: nil, to: nil, source: nil, start_percent: nil)
       @item = item
       @outcome = outcome.to_s
       @days = days
       @to = to.to_s
+      @source = source.to_s
+      @start_percent = start_percent
       # Into the freezer is freezing, whichever button said so: one event kind
       # and one window rule for it in the audit log.
       @outcome = "froze" if @outcome == "moved" && @to == "freezer"
@@ -42,7 +44,25 @@ module Items
     private
 
     def meta(before)
-      { before: before }.merge(@outcome == "snooze" ? { days: snooze_days } : {})
+      extra = {}
+      extra[:days] = snooze_days if @outcome == "snooze"
+      # The percent the thumb was on before this drag. A later release there
+      # can undo the open after it has already been saved.
+      percent = slider_start_percent
+      unless percent.nil?
+        extra[:source] = "slider"
+        extra[:start_percent] = percent
+      end
+      { before: before }.merge(extra)
+    end
+
+    # nil becomes 0 via to_i, which would record a start the user never had.
+    def slider_start_percent
+      return nil unless @outcome == "opened" && @source == "slider"
+      return nil unless @start_percent.to_s.match?(/\A\d{1,3}\z/)
+
+      percent = @start_percent.to_i
+      percent if (0..100).cover?(percent)
     end
 
     def apply_used = finish("rescued")
