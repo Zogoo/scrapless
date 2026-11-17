@@ -13,7 +13,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { Outcome, ScoredItem, Storage } from '../../core/models';
 import { ItemsService } from '../../core/services/items.service';
 import { UndoService } from '../../core/services/undo.service';
-import { KitchenLine, levelFromPercent, levelPercent, trackBackground } from './line';
+import { KitchenLine, TrackDraw, levelFromPercent, levelPercent, trackBars } from './line';
 
 /**
  * One food line: the percentage slider, Move, and Gone.
@@ -84,8 +84,8 @@ export class ItemLine {
       : line.level;
   }
 
-  protected track(): string {
-    return trackBackground(this.line(), this.level());
+  protected bars(): TrackDraw {
+    return trackBars(this.line(), this.level());
   }
 
   /**

@@ -46,6 +46,38 @@
 .slider {
   position: relative;
   --thumb: 26px;
+  --bar-gap: 3px;
+}
+
+/* One rounded bar per pack, inside the filled part. The gap is the sunken track. */
+.bands {
+  position: absolute;
+  left: 0;
+  top: calc((var(--tap) - 10px) / 2);
+  display: flex;
+  gap: var(--bar-gap);
+  height: 10px;
+  pointer-events: none;
+}
+
+.band {
+  flex-basis: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  border-radius: 999px;
+  background: var(--fresh);
+
+  &[data-phase='aging'] {
+    background: var(--aging);
+  }
+
+  &[data-phase='at_risk'] {
+    background: var(--at-risk);
+  }
+
+  &[data-phase='ghost'] {
+    background: var(--ghost);
+  }
 }
 
 .bite {
@@ -58,6 +90,7 @@
   box-sizing: border-box;
   transform: translateY(-50%);
   pointer-events: none;
+  /* Pellets stay ink so they read on the track. The body is yellow below. */
   color: var(--ink);
 
   /* The circle sits inside the box. At the right end, shift by that gap. */
@@ -73,7 +106,8 @@
   }
 
   .body {
-    fill: currentColor;
+    /* Classic Pac-Man yellow, the same on light and dark. */
+    fill: #ffcc00;
   }
 
   .mouth {
@@ -84,7 +118,8 @@
   }
 
   .eye {
-    fill: var(--surface);
+    /* Dark pupil. --surface would turn white on a light screen and vanish on yellow. */
+    fill: #1a1c19;
   }
 
   /* Two pellets on the track, just ahead of the mouth. */
@@ -107,8 +142,8 @@
 }
 
 /*
- * The track is painted by the component (one band per pack); the browser's own
- * track and fill are hidden so that painting is the only thing you see.
+ * The browser's own track and fill are hidden. This element is the sunken
+ * track; the pack bars sit on top of the filled part.
  */
 /* 48px to hit, 10px to see: the track is painted only in the content box. */
 .level {
@@ -119,6 +154,7 @@
   height: var(--tap);
   margin: 0;
   padding: calc((var(--tap) - 10px) / 2) 0;
+  background-color: var(--surface-sunken);
   background-clip: content-box;
   border: none;
   border-radius: 999px;

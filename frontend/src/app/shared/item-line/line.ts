@@ -61,7 +61,7 @@ export function toLines(items: ScoredItem[]): KitchenLine[] {
 /**
  * How a level spreads over the packs. Newest added is filled first, so lowering
  * drains the older pack and raising refills that pack before any newer one.
- * Mirrors Inventory::SetLevel. Returned oldest → newest; the track paints the reverse.
+ * Mirrors Inventory::SetLevel. Returned oldest → newest; the track draws the reverse.
  */
 export function segments(line: KitchenLine, level = line.level): Segment[] {
   let remaining = Math.max(0, Math.min(level, line.packs.length));
@@ -73,35 +73,41 @@ export function segments(line: KitchenLine, level = line.level): Segment[] {
   return newestFirst.reverse();
 }
 
-const PHASE_TOKEN: Record<ScoredItem['phase'], string> = {
-  fresh: 'var(--fresh)',
-  aging: 'var(--aging)',
-  at_risk: 'var(--at-risk)',
-  ghost: 'var(--ghost)',
-};
+export interface TrackBar {
+  id: number;
+  phase: ScoredItem['phase'];
+  /** How much of this pack is left, 0..1. Its share of the filled track. */
+  amount: number;
+}
+
+export interface TrackDraw {
+  /** Width of the filled part, as a percent of the track. The rest stays empty. */
+  fill: number;
+  /** Newest first, so the last bar sits against the thumb. */
+  bars: TrackBar[];
+}
 
 /**
- * The slider track: one coloured band per pack in the filled part. Newest sits
- * at the left edge, oldest flush against the thumb, then the empty track.
- * Lowering eats that oldest band. Colour is the pack's freshness, not its age.
- * Length carries the meaning (see styles.scss).
+ * The slider track: one bar per pack that still has some left. Newest sits at
+ * the left edge, oldest flush against the thumb. A gap between bars is painted
+ * by the stylesheet, so two packs of one colour stay separate. Lowering eats
+ * that oldest bar. Colour is the pack's freshness, not its age.
  */
-export function trackBackground(line: KitchenLine, level = line.level): string {
+export function trackBars(line: KitchenLine, level = line.level): TrackDraw {
   const total = line.packs.length;
-  const stops: string[] = [];
+  const bars: TrackBar[] = [];
   let at = 0;
 
-  // segments() is oldest → newest. Paint newest first so the first bite is the older pack.
-  for (const segment of segments(line, level).reverse()) {
-    if (segment.amount <= 0) continue;
-    const from = (at / total) * 100;
-    at += segment.amount;
-    const to = (at / total) * 100;
-    stops.push(`${PHASE_TOKEN[segment.phase]} ${from}% ${to}%`);
+  if (total > 0) {
+    // segments() is oldest → newest. Draw newest first so the first bite is the older pack.
+    for (const segment of segments(line, level).reverse()) {
+      if (segment.amount <= 0) continue;
+      at += segment.amount;
+      bars.push({ id: segment.id, phase: segment.phase, amount: segment.amount });
+    }
   }
-  stops.push(`var(--surface-sunken) ${(at / total) * 100}% 100%`);
 
-  return `linear-gradient(to right, ${stops.join(', ')})`;
+  return { fill: total > 0 ? (at / total) * 100 : 0, bars };
 }
 
 /** The only stops the Kitchen slider has. */
