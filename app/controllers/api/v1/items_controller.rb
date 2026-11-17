@@ -54,13 +54,22 @@ module Api
       # `days` for a snooze and `to` for a move.
       def resolve
         item = Items::Resolve.call(item: current_household.items.find(params[:id]),
-                                   outcome: params[:outcome], days: params[:days], to: params[:to])
+                                   outcome: params[:outcome], days: params[:days], to: params[:to],
+                                   source: params[:source], start_percent: params[:start_percent])
         render json: item_json(item.reload)
       end
 
       # Takes back the tap just made — a mis-tap on a list that reorders itself.
       def undo
         item = Items::Undo.call(item: current_household.items.find(params[:id]))
+        render json: item_json(item.reload)
+      end
+
+      # The slider opened this pack, and the thumb is back at the percent that
+      # drag started from. A pack that was already open is left as it is.
+      def revert_open
+        item = Items::RevertSliderOpen.call(item: current_household.items.find(params[:id]),
+                                             percent: params.require(:percent))
         render json: item_json(item.reload)
       end
 

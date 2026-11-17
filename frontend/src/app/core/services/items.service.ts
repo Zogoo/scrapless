@@ -32,6 +32,27 @@ export class ItemsService {
   }
 
   /**
+   * The first move of a slider drag. `startPercent` is where the thumb was
+   * before that move, so a later release there can undo the open.
+   */
+  openFromSlider(id: number, startPercent: number): Observable<Item> {
+    return this.http.post<Item>(`${this.url}/${id}/resolve`, {
+      outcome: 'opened',
+      source: 'slider',
+      start_percent: startPercent,
+    });
+  }
+
+  /**
+   * Back at the percent that opened the pack. Restores the window and clears
+   * opened when this slider did the opening, even after that open was saved.
+   * A pack that was already open is left as it is.
+   */
+  revertSliderOpen(id: number, percent: number): Observable<Item> {
+    return this.http.post<Item>(`${this.url}/${id}/revert_open`, { percent });
+  }
+
+  /**
    * One slider per Kitchen line: `level` runs 0..ids.length.
    * Lowering drains the oldest pack first; raising refills that pack first.
    */
