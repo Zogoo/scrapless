@@ -2,6 +2,12 @@
   display: block;
 }
 
+.accidental {
+  margin: 0.35rem 0 0;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
 :host.high-risk {
   border-left: 4px solid var(--danger);
 }

@@ -12,6 +12,16 @@
   color: var(--muted);
 }
 
+.meals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  button {
+    flex: 1;
+  }
+}
+
 .card {
   display: flex;
   flex-direction: column;

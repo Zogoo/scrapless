@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_16_112220) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_17_103000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -210,6 +210,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_16_112220) do
     t.index ["category", "storage"], name: "index_shelf_life_rules_on_category_and_storage", unique: true
   end
 
+  create_table "meal_suggestions", force: :cascade do |t|
+    t.integer "household_id", null: false
+    t.string "meal", null: false
+    t.date "served_on", null: false
+    t.string "locale", null: false
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["household_id", "meal", "served_on"], name: "index_meal_suggestions_on_household_meal_and_day", unique: true
+    t.index ["household_id"], name: "index_meal_suggestions_on_household_id"
+  end
+
   create_table "suggestion_dismissals", force: :cascade do |t|
     t.integer "household_id", null: false
     t.string "canonical_name", null: false
@@ -227,6 +239,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_16_112220) do
   add_foreign_key "item_events", "items"
   add_foreign_key "items", "captures"
   add_foreign_key "items", "households"
+  add_foreign_key "meal_suggestions", "households"
   add_foreign_key "memo_items", "households"
   add_foreign_key "notifications", "households"
   add_foreign_key "product_aliases", "households"
