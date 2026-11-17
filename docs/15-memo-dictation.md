@@ -27,11 +27,18 @@ it cannot turn a natural sentence like "I want to buy bread, milk, eggs" into th
 > The German failure has a separate cause. The recogniser's language is the **UI** language, and
 > the server-side transcription request sends no language hint at all (§15.2.4).
 >
-> **Alpha recommendation:** keep the browser's own recogniser; fix stop; restart recognition on
-> `end` until the user taps stop; add a DE/EN speech-language toggle beside the mic; and replace
-> the splitter with a dictionary-driven segmenter that costs nothing. **Cost per use stays $0**
-> wherever the browser recogniser exists, and **$0.00075** per 15 s on the recording fallback
-> (§15.5). Plan in §15.6.
+> **Alpha recommendation (revised 2026-11-17):** the alpha is about **German and English
+> working equally well**, not about long continuous dictation.
+> - Keep the browser's own recogniser, single-shot. Continuous listening is **dropped from the
+>   alpha**; its research stays in §15.2.2 for later.
+> - Make the mic **hold to talk, tap to toggle**: hold, say one item or a few, release, and the
+>   lines appear (§15.8).
+> - Fix stop to use `stop()`.
+> - Add a DE/EN speech-language toggle beside the mic, and send the language to the server.
+> - Replace the splitter with a dictionary-driven segmenter that costs nothing.
+>
+> **Cost per use stays $0** wherever the browser recogniser exists, and **$0.00075** per 15 s on
+> the recording fallback (§15.5). Plan in §15.6.
 
 ---
 
@@ -260,7 +267,7 @@ page, checked 2026-11-17.
 
 | | |
 |---|---|
-| **What** | Web Speech; `stop()` not `abort()`; restart on `end` until the user taps stop, capped at 30 s; a DE/EN speech-language toggle. The server splits with a dictionary-driven segmenter (§15.6 step 5). |
+| **What** | Web Speech, single-shot (`continuous = false`), started and stopped by a hold-to-talk / tap-to-toggle mic (§15.8); `stop()` not `abort()`; a DE/EN speech-language toggle. The server splits with a dictionary-driven segmenter (§15.6 step 5). No continuous listening in the alpha. |
 | **Cost per use** | **$0** wherever SpeechRecognition exists. **$0.00075** on the recording fallback (0.25 min × $0.003). |
 | **Latency** | Words appear live through interim results; one server round trip after stop, with no model call. |
 | **Platform support ✅** | Chrome desktop and Android, Safari and iOS Safari (Siri must be on), and Firefox desktop 160+. Firefox Android takes the recording path. iOS home-screen behaviour is unverified ❓. |
@@ -322,18 +329,23 @@ All figures are derived from the vendor prices above.
 
 ## 15.6 Alpha recommendation and implementation plan
 
-**Recommendation.** Keep the browser recogniser and fix how we drive it. Let the user choose the
-speech language. Turn the transcript into lines with a free segmenter shared by memo and capture.
-Add no new provider and no new infrastructure.
+**Recommendation.** The alpha's goal is that **German and English work equally well**. Keep the
+browser recogniser, single-shot, and fix how we drive it. Let the user choose the speech
+language. Drive the mic with hold-to-talk and tap-to-toggle (§15.8). Turn the transcript into
+lines with a free segmenter shared by memo and capture. Add no new provider and no new
+infrastructure.
+
+**Deferred, not in the alpha:** continuous listening, i.e. restarting recognition on `end` across
+pauses. §15.2.2 records why it would need a restart loop on Android. Hold-to-talk makes it
+unnecessary for now, because each hold is one short single-shot session.
 
 1. **Stop means stop** (`speech.service.ts`, `memo.ts:145`, `capture.ts:272`). Add
    `SpeechService.finish()`, which calls `recognition.stop()`, per the spec semantics in §15.2.1.
-   Keep `cancel()` → `abort()` for navigating away. Treat `no-speech` and `aborted` as an empty
-   result, not a "no mic" error.
-2. **Keep listening across pauses** (`speech.service.ts:80`). Restart on `end` until the user taps
-   stop, up to 30 s in total; this is required on Android, where `continuous` has no effect ✅.
-   Set `continuous = true` as well, for Safari 17+ and desktop. Rebuild the final text from
-   `event.results` on every event, and show final plus interim text while listening.
+   Keep `cancel()` → `abort()` for navigating away and for a cancelled hold. Treat `no-speech` and
+   `aborted` as an empty result, not a "no mic" error. Rebuild the final text from
+   `event.results` rather than appending.
+2. **Hold to talk, tap to toggle** (`memo.html`, `memo.ts`, `memo.scss`); the interaction is
+   specified in §15.8.4. Keep `continuous = false`.
 3. **Speech language toggle** (`memo.html`, `speech.service.ts:28`). Add a `DE | EN` chip beside
    the mic, defaulting to the UI locale and remembered in `localStorage` (try/catch, like
    `LocaleService`). Send it as `lang` with `dictate` and `dictateAudio`.
@@ -365,9 +377,12 @@ Add no new provider and no new infrastructure.
    - A manual pass on a real Android phone and an iPhone, both in the browser tab and from the
      home screen, to settle every ❓ above.
 
-**Done when** the §15.3 sentences produce the expected lines in both UI languages on Android
-Chrome and iOS Safari, a tap on stop never loses words, and the cost screen shows zero billed
-calls for a browser-path dictation.
+**Done when:**
+- the §15.3 sentences produce the expected lines with the speech toggle on DE and on EN, whatever
+  the UI language, on Android Chrome and iOS Safari;
+- a hold for one word ("Milch", "eggs") adds exactly that line;
+- releasing or tapping stop never loses words, and a cancelled hold adds nothing;
+- the cost screen shows zero billed calls for a browser-path dictation.
 
 ---
 
@@ -400,6 +415,114 @@ Not verified, so not relied on ❓:
   gives no count; counting requires downloading the taxonomy file);
 - transformers.js Whisper download sizes;
 - whisper.cpp speed on Fly's shared CPU.
+
+---
+
+## 15.8 Hold to talk: what users already do, and how the mic should behave
+
+The request was to make voice input flexible enough to work item by item: hold the mic, say
+"Milch", let go. This section checks that pattern against what people use today and against
+platform and accessibility rules, before any design is fixed.
+
+### 15.8.1 People already know two voice gestures, and use them for different jobs ✅
+
+| Job | Convention | Source |
+|---|---|---|
+| **Voice message** (short, sent as audio) | **Press and hold** the mic, speak, **release to send**. **Slide left to cancel.** | Telegram's documentation: "tap and hold the microphone icon", released to send, "Sliding to the left while recording cancels" ([Telegram](https://core.telegram.org/blackberry/chat-voice)). WhatsApp's Help Center describes the same hold, release and slide-to-cancel steps ([WhatsApp FAQ](https://faq.whatsapp.com/657157755756612/?cms_platform=android); the page would not render for fetching, so this is from WhatsApp's own help text shown in search results). |
+| **Dictation** (speech becomes text) | **Tap** the mic to start; tap again, say "stop dictation", or wait 30 s of silence to stop. | Apple, "Dictate text on iPhone" ([Apple Support](https://support.apple.com/guide/iphone/dictate-text-iph2c0651d2/ios)). Gboard: "tap Microphone" ([Gboard Help](https://support.google.com/gboard/answer/2781851?hl=en&co=GENIE.Platform%3DAndroid)). |
+
+Release-to-send is not universal:
+- **Google Messages:** "Press and hold Mic", then "Tap Send"
+  ([Messages Help](https://support.google.com/messages/answer/6159880)).
+- **Google Chat on iPhone:** "tap the mic", then the stop button, then "Send"
+  ([Chat Help](https://support.google.com/chat/answer/14763931?hl=en&co=GENIE.Platform%3DiOS)).
+
+So both gestures are familiar, and neither is universal.
+
+### 15.8.2 How common voice input is, in Germany specifically ✅
+
+- **Bitkom, 27 March 2024** (telephone survey, representative, 1,005 people aged 16+, of whom 773
+  smartphone users) ([Bitkom](https://www.bitkom.org/Presse/Presseinformation/Mehrheit-erhaelt-gerne-Sprachnachrichten)):
+  - **41 %** of smartphone users like sending voice messages.
+  - By age: **53 %** at 16–29, 46 % at 30–49, 35 % at 50–64, **28 %** at 65+.
+  - **75 %** say long voice messages annoy them.
+- **Bitkom, 14 November 2023** (representative survey, 1,159 people aged 16+): 558 of the
+  respondents use voice assistants
+  ([Bitkom](https://www.bitkom.org/Presse/Presseinformation/Wetter-Kochrezepte-Witze-Einsatz-digitale-Sprachassistenten)).
+- **Worldwide scale:** Meta reported 7 billion WhatsApp voice messages sent daily on average
+  ([Meta, 30 March 2022](https://about.fb.com/news/2022/03/new-voice-message-features-on-whatsapp/)).
+  That is the latest official figure found.
+
+What this supports: the hold gesture is widely practised, and short voice input is the norm.
+What it does **not** show: how many people would hold a mic to build a *shopping list*. No study
+of that was found ❓, and §15.8.5 measures it.
+
+### 15.8.3 What the rules say about press-and-hold ✅
+
+- **Apple HIG, Gestures.** The standard meaning of touch and hold is "Reveal additional controls or
+  functionality". A custom gesture must be discoverable and "Not the only way to perform an
+  important action". And: "Don't assume that people can use a specific gesture to perform a given
+  task." ([Apple HIG](https://developer.apple.com/design/human-interface-guidelines/gestures))
+- **WCAG 2.2, 2.5.2 Pointer Cancellation (Level A).** One allowed form is "Completion of the
+  function is on the up-event, and a mechanism is available to abort the function"
+  ([W3C](https://www.w3.org/WAI/WCAG22/Understanding/pointer-cancellation.html)). Hold-to-talk
+  complies if lines are added **on release** and a hold can be cancelled.
+- **WCAG 2.2, 2.5.1 Pointer Gestures (Level A).** Long press and click-and-hold count as
+  single-pointer methods, not path-based gestures. A slide whose direction or length must be
+  recognised is path-based and needs an alternative
+  ([W3C](https://www.w3.org/WAI/WCAG22/Understanding/pointer-gestures.html)). So a "slide left to
+  cancel" must not be the only way to cancel.
+- **Research on discoverability.** In a peer-reviewed study, Arleth, Damkjær and Knoche write that
+  "the affordance of a long tap on a button is often hidden in touch interfaces". Their experiment
+  found "no clear tendencies" on when a hint should appear (before, during or after the gesture)
+  (ArtsIT/DLI 2019, Springer 2020, [doi:10.1007/978-3-030-53294-9_20](https://doi.org/10.1007/978-3-030-53294-9_20)).
+  That is a single study, so it is a reason to show a visible hint, not proof of a hint design.
+
+### 15.8.4 The interaction this supports
+
+One mic button with two ways in, so neither gesture is "the only way":
+
+| Gesture | What happens | Why |
+|---|---|---|
+| **Press and hold** | Recognition starts on press. The "listening" state shows only once `audiostart` fires, which the spec defines as "the user agent has started to capture audio" ✅. **Release** calls `stop()`, and the lines are added. | The voice-message convention (§15.8.1). It completes on the up-event, as WCAG 2.5.2 allows. One hold is one short single-shot session, so no continuous mode is needed. |
+| **Tap** (press shorter than a threshold) | Toggles listening on. It ends when the recogniser ends by itself or on a second tap. | The dictation convention. It is the alternative for anyone who cannot hold, as the Apple HIG asks. |
+| **Cancel** | Release outside the button, **or** tap a visible ✕ while listening. Calls `abort()`; nothing is added. | WCAG 2.5.2's abort mechanism. The ✕ is the single-pointer alternative WCAG 2.5.1 requires for any slide. |
+| **After each release** | The new lines appear as chips with an undo. | Mistakes are cheap to fix. Undo uses the existing `destroy`. |
+| **Hint** | A visible line under the mic, e.g. "Halten und sprechen · Tippen für Liste" / "Hold and speak · tap for a list", until the user has used the mic a few times. | Long press is a hidden affordance (§15.8.3). |
+| **Language** | The DE/EN chip beside the mic, from §15.6 step 3. | The alpha's main goal. |
+
+**Browser details that need care.**
+- **iOS callout ✅.** On iOS, Safari shows a callout when a target is touched and held, and
+  `-webkit-touch-callout: none` disables it
+  ([MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/-webkit-touch-callout)).
+  The button also needs `user-select: none`.
+- **Restarting too fast ✅.** Calling `start()` while a session is still running throws
+  `InvalidStateError` ([spec](https://webaudio.github.io/web-speech-api/)). A quick second hold
+  must wait for the previous `end`.
+- **Not verified ❓, to test on devices before release:**
+  - whether the first-use microphone permission prompt breaks a hold. If it does, ask for
+    permission on the first tap, with an explanation;
+  - how long after press the first words are captured, i.e. whether the start of a word gets
+    clipped on Android Chrome and iOS Safari;
+  - the right tap-versus-hold threshold;
+  - haptic feedback. `navigator.vibrate` support on iOS was not checked.
+
+### 15.8.5 How we find out whether people actually use it
+
+The evidence above shows the gesture is familiar. It does not show it suits a shopping list. In the
+Berlin concierge test, log per dictation:
+
+- hold or tap;
+- duration;
+- speech language and UI language;
+- lines added;
+- lines deleted or renamed within 5 minutes;
+- cancels.
+
+Then compare holds with taps, German with English, and the Bitkom age bands (28–53 % like voice
+messages, §15.8.2). Ask five to eight households to think aloud while building a list, which shows
+whether the hint is understood. Decide on the default gesture from those numbers, not from this
+document.
 
 ---
 

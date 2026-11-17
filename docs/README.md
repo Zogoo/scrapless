@@ -29,7 +29,7 @@ receipt on every transaction — the best capture substrate in Europe. See [doc 
 | 12 | [Technical research — capture](12-technical-research-capture.md) | **Canonical capture architecture.** VLM-first receipt reading, extraction-accuracy and hallucination evidence, the two German receipt checksums, EU data residency, Open Food Facts licensing, auto-capture, and the in-fridge/door-mount camera verdicts |
 | 13 | [The MVP build](13-mvp-build.md) | **What now exists in this repo**, which conclusions it implements, and which it does not |
 | 14 | [MVP cost model](14-mvp-cost-model.md) | What the OpenAI calls cost per receipt, per household, per month — and which model to use |
-| 15 | [Memo dictation](15-memo-dictation.md) | Why the shopping-list mic misses German and multi-item sentences, voice options and cost per use for alpha, beta and v1, and the alpha plan |
+| 15 | [Memo dictation](15-memo-dictation.md) | Why the shopping-list mic misses German and multi-item sentences, voice options and verified cost per use for alpha, beta and v1, hold-to-talk UX research, and the alpha plan |
 
 **Visual companion:** [Interactive product brief](https://claude.ai/code/artifact/bcd6a143-4d45-4464-af49-7a5f7e19a9e3) — screens, a draggable decay model, roadmap and gates.
 
