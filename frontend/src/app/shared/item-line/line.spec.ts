@@ -87,7 +87,7 @@ describe('toLines', () => {
 });
 
 describe('segments', () => {
-  it('drains the older pack on the left before the newer one', () => {
+  it('drains the older pack before the newer one', () => {
     const [line] = toLines([old, fresh]);
 
     expect(segments(line, 1.25).map((s) => [s.id, s.amount])).toEqual([
@@ -110,11 +110,27 @@ describe('segments', () => {
 });
 
 describe('trackBackground', () => {
-  it('colours each pack by its freshness and greys out what is gone', () => {
+  it('paints the newest pack at the left edge and the oldest against the thumb', () => {
     const [line] = toLines([old, fresh]);
 
     expect(trackBackground(line)).toBe(
-      'linear-gradient(to right, var(--at-risk) 0% 25%, var(--fresh) 25% 75%, var(--surface-sunken) 75% 100%)',
+      'linear-gradient(to right, var(--fresh) 0% 50%, var(--at-risk) 50% 75%, var(--surface-sunken) 75% 100%)',
+    );
+  });
+
+  it('eats the older pack from the thumb side when the level drops', () => {
+    const [line] = toLines([old, fresh]);
+
+    expect(trackBackground(line, 1)).toBe(
+      'linear-gradient(to right, var(--fresh) 0% 50%, var(--surface-sunken) 50% 100%)',
+    );
+  });
+
+  it('keeps a single pack as one band from the left edge', () => {
+    const line = lineFor(pack({ id: 9, phase: 'aging', amount_left: 0.75 }));
+
+    expect(trackBackground(line)).toBe(
+      'linear-gradient(to right, var(--aging) 0% 75%, var(--surface-sunken) 75% 100%)',
     );
   });
 });
