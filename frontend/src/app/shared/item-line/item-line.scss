@@ -42,20 +42,19 @@
   white-space: nowrap;
 }
 
-/* The lock is the thumb: it replaces the circle and rides the same spot. */
+/* The thumb is Pac-Man. Unopened, the mouth is a line. Opened, it faces the track. */
 .slider {
   position: relative;
   --thumb: 26px;
 }
 
-.lock {
+.bite {
   position: absolute;
   z-index: 1;
   top: 50%;
   left: calc((100% - var(--thumb)) * var(--p, 0) / 100);
   width: var(--thumb);
   height: var(--thumb);
-  padding: 3px;
   box-sizing: border-box;
   transform: translateY(-50%);
   pointer-events: none;
@@ -65,26 +64,40 @@
     display: block;
     width: 100%;
     height: 100%;
-    overflow: visible;
+    overflow: hidden;
   }
 
-  .body,
-  .shackle {
+  .body {
+    fill: currentColor;
+  }
+
+  .mouth {
     fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    stroke: var(--surface);
+    stroke-width: 1.5;
+    stroke-linecap: butt;
   }
 
-  .shackle {
-    transform-box: fill-box;
-    transform-origin: left bottom;
-    transition: transform 180ms ease;
+  .eye {
+    fill: var(--surface);
   }
 
-  &.open .shackle {
-    transform: translateY(-2px) rotate(-28deg);
+  /* Two pellets on the track, just ahead of the mouth. */
+  .dots {
+    position: absolute;
+    top: 50%;
+    right: calc(100% + 2px);
+    display: flex;
+    gap: 3px;
+    transform: translateY(-50%);
+  }
+
+  .dot {
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentColor;
   }
 }
 

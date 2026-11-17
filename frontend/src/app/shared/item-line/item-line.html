@@ -29,17 +29,36 @@
     (input)="slide($event)"
     (change)="commitLevel($event)"
   />
-  <!-- The thumb. Closed until this slider opens the soonest pack. -->
+  <!-- Unopened: a closed line and one eye. Opened: the mouth faces the track and two dots sit just ahead. -->
   <span
-    class="lock"
-    [class.open]="opened()"
+    class="bite"
     role="img"
+    [attr.data-bites]="bites()"
     [attr.aria-label]="(opened() ? 'kitchen.lock_open' : 'kitchen.lock_closed') | translate"
   >
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <rect class="body" x="5" y="11" width="14" height="10" rx="2" />
-      <path class="shackle" d="M8 11 V8.5 a4 4 0 0 1 8 0 V11" />
-    </svg>
+    @if (bites() > 0 && bites() < 4) {
+      <span class="dots" aria-hidden="true">
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </span>
+    }
+    @if (bites() < 4) {
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        @if (bites() === 0) {
+          <circle class="body" cx="12" cy="12" r="10" />
+          <line class="mouth" x1="12" y1="12" x2="2" y2="12" />
+        } @else if (bites() === 1) {
+          <path class="body" d="M 12 12 L 4.929 4.929 A 10 10 0 1 1 4.929 19.071 Z" />
+        } @else if (bites() === 2) {
+          <path class="body" d="M 12 12 L 12 2 A 10 10 0 0 1 12 22 Z" />
+        } @else {
+          <path class="body" d="M 12 12 L 19.071 4.929 A 10 10 0 0 1 19.071 19.071 Z" />
+        }
+        @if (bites() < 3) {
+          <circle class="eye" cx="14" cy="6.5" r="1.5" />
+        }
+      </svg>
+    }
   </span>
 </div>
 @if (accidental()) {
