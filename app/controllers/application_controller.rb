@@ -25,6 +25,7 @@ class ApplicationController < ActionController::API
       token: household.token,
       join_code: household.join_code,
       locale: household.locale,
+      alerts_per_week: household.alerts_per_week,
       created_at: household.created_at
     }
   end

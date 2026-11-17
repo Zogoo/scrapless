@@ -184,7 +184,9 @@
       "transcribe": "Voice"
     },
     "other_kitchen": "Your other kitchen",
-    "switch_back": "Back to {{name}}"
+    "switch_back": "Back to {{name}}",
+    "switch_gone": "That kitchen no longer exists — it was forgotten on another phone. You're still in this one.",
+    "switch_failed": "Couldn't switch kitchens. Check your connection and try again."
   },
   "common": {
     "loading": "One moment…",
@@ -222,5 +224,35 @@
     "too_big": "That photo was a bit big. Try again.",
     "server": "Our end had a wobble. Try that again?",
     "generic": "That did not go through."
+  },
+  "notify": {
+    "title": "Notifications",
+    "ask_title": "Want a nudge when food needs using?",
+    "ask_body": "Around dinner time, at most once a week, and only when something is worth using. Nothing else.",
+    "needs_install": "On iPhone, add restlos to your Home Screen first (Share, then \"Add to Home Screen\"). Then turn notifications on under You.",
+    "got_it": "Got it",
+    "turn_on": "Turn on notifications",
+    "turn_off": "Turn off on this phone",
+    "on_note": "This phone also gets it on the lock screen.",
+    "off_note": "Get it on this phone’s lock screen too.",
+    "budget": "At most, for the whole kitchen:",
+    "per_week_1": "Once a week",
+    "per_week_2": "Twice a week",
+    "per_week_3": "3 times a week",
+    "blocked": "Notifications are blocked for this site. You can allow them again in your browser's site settings.",
+    "unsupported": "This browser can't show notifications.",
+    "bell_note": "When food is worth using, it shows under the bell around dinner time, on every phone in the kitchen."
+  },
+  "bell": {
+    "title": "Notifications",
+    "label": "Notifications",
+    "label_unread": "Notifications, {{count}} unread",
+    "read_all": "Mark all as read",
+    "empty": "Nothing needs you right now.",
+    "done": "done",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "push_offer": "Get these on your lock screen too.",
+    "push_turn_on": "Turn on"
   }
 }

@@ -29,8 +29,24 @@ Rails.application.routes.draw do
 
       resource :costs, only: :show, controller: "costs"
 
+      resource :push_subscription, only: %i[create destroy] do
+        get :key
+      end
+      resources :notifications, only: :index do
+        post :read, on: :member
+        post :read_all, on: :collection
+      end
+      # The first push build called it "opened"; a phone still running that
+      # bundle after a deploy keeps counting.
+      post "notifications/:id/opened", to: "notifications#read"
+
       post "recipes/suggest", to: "recipes#suggest"
     end
+  end
+
+  # Server-to-server only: the hourly Fly machine that wakes this one.
+  namespace :internal do
+    post "notifications/tick", to: "notifications#tick"
   end
 
   # "/" is not matched by the catch-all below, and without this Rails serves its

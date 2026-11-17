@@ -242,6 +242,8 @@
             </p>
           }
 
+          <app-notify-ask />
+
           <button type="button" class="primary wide" (click)="done()">
             {{ 'capture.accept_all' | translate: { count: result.items.length } }}
           </button>

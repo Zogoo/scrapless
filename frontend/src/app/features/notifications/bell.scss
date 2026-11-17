@@ -1,0 +1,160 @@
+:host {
+  display: block;
+}
+
+.bell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* The number, never just a dot: "1" and "3" are different evenings. */
+.count {
+  position: absolute;
+  top: 6px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--danger);
+  color: var(--bg); /* dark text on the light dark-mode red */
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--ink) 25%, transparent);
+}
+
+/* Drops from under the app bar, as wide as the page column. */
+.panel {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + var(--appbar-h));
+  left: 50%;
+  z-index: 21;
+  width: min(34rem, 100% - 1rem);
+  max-height: calc(100dvh - var(--appbar-h) - var(--tabbar-h) - 2rem);
+  overflow-y: auto;
+  transform: translateX(-50%);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 20%, transparent);
+
+  &:focus {
+    outline: none; /* focused only to move the reading position here */
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1rem 0.25rem;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0 0 0.5rem;
+    list-style: none;
+  }
+
+  footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem 1rem;
+    border-top: 1px solid var(--border);
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+  }
+}
+
+.quiet {
+  min-height: var(--tap);
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0.65rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+
+  .dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    margin-top: 0.45rem;
+    border-radius: 50%;
+  }
+
+  .text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  small {
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  &.unread {
+    background: var(--surface-tint);
+
+    .body {
+      font-weight: 700;
+    }
+
+    .dot {
+      background: var(--accent);
+    }
+  }
+
+  &.done .body {
+    color: var(--muted);
+  }
+}
+
+.empty {
+  margin: 0;
+  padding: 0.5rem 1rem 1.25rem;
+  color: var(--muted);
+}

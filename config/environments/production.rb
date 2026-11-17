@@ -89,7 +89,15 @@ Rails.application.configure do
   # Single-origin deployment: Rails serves the built Angular app from public/.
   config.public_file_server.enabled = true
   config.cache_store = :memory_store
-  config.active_job.queue_adapter = :async
+  # Jobs are durable: they live in their own SQLite file on the volume, so a
+  # push that failed when Fly stopped the machine is retried on the next wake.
+  # Solid Queue runs inside Puma (config/puma.rb). Finished jobs are not kept:
+  # the hourly cleanup Solid Queue would schedule cannot be relied on to run on
+  # a machine that sleeps, and failed jobs are kept regardless.
+  config.active_job.queue_adapter = :solid_queue
+  config.solid_queue.connects_to = { database: { writing: :queue } }
+  config.solid_queue.preserve_finished_jobs = false
+  config.solid_queue.shutdown_timeout = 50.seconds # under fly.toml's kill_timeout
   config.i18n.fallbacks = true
 
   # Defaults to :local so the image boots without object storage configured;

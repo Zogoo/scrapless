@@ -3,7 +3,11 @@
     <h1>{{ weekday() }}</h1>
   </header>
 
-  @if (install.shouldOffer()) {
+  <!-- One question at a time: the notification first, since the evening
+       nudge is the product, and the install pitch on a later visit. -->
+  @if (askNotify()) {
+    <app-notify-ask />
+  } @else if (install.shouldOffer()) {
     <aside class="install">
       <p>{{ 'install.pitch' | translate }}</p>
       @if (install.available()) {
@@ -49,7 +53,11 @@
       <h2 class="section-head">{{ 'today.use_first' | translate }}</h2>
 
       @for (item of today()!.use_first; track item.id) {
-        <app-item-line [line]="lineFor(item)" (failed)="error.set($event)" />
+        <app-item-line
+          [line]="lineFor(item)"
+          [class.picked]="picked().includes(item.id)"
+          (failed)="error.set($event)"
+        />
       }
     } @else if (allCalm()) {
       <div class="calm">

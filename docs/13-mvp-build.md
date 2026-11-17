@@ -110,7 +110,8 @@ analysis in [doc 14](14-mvp-cost-model.md).
 | Not built | Why |
 |---|---|
 | **Rescue ideas** ("what can I cook with this") | Out of the five-feature scope. It is the top of §13.4 — without it the Used/Wasted buttons have no reason to be pressed. |
-| **Notifications** | Doc 4 §4.9 calls the Wednesday notification *the product*. It needs push infrastructure, an email fallback for the ~40% of iOS users who never grant push, and the 3/week ledger. The `NOTIFICATION` table is not in the schema. |
+| **Email fallback for notifications** | Doc 5 §5.7 wants one for the ~25–30% of German users who will never get push (iPhone without Home Screen install, or a no). Kitchens have no email address, so there is nowhere to send it. Web Push and the in-app bell are built — see §13.4b, *notifications*; the bell is still a surface only for someone who opens the app. |
+| **An adaptive notification budget** | Doc 5 §5.5 lowers a kitchen's budget after two ignored notifications. `notifications.opened_at` records the taps (from the lock screen or the bell — it is also the kitchen's "read"); nothing reads it yet. Send time is the fixed 17:00–20:00 window, not learned. |
 | **Email/digital receipt import** | Doc 2 §2.4b promotes it to v1 P0 as the only capture path immune to forgetting. Significant work — retailer accounts, an ingest address, parsing. |
 | **The two German checksums** | Doc 12 §12.1's `Summe` reconciliation and VAT-class subtotals are the confidence score that replaces the vendor's. `RECEIPT_LINE.vat_class` is captured in the prompt but not reconciled, so `parse_confidence` is currently just the share of lines that resolved. **This is the largest accuracy gap.** |
 | **The second-pass tier** | ~15% of receipts should escalate to a stronger model. Not implemented: cheaper than doc 12's design and less accurate. |
@@ -126,8 +127,9 @@ analysis in [doc 14](14-mvp-cost-model.md).
    what converts a list into a reason to open the app. Should have been feature six.
 2. **The Summe checksum.** Turns `parse_confidence` from a guess into a measurement, and it is
    free — the number is already printed on every German receipt.
-3. **The notification budget + email fallback.** Doc 4 §4.9. Until this exists, the product is
-   something you have to remember to open, which doc 2 says nobody does.
+3. **The email fallback and the adaptive budget.** Web Push, the bell and the weekly ledger
+   exist (§13.4b); the ~25–30% who will never get push still have to remember to open the
+   app before the bell can tell them anything.
 4. **Printed-date capture**, so the safety carve-out has an input.
 5. **The 200-receipt corpus**, then decide `gpt-5-mini` vs `gpt-4o-mini` on measured
    line-level F1 — see [doc 14 §14.5](14-mvp-cost-model.md#145-model-choice--measured-against-the-bill).
@@ -218,6 +220,80 @@ pass (tap beats drag; hidden gestures go unfound):
   Otherwise **a move never lengthens the window**: milk put in the cupboard would have
   inherited the cupboard's generic six months, because no dairy-in-cupboard rule exists.
 
+### And what notifications needed
+
+Doc 4 §4.9 calls the evening notification *the product*. It is Web Push (`web-push` gem,
+VAPID keys as Fly secrets), at most 1 a week by default and 3 at most, and only when
+something is alertable — `RiskScorer#alertable?`, so presence is multiplied in and a
+notification is never spent on food that is probably eaten.
+
+- **The clock is outside the app.** The machine sleeps (`min_machines_running = 0`), and a
+  scheduler inside a stopped machine never fires, so Solid Queue's `recurring.yml` is not
+  used. An hourly Fly machine POSTs `/internal/notifications/tick`, which wakes this one.
+  The tick takes no input, needs a bearer token of at least 32 characters (compared in
+  constant time, fails closed when unset), and answers anything else with 404.
+- **The ledger is the lock.** `notifications` has unique indexes on (kitchen, ISO week, slot)
+  and (kitchen, day). The row is written before anything is sent, so a repeated, late or
+  concurrent tick sends nothing twice. The send window is 17:00–20:00 in the kitchen's time
+  zone, so one missed tick still delivers.
+- **Delivery is one job per phone, on Solid Queue.** It runs inside Puma in `async` mode (one
+  process on a 512 MB machine), with its own SQLite file beside the primary. Push-service
+  outages retry with backoff and survive the machine stopping (`kill_timeout = 60`,
+  `shutdown_timeout` 50 s); 404/410 forgets the phone; a refused VAPID key fails loudly
+  instead of deleting every subscription. The message is built at delivery, so food used up
+  in between is left out, and high-risk food only ever gets "worth a look".
+- **Push endpoints are allowlisted** (FCM, Mozilla, Apple, WNS, https, port 443): the server
+  POSTs to whatever is stored, so anything else would be an SSRF hole.
+- **Permission is asked once food is in**, never at onboarding (doc 2 §2.7: value before
+  permission), and inside the tap, because Safari refuses a prompt that is not. The capture
+  review asks after a scan; Today asks a kitchen that already has food, since a kitchen
+  stocked before notifications existed may never scan again (found on production). One
+  shared card, one answer per phone: either answer hides it on both screens.
+  Settings has the switch and the budget. iPhone Safari gets the Home Screen instruction,
+  since push exists there only for an installed app.
+- **Every kitchen gets the notification; push is only one way to see it.** The tick writes the
+  row for every kitchen with budget, subscribed or not, VAPID keys or not, and queues pushes
+  only where there are phones and keys. The bell in the app bar lists the last 14 days
+  (`GET /api/v1/notifications`, worded in the phone's language by the same `Message`).
+  **Read is per kitchen** (`opened_at`): once anyone opens one, it is read on every phone,
+  because the food is shared. The badge counts only unread notifications whose food is still
+  active, so it points at food to use, never at food already gone (doc 4 §4.9 forbids the
+  guilt counter); with the budget at 3 it cannot climb past 3. Tapping one — in the bell or on
+  the lock screen — opens `/today?n=<id>`, which marks it read and outlines its foods. The
+  bell is never polled (a poll would keep the sleeping machine awake): it reloads on landing
+  on a kitchen, on returning to the foreground, on a language change, and when the service
+  worker reports a push. The push payload carries the unread count for `setAppBadge`. Rows
+  older than 60 days are deleted by the tick.
+
+**Verified end to end in the docker-compose stack, with a real push through FCM.** A Chrome
+subscribed from Settings, a tick delivered "Spinat and Brokkoli want using tonight." to its
+service worker, a second tick sent nothing, opening `/today?n=1` recorded the tap, and a
+browser-side unsubscribe was cleaned up when FCM refused the stale endpoint. The production
+image was booted with Solid Queue inside Puma and stopped with SIGINT, as Fly does. That run
+found two deploy breakers, both fixed: the `openssl` gem (a `web-push` dependency) needs
+`libssl-dev` in both Dockerfiles, and `WEB_CONCURRENCY=1` put Puma 8 in cluster mode, where
+the Solid Queue plugin crashed boot — `fly.toml` now runs single mode (`0`).
+
+**The bell was verified in the browser at phone width** against the local server with no push
+keys and no subscription: the real `Dispatch` wrote the evening's row, the badge counted 1
+(last week's, whose yogurt was used up, showed as "used up" and did not count), tapping it
+outlined both foods and cleared the badge, a cold open of `/today?n=…` kept it cleared while
+the boot load crossed the read, and the German UI got German words from the server.
+
+**Then again end to end in docker-compose, with the bell and a real push through FCM.** A
+headless Chrome turned push on from the bell's own offer; the real `Dispatch` and
+`DeliverPushJob` delivered "Brokkoli and Spinat want using tonight." with the unread count;
+the service worker told the open app and the badge went to 2 without a reload; opening
+`/today?n=…` marked it read on the server, outlined both foods and closed the lock-screen
+copy. Turning push off and on again in Settings worked, and the tick answered 404 without its
+token and sent nothing outside 17:00–20:00. That pass found the badge staying at "1 unread"
+after its food was used — food changes now recount the bell — and subscription keys in the
+request log, now filtered.
+
+⚠️ **Still not verified:** a phone (Android via FCM, iPhone via APNs from the Home Screen),
+the tap on a real lock-screen notification (a synthetic click cannot focus a window), the
+app-icon badge, and Fly's scheduled machine.
+
 ---
 
 ## 13.4c Deployment
@@ -229,6 +305,30 @@ Angular app from `public/`, so production is single-origin and CORS is never exe
 Secrets (`RAILS_MASTER_KEY`, `SECRET_KEY_BASE`, `OPENAI_API_KEY`, `AI_MODE`,
 `AI_DAILY_BUDGET_USD`) are Fly secrets, piped to `fly secrets import` on stdin so no value
 reaches an argument list or a log.
+
+**Notifications need three more secrets and the clock, once.** Without the keys push is
+off — the client is told there is no key and offers no switch — but the bell still works, as
+long as the clock ticks.
+
+```sh
+# VAPID keys and the tick token, generated locally and piped in, never typed as arguments
+bin/rails runner 'k = WebPush.generate_key; puts "VAPID_PUBLIC_KEY=#{k.public_key}", "VAPID_PRIVATE_KEY=#{k.private_key}"; puts "NOTIFY_TICK_TOKEN=#{SecureRandom.hex(32)}"' \
+  | fly secrets import
+
+# The clock: an hourly machine in the same app, which receives the same secrets as env.
+# It only rings the bell; the app decides who is due.
+fly machine run curlimages/curl --schedule hourly --restart no --region fra \
+  --entrypoint /bin/sh -- -c \
+  'curl -fsS -X POST -H "Authorization: Bearer $NOTIFY_TICK_TOKEN" https://scrapless-app.fly.dev/internal/notifications/tick'
+```
+
+⚠️ **Not run yet — check each of these on the first setup:** the flags against
+`fly machine run --help`; that a machine made this way receives the app's secrets (if
+`$NOTIFY_TICK_TOKEN` is empty there, every tick gets a 404 — it fails closed, and `fly logs`
+shows it); and, after the next `fly deploy`, that the scheduled machine is still there on the
+curl image (it is not in a process group, so deploys should leave it alone).
+Rotating the VAPID keys invalidates every subscription: phones re-subscribe on their next
+visit when they tap "Turn on" again.
 
 ⚠️ **Two things had to be fixed before it was safe to expose.**
 
@@ -258,7 +358,7 @@ fly deploy --remote-only -a scrapless-app
 
 ## 13.5 Verification
 
-Backend 283 examples, frontend 49, RuboCop and Brakeman clean. Beyond the suites, the running app was
+Backend 334 examples, frontend 61, RuboCop and Brakeman clean. Beyond the suites, the running app was
 driven end to end: fridge created and named, four items added through the tap grid with
 **zero** billed model calls, the shop rewound a week to exercise the risk model, chicken
 correctly suppressed, localStorage cleared and the fridge restored from the cookie alone, and

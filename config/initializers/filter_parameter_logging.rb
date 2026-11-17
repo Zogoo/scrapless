@@ -4,5 +4,7 @@
 # Use this to limit dissemination of sensitive information.
 # See the ActiveSupport::ParameterFilter documentation for supported notations and behaviors.
 Rails.application.config.filter_parameters += [
-  :passw, :email, :secret, :token, :join_code, :_key, :crypt, :salt, :certificate, :otp, :ssn, :cvv, :cvc
+  :passw, :email, :secret, :token, :join_code, :_key, :crypt, :salt, :certificate, :otp, :ssn, :cvv, :cvc,
+  # A phone's push subscription: the endpoint and the keys its payloads are encrypted to.
+  :endpoint, :p256dh, :auth
 ]

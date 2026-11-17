@@ -37,3 +37,16 @@ plugin :tmp_restart
 # Specify the PID file. Defaults to tmp/pids/server.pid in development.
 # In other environments, only set the PID file if requested.
 pidfile ENV["PIDFILE"] if ENV["PIDFILE"]
+
+# Solid Queue runs inside Puma in production (fly.toml sets SOLID_QUEUE_IN_PUMA).
+# Async mode keeps its dispatcher and worker as threads in this one process
+# instead of forking two more Ruby processes on a 512 MB machine; the jobs are
+# a few HTTPS calls, so isolation buys little here.
+if ENV["SOLID_QUEUE_IN_PUMA"]
+  plugin :solid_queue
+  solid_queue_mode :async
+  # The plugin starts Solid Queue in Puma's parent process, so in cluster mode
+  # the app must be loaded there too, or boot fails on `SolidQueue`. fly.toml
+  # runs single mode (WEB_CONCURRENCY=0), where this changes nothing.
+  preload_app!
+end

@@ -19,6 +19,13 @@ main.with-tabs {
   position: sticky;
   top: 0;
   z-index: 5;
+
+  /* The bell's panel and backdrop live in here, and sticky makes this a
+     stacking context: without this the tab bar and the add button sat above
+     the backdrop and stayed tappable. */
+  &:has(.bell-open) {
+    z-index: 30;
+  }
   background: var(--app-bar);
   padding-top: env(safe-area-inset-top);
 
@@ -71,6 +78,11 @@ main.with-tabs {
     white-space: nowrap;
   }
 
+  .bell {
+    margin-left: auto;
+    flex: none;
+  }
+
   .you {
     margin-left: auto;
     display: flex;
@@ -91,6 +103,10 @@ main.with-tabs {
       width: 24px;
       height: 24px;
     }
+  }
+
+  .bell + .you {
+    margin-left: 0;
   }
 }
 

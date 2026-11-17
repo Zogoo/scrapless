@@ -204,4 +204,35 @@ RSpec.describe "Api::V1::Fridges", type: :request do
       expect(Item.count).to eq(0)
     end
   end
+
+  describe "the weekly notification budget" do
+    let(:household) { create(:household) }
+
+    it "is one a week unless the kitchen chooses otherwise" do
+      get "/api/v1/fridge", headers: fridge_headers(household)
+
+      expect(response.parsed_body["alerts_per_week"]).to eq(1)
+    end
+
+    it "can be raised to three" do
+      patch "/api/v1/fridge", params: { alerts_per_week: 3 }, as: :json, headers: fridge_headers(household)
+
+      expect(response.parsed_body["alerts_per_week"]).to eq(3)
+    end
+
+    # Doc 3 R5: the cap is a server-side invariant, not a UI preference.
+    it "cannot go above three" do
+      patch "/api/v1/fridge", params: { alerts_per_week: 7 }, as: :json, headers: fridge_headers(household)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(household.reload.alerts_per_week).to eq(1)
+    end
+
+    it "is left alone by a rename" do
+      household.update!(alerts_per_week: 2)
+      patch "/api/v1/fridge", params: { name: "Oma" }, as: :json, headers: fridge_headers(household)
+
+      expect(household.reload.alerts_per_week).to eq(2)
+    end
+  end
 end

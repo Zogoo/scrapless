@@ -4,11 +4,20 @@ import { Observable, tap } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { Item, Outcome, Storage, Today } from '../models';
+import { NotificationsService } from './notifications.service';
 
 @Injectable({ providedIn: 'root' })
 export class ItemsService {
   private readonly http = inject(HttpClient);
   private readonly url = `${environment.apiUrl}/items`;
+  private readonly notifications = inject(NotificationsService);
+
+  /**
+   * Food that is used, thrown out, emptied or brought back changes what the
+   * bell counts: a notification stops counting once its food is gone. Found in
+   * QA — the badge kept "1 unread" for a yogurt already used up.
+   */
+  private readonly recount = <T>() => tap<T>(() => this.notifications.recount());
 
   readonly today = signal<Today | null>(null);
 
@@ -18,7 +27,9 @@ export class ItemsService {
 
   /** Every outcome is one POST with no form. */
   resolve(id: number, outcome: Outcome, days?: number): Observable<Item> {
-    return this.http.post<Item>(`${this.url}/${id}/resolve`, { outcome, days });
+    return this.http
+      .post<Item>(`${this.url}/${id}/resolve`, { outcome, days })
+      .pipe(this.recount());
   }
 
   /** To another place in the kitchen; the server treats the freezer as freezing it. */
@@ -28,7 +39,7 @@ export class ItemsService {
 
   /** Takes back the last tap on this food, if it was just now. */
   undo(id: number): Observable<Item> {
-    return this.http.post<Item>(`${this.url}/${id}/undo`, {});
+    return this.http.post<Item>(`${this.url}/${id}/undo`, {}).pipe(this.recount());
   }
 
   /**
@@ -57,7 +68,9 @@ export class ItemsService {
    * Lowering drains the oldest pack first; raising refills that pack first.
    */
   level(ids: number[], level: number): Observable<{ items: Item[] }> {
-    return this.http.post<{ items: Item[] }>(`${this.url}/level`, { ids, level });
+    return this.http
+      .post<{ items: Item[] }>(`${this.url}/level`, { ids, level })
+      .pipe(this.recount());
   }
 
   correct(id: number, changes: Partial<Item>): Observable<Item> {
@@ -65,6 +78,6 @@ export class ItemsService {
   }
 
   remove(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.url}/${id}`);
+    return this.http.delete<void>(`${this.url}/${id}`).pipe(this.recount());
   }
 }
