@@ -99,6 +99,7 @@ module Api
         Ai::Transcriber.call(io: StringIO.new(data), filename: upload.original_filename,
                              content_type: upload.content_type,
                              duration_seconds: params[:duration_seconds].to_f,
+                             language: params[:lang].presence || I18n.locale.to_s,
                              household: current_household)
       end
 

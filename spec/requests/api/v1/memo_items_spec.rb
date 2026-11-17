@@ -63,6 +63,64 @@ RSpec.describe "Api::V1::MemoItems", type: :request do
     expect(household.memo_items.pluck(:name)).to eq(%w[Milk Bread Coffee])
   end
 
+  # Browser recognisers return no commas (doc 15 §15.2.3).
+  it "splits a sentence with no punctuation, in either language" do
+    post "/api/v1/memo/dictate", params: { transcript: "I want to buy bread milk eggs" }, headers: headers, as: :json
+    post "/api/v1/memo/dictate", params: { transcript: "ich brauche Brot Milch und Eier" }, headers: headers, as: :json
+
+    expect(household.memo_items.order(:id).pluck(:name)).to eq(%w[Bread Milk Eggs Brot Milch Eier])
+  end
+
+  # Hold-to-talk sends one item at a time.
+  it "adds a single held word as one line" do
+    post "/api/v1/memo/dictate", params: { transcript: "Klopapier" }, headers: headers, as: :json
+
+    expect(response.parsed_body["items"].map { |i| i["name"] }).to eq([ "Klopapier" ])
+  end
+
+  it "rejects a transcript too long to be a shopping list" do
+    post "/api/v1/memo/dictate", params: { transcript: "milch " * 300 }, headers: headers, as: :json
+
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(household.memo_items).to be_empty
+  end
+
+  describe "recorded audio" do
+    def audio = Rack::Test::UploadedFile.new(StringIO.new("not-really-audio"), "audio/mp4", original_filename: "memo.mp4")
+
+    # The language spoken is not always the app's: an English screen in a
+    # German supermarket.
+    it "transcribes in the language the person chose to speak" do
+      allow(Ai::Transcriber).to receive(:call).and_return("Milch")
+
+      post "/api/v1/memo/dictate", params: { audio: audio, lang: "de", duration_seconds: 2 },
+                                   headers: headers.merge("X-Locale" => "en")
+
+      expect(Ai::Transcriber).to have_received(:call).with(hash_including(language: "de", content_type: "audio/mp4"))
+      expect(household.memo_items.pluck(:name)).to eq([ "Milch" ])
+    end
+
+    it "falls back to the app's language when none is sent" do
+      allow(Ai::Transcriber).to receive(:call).and_return("milk")
+
+      post "/api/v1/memo/dictate", params: { audio: audio }, headers: headers.merge("X-Locale" => "en")
+
+      expect(Ai::Transcriber).to have_received(:call).with(hash_including(language: "en"))
+    end
+
+    it "stops paying for transcriptions after the hourly cap" do
+      Api::V1::MemoItemsController::MAX_TRANSCRIPTIONS_PER_HOUR.times do
+        AiCall.create!(household: household, purpose: "transcribe", model: "gpt-4o-mini-transcribe")
+      end
+      allow(Ai::Transcriber).to receive(:call)
+
+      post "/api/v1/memo/dictate", params: { audio: audio }, headers: headers
+
+      expect(response).to have_http_status(:too_many_requests)
+      expect(Ai::Transcriber).not_to have_received(:call)
+    end
+  end
+
   it "ticks a line off" do
     memo = create(:memo_item, household: household)
 

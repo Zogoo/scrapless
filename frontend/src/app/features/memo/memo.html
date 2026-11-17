@@ -2,22 +2,72 @@
   <header class="head">
     <h1>{{ 'memo.title' | translate }}</h1>
     @if (speech.supported) {
-      <button
-        type="button"
-        class="mic"
-        [class.live]="speech.listening()"
-        (click)="speech.listening() ? stopDictation() : startDictation()"
-        [attr.aria-label]="'memo.dictate' | translate"
-      >
-        🎙
-      </button>
+      <div class="voice">
+        <div class="lang" role="group" [attr.aria-label]="'memo.speech_lang' | translate">
+          @for (lang of speechLangs; track lang) {
+            <button
+              type="button"
+              class="lang-option"
+              [class.on]="speech.speechLang() === lang"
+              [attr.aria-pressed]="speech.speechLang() === lang"
+              [disabled]="speech.listening()"
+              (click)="setSpeechLang(lang)"
+            >
+              {{ lang.toUpperCase() }}
+            </button>
+          }
+        </div>
+        <button
+          type="button"
+          class="mic"
+          [class.live]="speech.listening()"
+          [disabled]="busy()"
+          [attr.aria-label]="'memo.dictate' | translate"
+          [attr.aria-pressed]="speech.listening()"
+          (pointerdown)="onMicDown($event)"
+          (pointerup)="onMicUp($event)"
+          (pointercancel)="onMicPointerCancel()"
+          (click)="onMicClick($event)"
+          (contextmenu)="$event.preventDefault()"
+        >
+          🎙
+        </button>
+      </div>
     }
   </header>
 
+  @if (speech.supported && showMicHint() && !speech.listening()) {
+    <p class="mic-hint">{{ 'memo.hold_hint' | translate }}</p>
+  }
+
   @if (speech.listening()) {
-    <p class="interim" role="status" aria-live="polite">
-      {{ speech.interim() || ('memo.listening' | translate) }}
-    </p>
+    <div class="interim" role="status" aria-live="polite">
+      <span>{{
+        speech.interim() ||
+          (speech.capturing() ? ('memo.listening' | translate) : ('memo.starting' | translate))
+      }}</span>
+      <button type="button" class="ghost cancel" (click)="cancelDictation()">
+        ✕ {{ 'memo.cancel' | translate }}
+      </button>
+    </div>
+  }
+
+  @if (justAdded().length > 0) {
+    <ul class="just-added" [attr.aria-label]="'memo.added' | translate">
+      @for (item of justAdded(); track item.id) {
+        <li>
+          <span>{{ item.name }}</span>
+          <button
+            type="button"
+            class="ghost"
+            [attr.aria-label]="'memo.undo_named' | translate: { name: item.name }"
+            (click)="undo(item)"
+          >
+            ↶
+          </button>
+        </li>
+      }
+    </ul>
   }
 
   <p class="lede">{{ 'memo.shared' | translate }}</p>

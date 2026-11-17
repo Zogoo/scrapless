@@ -3,6 +3,9 @@ module Api
     # The shopping memo. Its own object, not a view of inventory: what you intend
     # to buy and what is rotting have different lifecycles.
     class MemoItemsController < ApplicationController
+      # Paid transcriptions per kitchen per hour, the same bound capture uses.
+      MAX_TRANSCRIPTIONS_PER_HOUR = 40
+
       def index
         render json: {
           items: current_household.memo_items.ordered.map { |m| memo_json(m) },
@@ -23,14 +26,15 @@ module Api
       end
 
       # Voice or text, several lines at once. This is the "just say it on the way
-      # out of the door" path, so it must accept a whole sentence.
+      # out of the door" path, so it must accept a whole sentence — or, held one
+      # item at a time, a single word.
       def dictate
         transcript = params[:transcript].presence || transcribe
         return if performed?
-        return render json: { error: I18n.t("memo.nothing_heard") }, status: :unprocessable_content if transcript.blank?
+        return render_error(I18n.t("memo.nothing_heard")) if transcript.blank?
+        return render_error(I18n.t("capture.rejected.too_long")) if transcript.length > CapturesController::MAX_TEXT_CHARS
 
-        names = extract_names(transcript)
-        created = names.filter_map do |name|
+        created = extract_names(transcript).filter_map do |name|
           next if current_household.memo_items.open_line_for(name)
 
           current_household.memo_items.create!(name: name, source: "voice", added_by_name: actor_name)
@@ -84,26 +88,49 @@ module Api
         MemoItem::SOURCES.include?(value) ? value : "text"
       end
 
+      # Only Firefox on Android and iPhones with Siri off get here: everywhere
+      # else the browser transcribes for free (doc 15 §15.2.4). This path is
+      # paid, so it is capped like capture's.
       def transcribe
         upload = params[:audio]
-        return render json: { error: I18n.t("capture.rejected.no_audio") }, status: :unprocessable_content if upload.blank?
+        return render_error(I18n.t("capture.rejected.no_audio")) if upload.blank?
+        return render_error(I18n.t("capture.rejected.audio_too_large")) if upload.size > CapturesController::MAX_AUDIO_BYTES
+        if transcriptions_this_hour >= MAX_TRANSCRIPTIONS_PER_HOUR
+          return render json: { error: I18n.t("memo.too_many_recordings"), retryable: true }, status: :too_many_requests
+        end
 
-        data = upload.read
-        Ai::Transcriber.call(io: StringIO.new(data), filename: upload.original_filename,
+        Ai::Transcriber.call(io: StringIO.new(upload.read), filename: upload.original_filename,
                              content_type: upload.content_type,
                              duration_seconds: params[:duration_seconds].to_f,
-                             household: current_household)
+                             language: speech_language, household: current_household)
+      end
+
+      def transcriptions_this_hour
+        AiCall.where(household: current_household, purpose: "transcribe", created_at: 1.hour.ago..).count
+      end
+
+      # The language the person spoke, which is not always the app's language:
+      # an English UI in a German supermarket is the common Berlin case.
+      def speech_language
+        Ai::Transcriber::LANGUAGES.include?(params[:lang].to_s) ? params[:lang].to_s : I18n.locale.to_s
       end
 
       # A memo line does not need to be a resolved product — "something for
       # Sunday" is a legitimate entry. So this splits locally and never calls a
       # model: the memo is the one place where cost per line should be zero.
+      # Sentences the dictionary could not split at all are logged, so how often
+      # a model would have helped is measured before one is ever added.
       def extract_names(transcript)
-        transcript.split(Text::Splitter::SEPARATORS)
-                  .map { |part| part.strip.squeeze(" ") }
-                  .reject(&:blank?)
-                  .first(25)
-                  .map { |part| part.sub(/\A(buy|get|kauf|hol)\s+/i, "") }
+        result = Text::Segmenter.call(text: transcript, household: current_household)
+        if result.unresolved.any?
+          Rails.logger.info("memo dictation unresolved household=#{current_household.id} " \
+                            "chunks=#{result.unresolved.size}")
+        end
+        result.parts
+      end
+
+      def render_error(message)
+        render json: { error: message }, status: :unprocessable_content
       end
 
       def memo_json(item)

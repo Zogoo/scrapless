@@ -18,6 +18,7 @@ de:
       no_text: "Schreib erst, was du gekauft hast."
       too_large: "Die Datei ist zu groß. Versuch ein kleineres Foto."
       too_long: "Das ist viel auf einmal. Versuch eine kürzere Liste."
+      audio_too_large: "Die Aufnahme ist zu lang. Versuch eine kürzere."
     unreadable: "Der Bon war schwer zu lesen. Nochmal, oder sag mir einfach das Frische."
     partial_parse: "Wir haben übernommen, was wir kannten. Damit kamen wir nicht klar: %{list}"
     ai_unavailable: "Fotos lesen geht gerade nicht. Tippen oder sagen klappt aber immer."
@@ -51,6 +52,7 @@ de:
     probably_gone: "wahrscheinlich schon weg"
   memo:
     nothing_heard: "Wir haben nichts verstanden. Noch einmal?"
+    too_many_recordings: "Das sind viele Aufnahmen auf einmal. Warte eine Stunde oder tipp die Liste."
     reason:
       due: "meist alle %{cadence} Tage, zuletzt vor %{elapsed} Tagen gekauft"
       bought:

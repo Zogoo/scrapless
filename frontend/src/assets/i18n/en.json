@@ -101,13 +101,20 @@
     "title": "Shopping",
     "placeholder": "Add something",
     "add": "Add",
-    "dictate": "Say the list",
+    "dictate": "Hold to say an item, tap for a list",
     "listening": "Listening…",
     "empty": "Nothing on the list yet.",
     "suggested": "You usually need",
     "shared": "One list for this kitchen. Everyone who opened the share link sees the same lines.",
     "dismiss": "Stop suggesting {{name}}",
-    "clear_done": "Clear bought ({{count}})"
+    "clear_done": "Clear bought ({{count}})",
+    "starting": "One moment…",
+    "hold_hint": "Hold to say an item · tap for a list",
+    "cancel": "Cancel",
+    "added": "Just added",
+    "undo_named": "Take back {{name}}",
+    "speech_lang": "Language you speak",
+    "try_again": "Voice works differently here. Press the mic again."
   },
   "recipes": {
     "title": "Recipes",

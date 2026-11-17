@@ -526,6 +526,36 @@ document.
 
 ---
 
+## 15.9 What was built (branch `memo-dictation-alpha`)
+
+| Plan step | Where | Notes |
+|---|---|---|
+| 1. Stop means stop | `SpeechService.finish()` → `stop()`; `cancel()` → `abort()` with per-session cancellation | `no-speech` and `aborted` end quietly. The transcript is rebuilt from the whole result list on each event. Capture's stop uses `finish()` too. |
+| 2. Hold to talk, tap to toggle | `memo.ts` `onMicDown`/`onMicUp`/`onMicPointerCancel`/`onMicClick`; `memo.scss` | Hold ≥ `HOLD_MS` (350 ms, untuned ❓) then release adds the lines. A shorter press listens until a second tap. Release outside the button, a cancelled pointer, or the visible ✕ adds nothing. Keyboard Enter/Space toggles. The status reads "One moment…" until `audiostart`. A hint shows for the first three uses. The last dictation's lines appear as chips with undo. `continuous` stays `false`. |
+| 3. Speech language toggle | `SpeechService.speechLang` (`scrapless_speech_lang`), DE/EN chip | Defaults to the UI language until chosen, and is sent as `lang` on every dictation and recording. |
+| 4. Server hint | `Ai::Transcriber::PROMPTS`, `Ai::Client#transcribe` `language`/`prompt` fields | Recordings are labelled with `MediaRecorder.mimeType` (`.mp4` on Safari). On `service-not-allowed` the service stops offering recognition, and the next press records instead. A plain `not-allowed` (microphone denied) does **not** fall back, because recording would be denied too. |
+| 5. Segmenter | `Text::Segmenter`, used by memo `dictate` and by `Text::Splitter` (capture) | Rules as in step 5, plus three design choices to be checked against the evaluation set: <ul><li>An unknown run of up to two words directly before a known word is read as part of it ("oat milk", "Bio Milch"). The cost is that "tortillas milk" becomes one line.</li><li>Number words become digits in the line ("2 Gurken").</li><li>Past memo lines that are two known words glued together are not learned.</li></ul> |
+| 6. Leftover fallback | log only | Sentences of four or more words with no dictionary hit are logged (`memo dictation unresolved`). **No model call was added.** |
+| 7. Caps | `MemoItemsController` | Transcripts over 1,000 characters are rejected. Audio is capped by size, and paid transcriptions at 40 per kitchen per hour. |
+| 8. Tests | `spec/services/text/segmenter_spec.rb`, `memo_items_spec.rb`, `client_spec.rb`, `speech.service.spec.ts`, `memo.spec.ts` | 396 RSpec examples and 120 Vitest tests pass; RuboCop, Brakeman and bundler-audit are clean. |
+
+**Checked in the in-app browser 🧪** (Chromium 156, worktree servers, own SQLite file). Microphone
+access is blocked there, so a stand-in recogniser was put in through the page console:
+
+| Gesture | Speech language | Said | Result |
+|---|---|---|---|
+| Tap, tap | DE | "ich brauche Brot Milch und zwei Gurken" | **Brot · Milch · 2 Gurken**, as chips with undo; the recogniser got `de-DE` |
+| Hold | EN | "toilet paper" | **Toilet paper**, with `en-GB` |
+| Hold, release outside | — | — | Nothing added |
+
+Switching the UI to German kept the speech language on EN. The real recogniser, with the mic
+blocked, showed "no mic" as it should.
+
+**Still needs a real phone ❓:** the §15.8.4 list (permission prompt during a hold, first-word
+clipping, the 350 ms threshold), iOS Safari, Android Chrome, and the iOS home-screen app.
+
+---
+
 ### Sources
 
 - **Code:**

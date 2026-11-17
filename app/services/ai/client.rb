@@ -58,7 +58,7 @@ module Ai
     end
 
     # Returns the transcript text.
-    def transcribe(io:, filename:, content_type:, duration_seconds: 0.0)
+    def transcribe(io:, filename:, content_type:, duration_seconds: 0.0, language: nil, prompt: nil)
       unless @provider.transcription
         raise Unavailable, "#{@provider.name} has no transcription endpoint"
       end
@@ -67,7 +67,8 @@ module Ai
       response = post_multipart(
         "#{Config.base_url(provider: @provider)}/audio/transcriptions",
         model: Config.transcribe_model(provider: @provider),
-        io: io, filename: filename, content_type: content_type
+        io: io, filename: filename, content_type: content_type,
+        fields: { "language" => language, "prompt" => prompt }.compact
       )
 
       record_call(
@@ -154,12 +155,16 @@ module Ai
       perform(request)
     end
 
-    def post_multipart(url, model:, io:, filename:, content_type:)
+    def post_multipart(url, model:, io:, filename:, content_type:, fields: {})
       boundary = "----scrapless#{SecureRandom.hex(12)}"
-      payload = +""
-      payload << "--#{boundary}\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\n#{model}\r\n"
-      payload << "--#{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"#{filename}\"\r\n"
-      payload << "Content-Type: #{content_type}\r\n\r\n"
+      # Binary throughout: the audio is binary, and a prompt with an umlaut
+      # appended to it as UTF-8 would raise.
+      payload = "".b
+      { "model" => model }.merge(fields).each do |name, value|
+        payload << "--#{boundary}\r\nContent-Disposition: form-data; name=\"#{name}\"\r\n\r\n#{value}\r\n".b
+      end
+      payload << "--#{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"#{filename}\"\r\n".b
+      payload << "Content-Type: #{content_type}\r\n\r\n".b
       payload << io.read.dup.force_encoding(Encoding::BINARY)
       payload << "\r\n--#{boundary}--\r\n"
 

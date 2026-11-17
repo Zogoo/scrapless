@@ -30,13 +30,13 @@ module Ai
       end
     end
 
-    def transcribe(io:, filename:, content_type:, duration_seconds: 0.0)
+    def transcribe(io:, filename:, content_type:, duration_seconds: 0.0, language: nil, prompt: nil)
       # Rewound per attempt: a failed upload has already consumed the stream, and
       # the next provider would otherwise be handed zero bytes.
       attempt(:transcribe, require_transcription: true) do |client|
         io.rewind if io.respond_to?(:rewind)
         client.transcribe(io: io, filename: filename, content_type: content_type,
-                          duration_seconds: duration_seconds)
+                          duration_seconds: duration_seconds, language: language, prompt: prompt)
       end
     end
 

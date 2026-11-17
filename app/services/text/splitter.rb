@@ -4,8 +4,11 @@ module Text
   #
   # For a household that shops the same way every week this converges on free:
   # "milk, bread, eggs" is three dictionary hits and zero model calls.
+  #
+  # The splitting itself is Text::Segmenter's, so a sentence with no commas
+  # ("milch brot eier") is three parts here too, rather than one part that the
+  # fuzzy lookup below would resolve to a single food.
   class Splitter < ApplicationService
-    SEPARATORS = /,|;|\n|\band\b|\bund\b|\bplus\b/i
     QUANTITY = /\A(\d+(?:[.,]\d+)?)\s*(kg|g|ml|l|x)?\s*(?:x\s*)?(.+)\z/i
 
     def initialize(text:, household: nil)
@@ -17,7 +20,7 @@ module Text
       known = []
       unknown = []
 
-      @text.split(SEPARATORS).map { |part| part.strip.squeeze(" ") }.reject(&:blank?).each do |part|
+      Segmenter.call(text: @text, household: @household).parts.each do |part|
         quantity, unit, name = decompose(part)
         entry = ProductAlias.lookup(name, household: @household)
 

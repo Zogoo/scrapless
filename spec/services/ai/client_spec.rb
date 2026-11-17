@@ -150,5 +150,24 @@ RSpec.describe Ai::Client do
       expect(AiCall.last.audio_seconds).to eq(30)
       expect(AiCall.last.cost_usd).to be_within(0.0001).of(0.0015)
     end
+
+    # The hint and the prompt only help if they actually reach the provider.
+    it "sends the spoken language and the prompt as form fields" do
+      sent = nil
+      response = instance_double(Net::HTTPResponse, code: "200", body: { "text" => "Milch" }.to_json)
+      allow(response).to receive(:is_a?).with(Net::HTTPSuccess).and_return(true)
+      http = double("http")
+      allow(http).to receive(:request) { |request| sent = request.body and response }
+      allow(Net::HTTP).to receive(:start).and_yield(http)
+
+      described_class.new(household: household).transcribe(
+        io: StringIO.new("audio"), filename: "memo.mp4", content_type: "audio/mp4",
+        language: "de", prompt: "Einkaufsliste: Milch, Brötchen."
+      )
+
+      expect(sent).to include(%(name="language"\r\n\r\nde\r\n))
+      expect(sent.force_encoding(Encoding::UTF_8)).to include("Einkaufsliste: Milch, Brötchen.")
+      expect(sent).to include(%(filename="memo.mp4"))
+    end
   end
 end
