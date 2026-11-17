@@ -15,10 +15,30 @@ RSpec.describe Recipes::Suggest do
     allow(Ai::RecipeWriter).to receive(:call).and_return("recipes" => recipes)
   end
 
+  def suggest(**kwargs)
+    described_class.call(household: household, meal: "dinner", **kwargs)
+  end
+
+  it "refuses a meal that is not breakfast, lunch or dinner" do
+    create(:item, household: household)
+    expect(Ai::RecipeWriter).not_to receive(:call)
+
+    expect { suggest(meal: "snack") }.to raise_error(described_class::UnknownMeal)
+  end
+
   it "does not call the model for an empty kitchen" do
     expect(Ai::RecipeWriter).not_to receive(:call)
 
-    expect(described_class.call(household: household).recipes).to eq([])
+    expect(suggest.recipes).to eq([])
+  end
+
+  it "does not use up the meal when there was nothing to cook" do
+    suggest
+    create(:item, household: household)
+    model_answers
+
+    expect(suggest.cached).to be(false)
+    expect(Ai::RecipeWriter).to have_received(:call).once
   end
 
   it "shows the model the food most at risk first, flagged as use-first" do
@@ -26,7 +46,7 @@ RSpec.describe Recipes::Suggest do
     urgent = create(:item, :at_risk, household: household, display_name: "Brokkoli")
     model_answers
 
-    described_class.call(household: household)
+    suggest
 
     expect(Ai::RecipeWriter).to have_received(:call) do |pantry:, **|
       expect(pantry.map { |entry| entry[:id] }).to eq([ urgent.id, fresh.id ])
@@ -41,7 +61,7 @@ RSpec.describe Recipes::Suggest do
     kept = create(:item, household: household)
     model_answers
 
-    described_class.call(household: household)
+    suggest
 
     expect(Ai::RecipeWriter).to have_received(:call) do |pantry:, **|
       expect(pantry.map { |entry| entry[:id] }).to eq([ kept.id ])
@@ -54,7 +74,7 @@ RSpec.describe Recipes::Suggest do
     model_answers(recipe("Plain pasta", other), recipe("Broccoli pasta", urgent, other),
                   recipe("Pasta two", other), recipe("Pasta three", other))
 
-    titles = described_class.call(household: household).recipes.map { |r| r[:title] }
+    titles = suggest.recipes.map { |r| r[:title] }
 
     expect(titles).to eq([ "Broccoli pasta", "Plain pasta", "Pasta two" ])
   end
@@ -64,36 +84,52 @@ RSpec.describe Recipes::Suggest do
 
     before { model_answers(recipe("Brokkoli pan", item)) }
 
-    it "answers a repeat tap from the cache without calling the model again" do
-      first = described_class.call(household: household)
-      second = described_class.call(household: household)
+    it "answers a repeat tap for that meal without calling the model again" do
+      first = suggest
+      second = suggest
 
       expect(Ai::RecipeWriter).to have_received(:call).once
       expect([ first.cached, second.cached ]).to eq([ false, true ])
       expect(second.recipes).to eq(first.recipes)
     end
 
-    it "asks again once the food in the kitchen changes" do
-      described_class.call(household: household)
+    it "does not ask again the same day when the food in the kitchen changes" do
+      suggest
       create(:item, household: household, display_name: "Milch", canonical_name: "milch")
 
-      expect(described_class.call(household: household).cached).to be(false)
+      expect(suggest.cached).to be(true)
+      expect(Ai::RecipeWriter).to have_received(:call).once
+    end
+
+    it "asks again for a different meal" do
+      suggest
+
+      expect(suggest(meal: "breakfast").cached).to be(false)
       expect(Ai::RecipeWriter).to have_received(:call).twice
     end
 
-    it "keeps each language's answer separate" do
-      described_class.call(household: household, locale: :en)
-      described_class.call(household: household, locale: :de)
+    it "asks again the next day" do
+      suggest
 
+      expect(suggest(on: Date.current + 1).cached).to be(false)
       expect(Ai::RecipeWriter).to have_received(:call).twice
+    end
+
+    it "shows the stored answer when the same meal is asked in another language" do
+      suggest(locale: :en)
+      second = suggest(locale: :de)
+
+      expect(Ai::RecipeWriter).to have_received(:call).once
+      expect(second.cached).to be(true)
+      expect(second.recipes).to eq(suggest(locale: :en).recipes)
     end
 
     it "does not share answers between fridges" do
       other = create(:household)
       create(:item, household: other)
 
-      described_class.call(household: household)
-      described_class.call(household: other)
+      suggest
+      described_class.call(household: other, meal: "dinner")
 
       expect(Ai::RecipeWriter).to have_received(:call).twice
     end
@@ -115,20 +151,20 @@ RSpec.describe Recipes::Suggest do
     it "stops a fridge that has used its model calls for the hour" do
       log_calls(described_class::MAX_CALLS_PER_HOUR)
 
-      expect { described_class.call(household: household) }.to raise_error(described_class::TooMany)
+      expect { suggest }.to raise_error(described_class::TooMany)
     end
 
     it "only counts the last hour" do
       log_calls(described_class::MAX_CALLS_PER_HOUR, at: 2.hours.ago)
 
-      expect { described_class.call(household: household) }.not_to raise_error
+      expect { suggest }.not_to raise_error
     end
 
     it "still answers from the cache once the limit is reached" do
-      described_class.call(household: household)
+      suggest
       log_calls(described_class::MAX_CALLS_PER_HOUR)
 
-      expect(described_class.call(household: household).cached).to be(true)
+      expect(suggest.cached).to be(true)
     end
   end
 end

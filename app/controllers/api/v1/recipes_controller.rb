@@ -1,6 +1,6 @@
 module Api
   module V1
-    # "Cook with these" — a few ideas built only from what is in the kitchen.
+    # Breakfast, lunch or dinner — a few ideas built only from what is in the kitchen.
     class RecipesController < ApplicationController
       # Declared here so they win over ApplicationController's capture-flavoured
       # copy: "photo reading is off" means nothing on this screen. Order matters —
@@ -8,10 +8,11 @@ module Api
       rescue_from Ai::Client::Error, with: :render_ideas_unusable
       rescue_from Ai::Client::Unavailable, with: :render_ideas_unavailable
       rescue_from Recipes::Suggest::TooMany, with: :render_too_many
+      rescue_from Recipes::Suggest::UnknownMeal, with: :render_unknown_meal
 
       def suggest
-        result = Recipes::Suggest.call(household: current_household)
-        render json: { recipes: result.recipes, cached: result.cached, mode: Ai::Config.mode }
+        result = Recipes::Suggest.call(household: current_household, meal: params.require(:meal))
+        render json: { meal: result.meal, recipes: result.recipes, cached: result.cached, mode: Ai::Config.mode }
       end
 
       private
@@ -28,6 +29,10 @@ module Api
 
       def render_too_many
         render json: { error: I18n.t("recipes.too_many"), retryable: true }, status: :too_many_requests
+      end
+
+      def render_unknown_meal
+        render json: { error: I18n.t("recipes.unknown_meal") }, status: :unprocessable_content
       end
     end
   end

@@ -20,6 +20,7 @@ class Household < ApplicationRecord
   has_many :memo_items, dependent: :destroy
   has_many :product_aliases, dependent: :destroy
   has_many :suggestion_dismissals, dependent: :destroy
+  has_many :meal_suggestions, dependent: :destroy
 
   validates :name, presence: true, length: { maximum: 60 }
   validates :uuid, :token, :join_code, presence: true, uniqueness: true

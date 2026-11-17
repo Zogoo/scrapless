@@ -7,13 +7,13 @@ RSpec.describe Ai::RecipeWriter do
   end
 
   it "returns nothing for an empty kitchen" do
-    expect(described_class.call(pantry: [])).to eq("recipes" => [])
+    expect(described_class.call(pantry: [], meal: "dinner")).to eq("recipes" => [])
   end
 
   # The stub is the product with no key configured, so it has to cook with the
   # household's own food rather than a canned list.
   it "builds the stub answer from the household's own food" do
-    result = described_class.call(pantry: pantry)
+    result = described_class.call(pantry: pantry, meal: "dinner")
 
     ids = result["recipes"].first["ingredients"].filter_map { |i| i["item_id"] }
     expect(ids).to eq([ 1, 2, 3 ])
@@ -43,7 +43,7 @@ RSpec.describe Ai::RecipeWriter do
 
     it "bills the call to the household on the cheap text tier" do
       stub_transport
-      described_class.call(pantry: pantry, household: household)
+      described_class.call(pantry: pantry, meal: "dinner", household: household)
 
       expect(AiCall.last).to have_attributes(purpose: "recipe_suggest", model: "gpt-5-nano",
                                              household_id: household.id, success: true)
@@ -53,10 +53,11 @@ RSpec.describe Ai::RecipeWriter do
       router = instance_double(Ai::Router, json_completion: { "recipes" => [] })
       allow(Ai::Router).to receive(:new).and_return(router)
 
-      described_class.call(pantry: pantry, household: household, locale: :de)
+      described_class.call(pantry: pantry, meal: "breakfast", household: household, locale: :de)
 
       expect(router).to have_received(:json_completion) do |purpose:, messages:, **|
         expect(purpose).to eq(:recipe_suggest)
+        expect(messages.first[:content]).to include("up to 3 short breakfast recipes")
         expect(messages.first[:content]).to include("Write titles and steps in German")
         expect(JSON.parse(messages.last[:content]).map { |e| e["id"] }).to eq([ 1, 2, 3 ])
       end

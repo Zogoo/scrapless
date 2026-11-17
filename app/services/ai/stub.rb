@@ -62,11 +62,11 @@ module Ai
 
     # Built from the household's real list, so the stub goes through exactly the
     # same grounding as a live answer and the screen shows food they actually have.
-    def recipe_result(pantry)
+    def recipe_result(pantry, meal: "dinner")
       recipes = pantry.each_slice(3).first(2).each_with_index.map do |group, index|
         names = group.map { |entry| entry[:name] }
         {
-          "title" => index.zero? ? "Quick pan of #{names.to_sentence}" : "Oven tray with #{names.to_sentence}",
+          "title" => index.zero? ? "Quick #{meal} of #{names.to_sentence}" : "Oven tray with #{names.to_sentence}",
           "minutes" => index.zero? ? 15 : 30,
           "ingredients" => group.map { |entry| stub_ingredient(entry) } +
                            [ { "item_id" => nil, "name" => "Salt", "amount" => "a pinch", "optional" => true } ],

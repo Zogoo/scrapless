@@ -46,7 +46,7 @@ module Ai
       this kitchen, most urgent first.
 
       Rules:
-      1. Suggest up to 3 short recipes, each with 2-5 steps.
+      1. Suggest up to 3 short %<meal>s recipes, each with 2-5 steps.
       2. Every ingredient that is not optional must come from the list: set
          item_id to its id and copy its name exactly.
       3. Build each recipe around items marked "use_first" where you sensibly can.
@@ -60,20 +60,22 @@ module Ai
 
     LANGUAGES = { en: "English", de: "German" }.freeze
 
-    def initialize(pantry:, household: nil, locale: I18n.locale)
+    def initialize(pantry:, meal:, household: nil, locale: I18n.locale)
       @pantry = pantry
+      @meal = meal.to_s
       @household = household
       @locale = locale
     end
 
     def call
       return { "recipes" => [] } if @pantry.empty?
-      return Stub.recipe_result(@pantry) unless Config.live?
+      return Stub.recipe_result(@pantry, meal: @meal) unless Config.live?
 
       Router.new(household: @household).json_completion(
         purpose: :recipe_suggest, schema: SCHEMA, max_output_tokens: 1500,
         messages: [
-          { role: "system", content: format(SYSTEM, language: LANGUAGES.fetch(@locale.to_sym, "English")) },
+          { role: "system", content: format(SYSTEM, meal: @meal,
+                                            language: LANGUAGES.fetch(@locale.to_sym, "English")) },
           { role: "user", content: @pantry.to_json }
         ]
       )

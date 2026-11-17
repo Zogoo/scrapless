@@ -111,11 +111,13 @@
   },
   "recipes": {
     "title": "Recipes",
-    "lede": "A few short ideas from what's already in the kitchen.",
-    "ask": "Cook with these",
+    "lede": "One meal from what's already in the kitchen. Each one, once a day.",
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "dinner": "Dinner",
     "thinking": "Looking through the kitchen…",
     "empty_title": "Nothing to cook from yet.",
-    "empty_body": "Once there's food in here, a couple of short ideas will show up.",
+    "empty_body": "Once there's food in here, pick a meal.",
     "minutes": "{{count}} min",
     "uses_first": "Uses what should go first",
     "optional": "optional"

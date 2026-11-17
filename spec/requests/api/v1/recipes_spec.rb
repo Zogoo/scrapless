@@ -16,7 +16,7 @@ RSpec.describe "Api::V1::Recipes", type: :request do
       create(:item, household: household, display_name: "Nudeln", canonical_name: "nudeln")
       create(:item, household: create(:household), display_name: "Someone else's cheese", canonical_name: "cheese")
 
-      post "/api/v1/recipes/suggest", headers: headers
+      post "/api/v1/recipes/suggest", params: { meal: "dinner" }, headers: headers
 
       expect(response).to have_http_status(:ok)
       body = response.parsed_body
@@ -28,25 +28,52 @@ RSpec.describe "Api::V1::Recipes", type: :request do
     end
 
     it "answers an empty kitchen with no recipes rather than an error" do
-      post "/api/v1/recipes/suggest", headers: headers
+      post "/api/v1/recipes/suggest", params: { meal: "lunch" }, headers: headers
 
       expect(response).to have_http_status(:ok)
       expect(response.parsed_body["recipes"]).to eq([])
     end
 
-    it "answers a repeat tap from the cache" do
+    it "answers a repeat tap for the same meal from the stored result" do
       create(:item, household: household)
 
-      2.times { post "/api/v1/recipes/suggest", headers: headers }
+      post "/api/v1/recipes/suggest", params: { meal: "dinner" }, headers: headers
+      first = response.parsed_body
+      post "/api/v1/recipes/suggest", params: { meal: "dinner" }, headers: headers
 
       expect(response.parsed_body["cached"]).to be(true)
+      expect(response.parsed_body["recipes"]).to eq(first["recipes"])
+      expect(response.parsed_body["meal"]).to eq("dinner")
+    end
+
+    it "cooks a different meal the same day" do
+      create(:item, household: household)
+
+      post "/api/v1/recipes/suggest", params: { meal: "dinner" }, headers: headers
+      post "/api/v1/recipes/suggest", params: { meal: "breakfast" }, headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to include("cached" => false, "meal" => "breakfast")
+    end
+
+    it "requires a meal" do
+      post "/api/v1/recipes/suggest", headers: headers
+
+      expect(response).to have_http_status(:bad_request)
+    end
+
+    it "refuses a meal we do not cook" do
+      post "/api/v1/recipes/suggest", params: { meal: "snack" }, headers: headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["error"]).to eq(I18n.t("recipes.unknown_meal"))
     end
 
     it "says so in recipe terms when the fridge has asked too often this hour" do
       create(:item, household: household)
       allow(Recipes::Suggest).to receive(:call).and_raise(Recipes::Suggest::TooMany)
 
-      post "/api/v1/recipes/suggest", headers: headers
+      post "/api/v1/recipes/suggest", params: { meal: "dinner" }, headers: headers
 
       expect(response).to have_http_status(:too_many_requests)
       expect(response.parsed_body["error"]).to eq(I18n.t("recipes.too_many"))
@@ -68,7 +95,7 @@ RSpec.describe "Api::V1::Recipes", type: :request do
         AiCall.create!(purpose: "receipt_extract", model: "gpt-5-mini", cost_micros: 20_000)
         expect(Net::HTTP).not_to receive(:start)
 
-        post "/api/v1/recipes/suggest", headers: headers
+        post "/api/v1/recipes/suggest", params: { meal: "dinner" }, headers: headers
 
         expect(response).to have_http_status(:service_unavailable)
         expect(response.parsed_body).to include("error" => I18n.t("recipes.ai_unavailable"), "retryable" => false)

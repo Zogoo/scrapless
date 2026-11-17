@@ -2,28 +2,40 @@
   <h1>{{ 'recipes.title' | translate }}</h1>
   <p class="lede">{{ 'recipes.lede' | translate }}</p>
 
+  <div class="meals" role="group" [attr.aria-label]="'recipes.title' | translate">
+    @for (meal of meals; track meal) {
+      <button
+        type="button"
+        [class.primary]="selected() === meal"
+        [class.ghost]="selected() !== meal"
+        [attr.aria-pressed]="selected() === meal"
+        [disabled]="loading()"
+        (click)="ask(meal)"
+      >
+        {{ 'recipes.' + meal | translate }}
+      </button>
+    }
+  </div>
+
   @if (error()) {
     <p class="error">
       {{ error() }}
-      @if (retryable()) {
-        <button type="button" class="ghost" (click)="ask()">
+      @if (retryable() && selected(); as meal) {
+        <button type="button" class="ghost" (click)="ask(meal)">
           {{ 'common.retry' | translate }}
         </button>
       }
     </p>
   }
 
-  @if (!asked()) {
-    <button type="button" class="primary" (click)="ask()">{{ 'recipes.ask' | translate }}</button>
-  } @else if (loading()) {
+  @if (loading()) {
     <p class="loading">{{ 'recipes.thinking' | translate }}</p>
-  } @else if (!error() && recipes().length === 0) {
+  } @else if (selected() && !error() && recipes().length === 0) {
     <div class="calm">
       <span class="mark" aria-hidden="true">🍲</span>
       <h2>{{ 'recipes.empty_title' | translate }}</h2>
       <p>{{ 'recipes.empty_body' | translate }}</p>
     </div>
-    <button type="button" class="primary" (click)="ask()">{{ 'recipes.ask' | translate }}</button>
   } @else if (recipes().length > 0) {
     @for (recipe of recipes(); track recipe.title) {
       <article class="card">

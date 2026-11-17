@@ -1,49 +1,62 @@
-require "digest"
-
 module Recipes
-  # "What can I make tonight?", answered from what is actually in the kitchen,
+  # "What can I make for this meal?", answered from what is actually in the kitchen,
   # with the food most at risk put first.
   #
-  # Three things keep this cheap. The answer is cached against a fingerprint of
-  # the inventory, so tapping again costs nothing until the food changes. A
-  # fridge gets a few real model calls an hour, counted out of the ai_calls
-  # ledger (a cache counter would reset on restart). And the daily Ai::Budget
-  # still applies underneath, through the router.
+  # Breakfast, lunch and dinner are each generated at most once a day for a
+  # fridge. The answer is stored, so a second tap shows it again and does not
+  # call the model, even after a restart or a change in the kitchen. A fridge
+  # still only gets a few real model calls an hour, counted out of the ai_calls
+  # ledger, and the daily Ai::Budget still applies underneath, through the router.
   class Suggest < ApplicationService
     class TooMany < StandardError; end
+    class UnknownMeal < StandardError; end
 
+    MEALS = MealSuggestion::MEALS
     MAX_RECIPES = 3
     # A long list costs tokens and does not make better dinners; the most urgent
     # thirty is plenty to cook from.
     MAX_ITEMS = 30
     MAX_CALLS_PER_HOUR = 6
-    CACHE_TTL = 12.hours
 
-    Result = Struct.new(:recipes, :cached, keyword_init: true)
+    Result = Struct.new(:recipes, :cached, :meal, keyword_init: true)
 
-    def initialize(household:, locale: I18n.locale, on: Date.current)
+    def initialize(household:, meal:, locale: I18n.locale, on: Date.current)
       @household = household
+      @meal = meal.to_s.downcase
       @locale = locale
       @on = on
     end
 
     def call
-      return Result.new(recipes: [], cached: false) if pantry.empty?
+      raise UnknownMeal, @meal unless MEALS.include?(@meal)
 
-      cached = Rails.cache.read(cache_key)
-      return Result.new(recipes: cached, cached: true) unless cached.nil?
+      stored = remembered
+      return Result.new(recipes: stored.payload, cached: true, meal: @meal) if stored
+      return Result.new(recipes: [], cached: false, meal: @meal) if pantry.empty?
 
-      recipes = write_recipes
-      Rails.cache.write(cache_key, recipes, expires_in: CACHE_TTL)
-      Result.new(recipes: recipes, cached: false)
+      record = save(write_recipes)
+      Result.new(recipes: record.payload, cached: !record.previously_new_record?, meal: @meal)
     end
 
     private
 
+    def remembered
+      @household.meal_suggestions.find_by(meal: @meal, served_on: @on)
+    end
+
+    # A second request that slipped in while this one was writing loses the
+    # race and shows the row that won, rather than keeping a second answer.
+    def save(recipes)
+      MealSuggestion.create!(household: @household, meal: @meal, served_on: @on,
+                             locale: @locale.to_s, body: recipes.to_json)
+    rescue ActiveRecord::RecordNotUnique, ActiveRecord::RecordInvalid
+      remembered || raise
+    end
+
     def write_recipes
       raise TooMany if Ai::Config.live? && calls_this_hour >= MAX_CALLS_PER_HOUR
 
-      raw = Ai::RecipeWriter.call(pantry: pantry, household: @household, locale: @locale)
+      raw = Ai::RecipeWriter.call(pantry: pantry, meal: @meal, household: @household, locale: @locale)
       Array(raw["recipes"])
         .filter_map { |recipe| GroundInInventory.call(recipe: recipe, items: items, use_first_ids: use_first_ids,
                                               household: @household) }
@@ -81,12 +94,6 @@ module Recipes
           priority: use_first_ids.include?(s.item.id) ? "use_first" : nil
         }.compact
       end
-    end
-
-    # The fingerprint is exactly what the model would be shown, plus the day and
-    # language: same food, same answer; anything changes, ask again.
-    def cache_key
-      [ "recipes/v1", @household.id, @locale, @on.iso8601, Digest::SHA256.hexdigest(pantry.to_json) ].join("/")
     end
   end
 end

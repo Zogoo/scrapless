@@ -130,7 +130,10 @@ export interface Recipe {
   use_first_count: number;
 }
 
+export type Meal = 'breakfast' | 'lunch' | 'dinner';
+
 export interface RecipeSuggestions {
+  meal: Meal;
   recipes: Recipe[];
   cached: boolean;
   mode: 'live' | 'stub';
