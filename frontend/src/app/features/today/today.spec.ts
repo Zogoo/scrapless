@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { environment } from '../../../environments/environment';
 import { errorInterceptor } from '../../core/interceptors/error.interceptor';
 import { InstallService } from '../../core/services/install.service';
+import { PushService } from '../../core/services/push.service';
 import { Today } from './today';
 
 /** The surface the test drives; these members are protected on the component. */
@@ -184,5 +185,72 @@ describe('Today', () => {
     expect(root.textContent).not.toContain('today.used');
     expect(root.textContent).not.toContain('today.froze');
     expect(root.textContent).not.toContain('today.partial');
+  });
+
+  // Found on production: a kitchen stocked before notifications existed never
+  // scans again, so the capture review never asked it.
+  describe('the notification question', () => {
+    const stocked = {
+      use_first: [],
+      fine_for_now: [
+        {
+          id: 8,
+          display_name: 'Reis',
+          canonical_name: 'reis',
+          storage: 'pantry',
+          amount_left: 1,
+          window_end: '2027-01-01',
+          phase: 'fresh',
+          headline: 'fine',
+          life_fraction: 0.1,
+        },
+      ],
+      probably_gone: [],
+      sweep_count: 0,
+      as_of: '2026-11-17',
+      has_captured: true,
+    };
+    const empty = { ...stocked, fine_for_now: [], has_captured: false };
+
+    function render(page: object) {
+      const fixture = TestBed.createComponent(Today);
+      fixture.detectChanges();
+      http.match(`${environment.apiUrl}/items`).forEach((req) => req.flush(page));
+      fixture.detectChanges();
+      return fixture;
+    }
+
+    beforeEach(() => localStorage.clear());
+
+    it('is asked of a kitchen that already has food', () => {
+      TestBed.inject(PushService).state.set('off');
+
+      expect(render(stocked).nativeElement.querySelector('.notify-ask')).not.toBeNull();
+    });
+
+    it('waits until there is food to notify about', () => {
+      TestBed.inject(PushService).state.set('off');
+
+      expect(render(empty).nativeElement.querySelector('.notify-ask')).toBeNull();
+    });
+
+    it('is not asked where the answer is already known', () => {
+      TestBed.inject(PushService).state.set('on');
+
+      expect(render(stocked).nativeElement.querySelector('.notify-ask')).toBeNull();
+    });
+
+    it('goes away on "Not now" and stays away', () => {
+      const push = TestBed.inject(PushService);
+      push.state.set('off');
+      const fixture = render(stocked);
+
+      const buttons = fixture.nativeElement.querySelectorAll('.notify-actions button');
+      (buttons[1] as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.notify-ask')).toBeNull();
+      expect(localStorage.getItem('scrapless_push_asked')).toBe('1');
+    });
   });
 });

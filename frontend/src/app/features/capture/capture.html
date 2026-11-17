@@ -242,27 +242,7 @@
             </p>
           }
 
-          @if (!notifyAnswered() && push.shouldAsk()) {
-            <aside class="notify-ask" aria-labelledby="notify-ask-head">
-              <p id="notify-ask-head" class="notify-head">{{ 'notify.ask_title' | translate }}</p>
-              @if (push.state() === 'needs_install') {
-                <p>{{ 'notify.needs_install' | translate }}</p>
-                <button type="button" class="ghost" (click)="answerNotify(false)">
-                  {{ 'notify.got_it' | translate }}
-                </button>
-              } @else {
-                <p>{{ 'notify.ask_body' | translate }}</p>
-                <div class="notify-actions">
-                  <button type="button" class="primary" (click)="answerNotify(true)">
-                    {{ 'notify.turn_on' | translate }}
-                  </button>
-                  <button type="button" class="ghost" (click)="answerNotify(false)">
-                    {{ 'install.not_now' | translate }}
-                  </button>
-                </div>
-              }
-            </aside>
-          }
+          <app-notify-ask />
 
           <button type="button" class="primary wide" (click)="done()">
             {{ 'capture.accept_all' | translate: { count: result.items.length } }}

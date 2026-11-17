@@ -15,8 +15,10 @@ import { ItemsService } from '../../core/services/items.service';
 import { InstallService } from '../../core/services/install.service';
 import { LocaleService } from '../../core/services/locale.service';
 import { NotificationsService } from '../../core/services/notifications.service';
+import { PushService } from '../../core/services/push.service';
 import { ScoredItem } from '../../core/models';
 import { ItemLine } from '../../shared/item-line/item-line';
+import { NotifyAsk } from '../../shared/notify-ask/notify-ask';
 import { lineFor } from '../../shared/item-line/line';
 
 /**
@@ -28,7 +30,7 @@ import { lineFor } from '../../shared/item-line/line';
  */
 @Component({
   selector: 'app-today',
-  imports: [TranslatePipe, ItemLine],
+  imports: [TranslatePipe, ItemLine, NotifyAsk],
   templateUrl: './today.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './today.scss',
@@ -42,6 +44,7 @@ export class Today implements OnInit {
   private readonly translate = inject(TranslateService);
   private readonly locale = inject(LocaleService);
   protected readonly install = inject(InstallService);
+  private readonly push = inject(PushService);
 
   protected readonly today = this.items.today;
   protected readonly loading = signal(true);
@@ -68,6 +71,16 @@ export class Today implements OnInit {
       today.probably_gone.length === 0
     );
   });
+
+  /**
+   * The notification question, for a kitchen that already has food. The
+   * capture review only reaches someone who scans again, so a kitchen stocked
+   * before notifications existed would otherwise never be asked. Not on an
+   * iPhone outside the Home Screen: the install pitch is the step there.
+   */
+  protected readonly askNotify = computed(
+    () => this.push.state() === 'off' && this.push.shouldAsk() && !!this.today() && !this.isEmpty(),
+  );
 
   /** True when there is food, and none of it needs anything. The good state. */
   protected readonly allCalm = computed(() => {

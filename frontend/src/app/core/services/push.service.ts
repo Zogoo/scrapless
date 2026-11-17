@@ -16,7 +16,7 @@ import { isIosDevice } from './install.service';
  */
 export type PushState = 'unavailable' | 'unsupported' | 'needs_install' | 'blocked' | 'off' | 'on';
 
-/** Answered once, on the capture review: "Not now" is remembered on this phone. */
+/** Answered once per phone, wherever it was asked: "Not now" is remembered. */
 const ASKED_KEY = 'scrapless_push_asked';
 /** `serviceWorker.ready` never settles when registration failed. */
 const READY_TIMEOUT_MS = 5000;
@@ -35,6 +35,8 @@ export class PushService {
   private publicKey: string | null = null;
 
   readonly state = signal<PushState>('unavailable');
+  /** A signal, so answering on one screen hides the question on every other. */
+  private readonly asked = signal(readAsked());
   /** Subscribing waits on the browser's push service: seconds on a fresh profile. */
   readonly busy = signal(false);
 
@@ -112,18 +114,14 @@ export class PushService {
     }
   }
 
-  /** True when the capture review should ask. */
+  /** True while this phone could still say yes and has not been asked. */
   shouldAsk(): boolean {
     const state = this.state();
-    if (state !== 'off' && state !== 'needs_install') return false;
-    try {
-      return localStorage.getItem(ASKED_KEY) !== '1';
-    } catch {
-      return false;
-    }
+    return (state === 'off' || state === 'needs_install') && !this.asked();
   }
 
   markAsked(): void {
+    this.asked.set(true);
     try {
       localStorage.setItem(ASKED_KEY, '1');
     } catch {
@@ -157,6 +155,15 @@ export class PushService {
   private set(state: PushState): PushState {
     this.state.set(state);
     return state;
+  }
+}
+
+/** Unreadable storage counts as asked: better silent than asking every visit. */
+function readAsked(): boolean {
+  try {
+    return localStorage.getItem(ASKED_KEY) === '1';
+  } catch {
+    return true;
   }
 }
 

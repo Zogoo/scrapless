@@ -244,8 +244,11 @@ notification is never spent on food that is probably eaten.
   in between is left out, and high-risk food only ever gets "worth a look".
 - **Push endpoints are allowlisted** (FCM, Mozilla, Apple, WNS, https, port 443): the server
   POSTs to whatever is stored, so anything else would be an SSRF hole.
-- **Permission is asked on the first capture review**, not at onboarding (doc 2 §2.7: value
-  before permission), and inside the tap, because Safari refuses a prompt that is not.
+- **Permission is asked once food is in**, never at onboarding (doc 2 §2.7: value before
+  permission), and inside the tap, because Safari refuses a prompt that is not. The capture
+  review asks after a scan; Today asks a kitchen that already has food, since a kitchen
+  stocked before notifications existed may never scan again (found on production). One
+  shared card, one answer per phone: either answer hides it on both screens.
   Settings has the switch and the budget. iPhone Safari gets the Home Screen instruction,
   since push exists there only for an installed app.
 - **Every kitchen gets the notification; push is only one way to see it.** The tick writes the

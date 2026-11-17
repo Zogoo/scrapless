@@ -3,7 +3,11 @@
     <h1>{{ weekday() }}</h1>
   </header>
 
-  @if (install.shouldOffer()) {
+  <!-- One question at a time: the notification first, since the evening
+       nudge is the product, and the install pitch on a later visit. -->
+  @if (askNotify()) {
+    <app-notify-ask />
+  } @else if (install.shouldOffer()) {
     <aside class="install">
       <p>{{ 'install.pitch' | translate }}</p>
       @if (install.available()) {
