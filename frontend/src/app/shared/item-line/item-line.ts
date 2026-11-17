@@ -44,7 +44,10 @@ export class ItemLine {
   private readonly undo = inject(UndoService);
 
   protected readonly moving = signal<ScoredItem | null>(null);
-  /** Set when this drag opened the pack and then came back to where it started. */
+  /**
+   * Set when a release undoes an open this slider made, so the pack is
+   * unopened again. That includes an open already saved earlier in the sitting.
+   */
   protected readonly accidental = signal(false);
   private readonly moveSheet = viewChild<ElementRef<HTMLDialogElement>>('moveSheet');
   private readonly preview = signal<{ key: string; percent: number } | null>(null);
@@ -188,10 +191,12 @@ export class ItemLine {
     }
 
     this.items.revertSliderOpen(gesture.packId, percent).subscribe({
-      next: () => {
-        // Only the open this drag just made. A pack that was already open
-        // changes its amount and stays quiet.
-        if (gesture.openSent && percent === gesture.startPercent) this.accidental.set(true);
+      next: (item) => {
+        // The server clears opened_on only when this slider is what opened the
+        // pack. A later release in the same sitting counts: the open is already
+        // saved, so this drag did not send it. A pack that was open beforehand
+        // comes back still open, and stays quiet.
+        if (item.opened_on == null) this.accidental.set(true);
         writeAmount();
       },
       error: (err: { message?: string }) => this.fail(err),
