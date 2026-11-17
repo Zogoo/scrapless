@@ -59,11 +59,6 @@ export class ItemLine {
   private gesture: Gesture | null = null;
   private openingId: number | null = null;
   private openInFlight = false;
-  /**
-   * The lock follows the pack, except while a drag is ahead of the reload:
-   * the first move opens it, and an undone open closes it again.
-   */
-  private readonly openedNow = signal<{ id: number; open: boolean } | null>(null);
   private afterOpen: (() => void) | null = null;
 
   protected readonly storages: Storage[] = ['fridge', 'freezer', 'pantry'];
@@ -88,13 +83,15 @@ export class ItemLine {
     return trackBackground(this.line(), this.level());
   }
 
-  /** Closed until this slider opens the soonest pack. An undone open closes it. */
-  protected opened(): boolean {
-    const pack = this.line().first;
-    const now = this.openedNow();
-    const saved = pack.opened_on != null;
-    if (now && now.id === pack.id && now.open !== saved) return now.open;
-    return saved;
+  /**
+   * How far the mouth is open. The closed line is 100%. Each step below that
+   * is one wider wedge from the right, and the fourth takes the circle.
+   */
+  protected bites(): number {
+    const wedges = Math.round((100 - this.percent()) / 25);
+    if (wedges < 0) return 0;
+    if (wedges > 4) return 4;
+    return wedges;
   }
 
   /** The thumb went down. Nothing is opened until the percent actually changes. */
@@ -132,14 +129,12 @@ export class ItemLine {
 
     gesture.openSent = true;
     this.openingId = pack.id;
-    this.openedNow.set({ id: pack.id, open: true });
     this.openInFlight = true;
     this.items.openFromSlider(pack.id, gesture.startPercent).subscribe({
       next: () => this.settleOpen(),
       error: () => {
         gesture.openSent = false;
         if (this.openingId === pack.id) this.openingId = null;
-        this.openedNow.set({ id: pack.id, open: false });
         this.settleOpen();
       },
     });
@@ -212,10 +207,7 @@ export class ItemLine {
         // pack. A later release in the same sitting counts: the open is already
         // saved, so this drag did not send it. A pack that was open beforehand
         // comes back still open, and stays quiet.
-        if (item.opened_on == null) {
-          this.accidental.set(true);
-          this.openedNow.set({ id: gesture.packId, open: false });
-        }
+        if (item.opened_on == null) this.accidental.set(true);
         writeAmount();
       },
       error: (err: { message?: string }) => this.fail(err),

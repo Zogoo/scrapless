@@ -56,6 +56,14 @@ function sliderOpen(start: number) {
   return { outcome: 'opened', source: 'slider', start_percent: start };
 }
 
+// One mouth, facing right. 100% is the closed line. Each stop opens that
+// same wedge: 90°, then 180°, then 270°. At 0% nothing is left to draw.
+const mouth = {
+  1: 'M 12 12 L 19.071 4.929 A 10 10 0 1 0 19.071 19.071 Z',
+  2: 'M 12 12 L 12 2 A 10 10 0 0 0 12 22 Z',
+  3: 'M 12 12 L 4.929 4.929 A 10 10 0 0 0 4.929 19.071 Z',
+};
+
 describe('Item line', () => {
   let http: HttpTestingController;
 
@@ -201,7 +209,7 @@ describe('Item line', () => {
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
   });
 
-  it('shows a closed lock until the pack is opened', () => {
+  it('draws a closed mouth on a full circle', () => {
     const fixture = TestBed.createComponent(ItemLine);
     fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
     const translate = TestBed.inject(TranslateService);
@@ -210,31 +218,68 @@ describe('Item line', () => {
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
-    const lock = root.querySelector('.lock');
-    expect(root.querySelectorAll('.lock')).toHaveLength(1);
-    expect(lock?.classList.contains('open')).toBe(false);
-    expect(lock?.getAttribute('aria-label')).toBe('Unopened');
-    // A full pack's thumb is at the right end. The lock uses that same stop.
+    const bite = root.querySelector('.bite');
+    expect(root.querySelectorAll('.bite')).toHaveLength(1);
+    expect(bite?.getAttribute('data-bites')).toBe('0');
+    expect(bite?.getAttribute('aria-label')).toBe('Unopened');
+    expect(bite?.querySelectorAll('circle.body')).toHaveLength(1);
+    expect(bite?.querySelectorAll('.eye')).toHaveLength(1);
+    expect(bite?.querySelectorAll('.mouth')).toHaveLength(1);
+    expect(bite?.querySelector('path')).toBeNull();
     expect(root.querySelector('.slider')?.getAttribute('style')).toContain('--p: 100');
   });
 
-  it('shows an open lock when the pack is already open', () => {
+  it('opens that mouth one wedge per step, from the right', () => {
     const fixture = TestBed.createComponent(ItemLine);
-    fixture.componentRef.setInput(
-      'line',
-      toLines([pack(1, 1, 'milk', '2026-11-20', '2026-11-12')])[0],
-    );
     const translate = TestBed.inject(TranslateService);
     translate.setTranslation('en', { kitchen: { lock_closed: 'Unopened', lock_open: 'Opened' } });
     translate.use('en');
-    fixture.detectChanges();
 
-    const lock = (fixture.nativeElement as HTMLElement).querySelector('.lock');
-    expect(lock?.classList.contains('open')).toBe(true);
-    expect(lock?.getAttribute('aria-label')).toBe('Opened');
+    const show = (amount: number) => {
+      fixture.componentRef.setInput('line', toLines([pack(1, amount)])[0]);
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    };
+
+    const one = show(0.75);
+    expect(one.querySelector('.bite')?.getAttribute('data-bites')).toBe('1');
+    expect(one.querySelector('.bite')?.getAttribute('aria-label')).toBe('Opened');
+    expect(one.querySelectorAll('path')).toHaveLength(1);
+    expect(one.querySelector('path')?.getAttribute('d')).toBe(mouth[1]);
+    expect(one.querySelector('.eye')).not.toBeNull();
+    expect(one.querySelector('.mouth')).toBeNull();
+
+    const two = show(0.5);
+    expect(two.querySelector('path')?.getAttribute('d')).toBe(mouth[2]);
+    expect(two.querySelector('.eye')).not.toBeNull();
+
+    const three = show(0.25);
+    expect(three.querySelector('path')?.getAttribute('d')).toBe(mouth[3]);
+    expect(three.querySelector('.eye')).toBeNull();
+
+    const gone = show(0);
+    expect(gone.querySelector('.bite')?.getAttribute('data-bites')).toBe('4');
+    expect(gone.querySelector('.bite')?.getAttribute('aria-label')).toBe('Opened');
+    expect(gone.querySelector('svg')).toBeNull();
   });
 
-  it('opens the lock on the first move', () => {
+  it('opens the mouth on the first move', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
+    fixture.detectChanges();
+    const screen = fixture.componentInstance as unknown as ItemLineScreen;
+
+    screen.slide(slider(75));
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.bite')?.getAttribute('data-bites')).toBe('1');
+    expect(root.querySelector('path')?.getAttribute('d')).toBe(mouth[1]);
+    expect(root.querySelector('.slider')?.getAttribute('style')).toContain('--p: 75');
+    http.expectOne(`${environment.apiUrl}/items/1/resolve`).flush({});
+  });
+
+  it('closes the mouth again when the thumb returns to full', () => {
     const fixture = TestBed.createComponent(ItemLine);
     fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
     fixture.detectChanges();
@@ -242,10 +287,18 @@ describe('Item line', () => {
 
     screen.slide(slider(50));
     fixture.detectChanges();
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.bite')?.getAttribute('data-bites'),
+    ).toBe('2');
 
-    const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('.lock')?.classList.contains('open')).toBe(true);
-    expect(root.querySelector('.slider')?.getAttribute('style')).toContain('--p: 50');
+    screen.slide(slider(100));
+    fixture.detectChanges();
+
+    const bite = (fixture.nativeElement as HTMLElement).querySelector('.bite');
+    expect(bite?.getAttribute('data-bites')).toBe('0');
+    expect(bite?.querySelector('circle.body')).not.toBeNull();
+    expect(bite?.querySelector('.mouth')).not.toBeNull();
+    expect(bite?.querySelector('path')).toBeNull();
     http.expectOne(`${environment.apiUrl}/items/1/resolve`).flush({});
   });
 
@@ -300,9 +353,6 @@ describe('Item line', () => {
     expect(
       (fixture.nativeElement as HTMLElement).querySelector('.accidental')?.textContent,
     ).toContain('Accidental touch. This is unopened again.');
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('.lock')?.classList.contains('open'),
-    ).toBe(false);
   });
 
   it('does not warn when a pack that was already open comes back to the start', () => {
