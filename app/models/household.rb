@@ -19,6 +19,7 @@ class Household < ApplicationRecord
   has_many :item_events, dependent: :destroy
   has_many :memo_items, dependent: :destroy
   has_many :product_aliases, dependent: :destroy
+  has_many :vocabulary_entries, dependent: :destroy
   has_many :suggestion_dismissals, dependent: :destroy
   has_many :meal_suggestions, dependent: :destroy
   has_many :push_subscriptions, dependent: :destroy

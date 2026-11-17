@@ -114,7 +114,8 @@
     "added": "Just added",
     "undo_named": "Take back {{name}}",
     "speech_lang": "Language you speak",
-    "try_again": "Voice works differently here. Press the mic again."
+    "try_again": "Voice works differently here. Press the mic again.",
+    "fix_named": "Fix {{name}}"
   },
   "recipes": {
     "title": "Recipes",

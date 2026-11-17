@@ -85,6 +85,35 @@ RSpec.describe "Api::V1::MemoItems", type: :request do
     expect(household.memo_items).to be_empty
   end
 
+  # A correction is how a kitchen teaches the mic its own words.
+  it "learns from renaming a line the mic wrote" do
+    post "/api/v1/memo/dictate", params: { transcript: "ich hätt gern Milch" }, headers: headers, as: :json
+    line = household.memo_items.find_by!(canonical_name: "ich hätt gern")
+
+    patch "/api/v1/memo/#{line.id}", params: { memo_item: { name: "Hafermilch" } }, headers: headers, as: :json
+    post "/api/v1/memo/dictate", params: { transcript: "hafermilch brot" }, headers: headers, as: :json
+
+    expect(household.vocabulary_entries.pluck(:kind, :phrase)).to include([ "item", "hafermilch" ])
+    expect(response.parsed_body["items"].map { |i| i["name"] }).to eq([ "Brot" ])
+  end
+
+  it "records how the mic was used, so the gestures are measured" do
+    allow(Rails.logger).to receive(:info).and_call_original
+
+    post "/api/v1/memo/dictate", params: { transcript: "Milch", lang: "de", gesture: "hold", press_ms: 820 },
+                                 headers: headers, as: :json
+
+    expect(Rails.logger).to have_received(:info).with(/gesture=hold press_ms=820 lang=de/)
+  end
+
+  it "keeps an unknown gesture value out of the log" do
+    allow(Rails.logger).to receive(:info).and_call_original
+
+    post "/api/v1/memo/dictate", params: { transcript: "Milch", gesture: "hold\nforged=1" }, headers: headers, as: :json
+
+    expect(Rails.logger).to have_received(:info).with(/gesture=unknown /)
+  end
+
   describe "recorded audio" do
     def audio = Rack::Test::UploadedFile.new(StringIO.new("not-really-audio"), "audio/mp4", original_filename: "memo.mp4")
 
@@ -109,7 +138,7 @@ RSpec.describe "Api::V1::MemoItems", type: :request do
     end
 
     it "stops paying for transcriptions after the hourly cap" do
-      Api::V1::MemoItemsController::MAX_TRANSCRIPTIONS_PER_HOUR.times do
+      InputLimits::MAX_TRANSCRIPTIONS_PER_HOUR.times do
         AiCall.create!(household: household, purpose: "transcribe", model: "gpt-4o-mini-transcribe")
       end
       allow(Ai::Transcriber).to receive(:call)

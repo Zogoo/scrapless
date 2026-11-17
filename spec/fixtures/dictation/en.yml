@@ -1,0 +1,10 @@
+- said: I want to buy bread milk eggs
+  lines: [bread, milk, eggs]
+- said: get some milk and also bananas
+  lines: [milk, bananas]
+- said: milk toilet paper and something for Sunday
+  lines: [milk, toilet paper, something for Sunday]
+- said: can you add a dozen eggs please
+  lines: [12 eggs]
+- said: two bottles of organic milk
+  lines: [2 bottles of organic milk]

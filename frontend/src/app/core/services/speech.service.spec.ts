@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { environment } from '../../../environments/environment';
+import { SPEECH_TAGS } from '../speech-tags';
 import { LocaleService } from './locale.service';
 import { SPEECH_LANG_KEY, SpeechService, audioFilename, speechTag } from './speech.service';
 
@@ -183,9 +185,22 @@ describe('SpeechService', () => {
     });
   });
 
-  it('maps a language to the recogniser tag', () => {
-    expect(speechTag('de')).toBe('de-DE');
-    expect(speechTag('en')).toBe('en-GB');
+  // A language added to the app must get a recogniser tag, not borrow another's.
+  it('has a recogniser tag for every language the app offers', () => {
+    for (const locale of environment.availableLocales) {
+      expect(SPEECH_TAGS[locale], locale).toBeTruthy();
+      expect(speechTag(locale).startsWith(locale)).toBe(true);
+    }
+  });
+
+  it('never falls back to another language for a tag it lacks', () => {
+    expect(speechTag('fr')).toBe('fr');
+  });
+
+  it('ignores a speech language the app does not offer', () => {
+    speech.setSpeechLang('xx');
+
+    expect(environment.availableLocales).toContain(speech.speechLang());
   });
 
   // Safari records MP4/AAC; naming it .webm mislabels it (doc 15 §15.2.4).

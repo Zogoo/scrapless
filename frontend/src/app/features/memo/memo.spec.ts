@@ -16,7 +16,7 @@ class FakeSpeech {
   readonly listening = signal(false);
   readonly capturing = signal(false);
   readonly interim = signal('');
-  readonly speechLang = signal<'de' | 'en'>('de');
+  readonly speechLang = signal('de');
   readonly recognitionSupported = true;
   readonly recordingSupported = true;
   readonly supported = true;
@@ -35,7 +35,7 @@ class FakeSpeech {
     this.listening.set(true);
     return this.heard;
   });
-  setSpeechLang = vi.fn((lang: 'de' | 'en') => this.speechLang.set(lang));
+  setSpeechLang = vi.fn((lang: string) => this.speechLang.set(lang));
 }
 
 /** The surface the test drives; these members are protected on the component. */
@@ -46,6 +46,7 @@ interface MicSurface {
   onMicClick(event: MouseEvent): void;
   cancelDictation(): void;
   undo(item: MemoItem): void;
+  rename(item: MemoItem, name: string): void;
   micMode(): 'idle' | 'hold' | 'toggle';
   justAdded(): MemoItem[];
 }
@@ -117,7 +118,12 @@ describe('Memo mic', () => {
 
     expect(speech.finish).toHaveBeenCalled();
     const req = http.expectOne(`${environment.apiUrl}/memo/dictate`);
-    expect(req.request.body).toEqual({ transcript: 'Milch', lang: 'de' });
+    expect(req.request.body).toEqual({
+      transcript: 'Milch',
+      lang: 'de',
+      gesture: 'hold',
+      press_ms: HOLD_MS + 200,
+    });
     req.flush({ transcript: 'Milch', items: [milch] });
     http.expectOne(`${environment.apiUrl}/memo`).flush({ items: [milch], suggestions: [] });
 
@@ -185,5 +191,23 @@ describe('Memo mic', () => {
 
     expect(http.expectOne(`${environment.apiUrl}/memo/7`).request.method).toBe('DELETE');
     expect(mic.justAdded()).toEqual([]);
+  });
+  // The correction is what the server learns from.
+  it('renames a line that was just dictated', () => {
+    hold(HOLD_MS + 200);
+    http
+      .expectOne(`${environment.apiUrl}/memo/dictate`)
+      .flush({ transcript: 'Milch', items: [milch] });
+    http.expectOne(`${environment.apiUrl}/memo`).flush({ items: [milch], suggestions: [] });
+
+    mic.rename(milch, 'Hafermilch');
+
+    const req = http.expectOne(`${environment.apiUrl}/memo/7`);
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({ memo_item: { name: 'Hafermilch' } });
+    req.flush({ ...milch, name: 'Hafermilch' });
+    http.expectOne(`${environment.apiUrl}/memo`).flush({ items: [], suggestions: [] });
+
+    expect(mic.justAdded().map((item) => item.name)).toEqual(['Hafermilch']);
   });
 });

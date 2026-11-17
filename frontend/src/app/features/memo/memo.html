@@ -56,7 +56,28 @@
     <ul class="just-added" [attr.aria-label]="'memo.added' | translate">
       @for (item of justAdded(); track item.id) {
         <li>
-          <span>{{ item.name }}</span>
+          @if (editingId() === item.id) {
+            <input
+              #fix
+              type="text"
+              maxlength="120"
+              enterkeyhint="done"
+              [value]="item.name"
+              [attr.aria-label]="'memo.fix_named' | translate: { name: item.name }"
+              (keyup.enter)="rename(item, fix.value)"
+              (keyup.escape)="editingId.set(null)"
+              (blur)="rename(item, fix.value)"
+            />
+          } @else {
+            <button
+              type="button"
+              class="ghost name"
+              [attr.aria-label]="'memo.fix_named' | translate: { name: item.name }"
+              (click)="editingId.set(item.id)"
+            >
+              {{ item.name }}
+            </button>
+          }
           <button
             type="button"
             class="ghost"

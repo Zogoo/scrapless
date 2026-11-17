@@ -1,6 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 
+import { environment } from '../../../environments/environment';
+import { SPEECH_TAGS } from '../speech-tags';
 import { LocaleService } from './locale.service';
 
 /** The vendor-prefixed shape Chrome and Safari actually expose. */
@@ -27,16 +29,17 @@ type SpeechWindow = Window & {
   webkitSpeechRecognition?: new () => SpeechRecognitionLike;
 };
 
-export type SpeechLang = 'de' | 'en';
+/** One of environment.availableLocales. */
+export type SpeechLang = string;
 
 /** Recognisers put spaces at either end of a piece, inconsistently. */
 const squeeze = (text: string): string => text.replace(/\s+/g, ' ').trim();
 
 export const SPEECH_LANG_KEY = 'scrapless_speech_lang';
 
-/** Maps our two-letter language onto the BCP-47 tag the recogniser wants. */
-export function speechTag(lang: string | null | undefined): string {
-  return lang === 'de' ? 'de-DE' : 'en-GB';
+/** The recogniser tag for one of the app's languages; never another language's. */
+export function speechTag(lang: string): string {
+  return SPEECH_TAGS[lang] ?? lang;
 }
 
 /** What MediaRecorder actually wrote, named so the server can tell. */
@@ -82,9 +85,7 @@ export class SpeechService {
 
   private readonly chosenLang = signal<SpeechLang | null>(this.readLang());
   /** The language the person speaks, which need not be the app's language. */
-  readonly speechLang = computed<SpeechLang>(
-    () => this.chosenLang() ?? (this.locale.current() === 'de' ? 'de' : 'en'),
-  );
+  readonly speechLang = computed<SpeechLang>(() => this.chosenLang() ?? this.locale.current());
 
   /** The open recognition session; `cancelled` is per session, so a late end event of one cannot leak into the next. */
   private session: { recognition: SpeechRecognitionLike; cancelled: boolean } | null = null;
@@ -108,6 +109,7 @@ export class SpeechService {
   }
 
   setSpeechLang(lang: SpeechLang): void {
+    if (!environment.availableLocales.includes(lang)) return;
     this.chosenLang.set(lang);
     try {
       localStorage.setItem(SPEECH_LANG_KEY, lang);
@@ -259,7 +261,7 @@ export class SpeechService {
   private readLang(): SpeechLang | null {
     try {
       const saved = localStorage.getItem(SPEECH_LANG_KEY);
-      return saved === 'de' || saved === 'en' ? saved : null;
+      return saved && environment.availableLocales.includes(saved) ? saved : null;
     } catch {
       return null;
     }

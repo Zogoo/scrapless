@@ -18,7 +18,8 @@ import {
   takeUntil,
 } from 'rxjs';
 
-import { MemoService } from '../../core/services/memo.service';
+import { environment } from '../../../environments/environment';
+import { DictationGesture, MemoService } from '../../core/services/memo.service';
 import {
   SpeechLang,
   SpeechService,
@@ -28,8 +29,10 @@ import {
 import { MemoItem, Suggestion } from '../../core/models';
 
 /**
- * Shorter than this is a tap, longer is a hold. Not a verified figure: doc 15
- * §15.8.4 lists the threshold as something to tune on real phones.
+ * Shorter than this is a tap, longer is a hold. A heuristic, not a verified
+ * figure: it fails for anyone who holds briefly for a one-word item. Every
+ * dictation logs its press duration (`press_ms`), so the value is tuned from
+ * real use (doc 15 §15.8.5).
  */
 export const HOLD_MS = 350;
 const MIC_USES_KEY = 'scrapless_mic_uses';
@@ -67,10 +70,16 @@ export class Memo implements OnInit, OnDestroy {
   /** The lines the last dictation added, shown with an undo. */
   protected readonly justAdded = signal<MemoItem[]>([]);
   protected readonly micUses = signal(this.readMicUses());
-  protected readonly speechLangs: readonly SpeechLang[] = ['de', 'en'];
+  /** Every language the app speaks; the list is environment.availableLocales. */
+  protected readonly speechLangs: readonly SpeechLang[] = environment.availableLocales;
   protected readonly showMicHint = computed(() => this.micUses() < HINT_UNTIL_USES);
 
+  /** The just-added line being corrected, if any. */
+  protected readonly editingId = signal<number | null>(null);
+
   private pressedAt = 0;
+  /** How the mic was used, logged with each dictation (doc 15 §15.8.5). */
+  private gesture: DictationGesture = { gesture: 'tap', press_ms: 0 };
   private swallowUp = false;
   private listening: Subscription | null = null;
 
@@ -184,6 +193,7 @@ export class Memo implements OnInit, OnDestroy {
     }
     this.pressedAt = Date.now();
     this.micMode.set('hold');
+    this.gesture = { gesture: 'hold', press_ms: 0 };
     this.startDictation();
   }
 
@@ -198,10 +208,13 @@ export class Memo implements OnInit, OnDestroy {
       this.cancelDictation();
       return;
     }
-    if (Date.now() - this.pressedAt < HOLD_MS) {
+    const pressMs = Date.now() - this.pressedAt;
+    if (pressMs < HOLD_MS) {
+      this.gesture = { gesture: 'tap', press_ms: pressMs };
       this.micMode.set('toggle');
       return;
     }
+    this.gesture = { gesture: 'hold', press_ms: pressMs };
     this.finishDictation();
   }
 
@@ -219,6 +232,7 @@ export class Memo implements OnInit, OnDestroy {
     }
     if (this.speech.listening() || this.busy()) return;
     this.micMode.set('toggle');
+    this.gesture = { gesture: 'key', press_ms: 0 };
     this.startDictation();
   }
 
@@ -229,6 +243,21 @@ export class Memo implements OnInit, OnDestroy {
 
   protected setSpeechLang(lang: SpeechLang): void {
     this.speech.setSpeechLang(lang);
+  }
+
+  /** Fix a line the mic got wrong; the server learns from the correction. */
+  protected rename(item: MemoItem, name: string): void {
+    this.editingId.set(null);
+    const cleaned = name.trim();
+    if (!cleaned || cleaned === item.name) return;
+
+    this.memo.rename(item.id, cleaned).subscribe({
+      next: (saved) => {
+        this.justAdded.update((items) => items.map((i) => (i.id === saved.id ? saved : i)));
+        this.refresh();
+      },
+      error: (err) => this.fail(err),
+    });
   }
 
   /** Take back one line that was just dictated. */
@@ -287,6 +316,7 @@ export class Memo implements OnInit, OnDestroy {
             recording.seconds,
             lang,
             audioFilename(recording.mimeType, 'memo'),
+            this.gesture,
           )
           .subscribe({
             next: (result) => this.dictated(result.items),
@@ -298,7 +328,7 @@ export class Memo implements OnInit, OnDestroy {
 
   private sendDictation(text: string): void {
     this.busy.set(true);
-    this.memo.dictate(text, this.speech.speechLang()).subscribe({
+    this.memo.dictate(text, this.speech.speechLang(), this.gesture).subscribe({
       next: (result) => this.dictated(result.items),
       error: (err) => this.failDictation(err),
     });

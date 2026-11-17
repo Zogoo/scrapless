@@ -114,7 +114,8 @@
     "added": "Gerade hinzugefügt",
     "undo_named": "{{name}} zurücknehmen",
     "speech_lang": "Sprache beim Sprechen",
-    "try_again": "Sprache funktioniert hier anders. Drück das Mikro noch einmal."
+    "try_again": "Sprache funktioniert hier anders. Drück das Mikro noch einmal.",
+    "fix_named": "{{name}} korrigieren"
   },
   "recipes": {
     "title": "Rezepte",

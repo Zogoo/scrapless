@@ -3,8 +3,9 @@ module Api
     # The shopping memo. Its own object, not a view of inventory: what you intend
     # to buy and what is rotting have different lifecycles.
     class MemoItemsController < ApplicationController
-      # Paid transcriptions per kitchen per hour, the same bound capture uses.
-      MAX_TRANSCRIPTIONS_PER_HOUR = 40
+      include InputLimits
+
+      GESTURES = %w[hold tap key].freeze
 
       def index
         render json: {
@@ -32,20 +33,23 @@ module Api
         transcript = params[:transcript].presence || transcribe
         return if performed?
         return render_error(I18n.t("memo.nothing_heard")) if transcript.blank?
-        return render_error(I18n.t("capture.rejected.too_long")) if transcript.length > CapturesController::MAX_TEXT_CHARS
+        return render_error(I18n.t("capture.rejected.too_long")) if transcript.length > MAX_TEXT_CHARS
 
         created = extract_names(transcript).filter_map do |name|
           next if current_household.memo_items.open_line_for(name)
 
           current_household.memo_items.create!(name: name, source: "voice", added_by_name: actor_name)
         end
+        log_dictation(created.size)
 
         render json: { transcript: transcript, items: created.map { |m| memo_json(m) } }, status: :created
       end
 
       def update
         item = current_household.memo_items.find(params[:id])
+        previous_name = item.name
         item.update!(memo_params)
+        Memo::LearnFromCorrection.call(item: item, previous_name: previous_name) if item.saved_change_to_name?
         item.update!(done_at: item.done? ? Time.current : nil) if item.saved_change_to_done?
         render json: memo_json(item)
       end
@@ -94,7 +98,7 @@ module Api
       def transcribe
         upload = params[:audio]
         return render_error(I18n.t("capture.rejected.no_audio")) if upload.blank?
-        return render_error(I18n.t("capture.rejected.audio_too_large")) if upload.size > CapturesController::MAX_AUDIO_BYTES
+        return render_error(I18n.t("capture.rejected.audio_too_large")) if upload.size > MAX_AUDIO_BYTES
         if transcriptions_this_hour >= MAX_TRANSCRIPTIONS_PER_HOUR
           return render json: { error: I18n.t("memo.too_many_recordings"), retryable: true }, status: :too_many_requests
         end
@@ -112,7 +116,16 @@ module Api
       # The language the person spoke, which is not always the app's language:
       # an English UI in a German supermarket is the common Berlin case.
       def speech_language
-        Ai::Transcriber::LANGUAGES.include?(params[:lang].to_s) ? params[:lang].to_s : I18n.locale.to_s
+        Dictation::Vocabulary.supported?(params[:lang]) ? params[:lang].to_s : I18n.locale.to_s
+      end
+
+      # How the mic was used, so the hold threshold and the default gesture are
+      # decided from numbers (doc 15 §15.8.5) rather than guessed.
+      def log_dictation(lines)
+        Rails.logger.info(
+          "memo dictation household=#{current_household.id} gesture=#{gesture_param} " \
+          "press_ms=#{params[:press_ms].to_i} lang=#{speech_language} ui=#{I18n.locale} lines=#{lines}"
+        )
       end
 
       # A memo line does not need to be a resolved product — "something for
@@ -128,6 +141,9 @@ module Api
         end
         result.parts
       end
+
+      # Only known values reach the log: a free-form param could forge lines.
+      def gesture_param = GESTURES.include?(params[:gesture].to_s) ? params[:gesture].to_s : "unknown"
 
       def render_error(message)
         render json: { error: message }, status: :unprocessable_content
