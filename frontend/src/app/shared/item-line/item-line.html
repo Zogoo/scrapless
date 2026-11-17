@@ -14,20 +14,34 @@
 <!-- One slider, five stops. The pack added first sits left, the one just
      added sits right, and sliding down drains that left band. 0% uses the
      line. Each band keeps its freshness colour. -->
-<input
-  type="range"
-  class="level"
-  min="0"
-  max="100"
-  step="25"
-  [value]="percent()"
-  [style.background-image]="track()"
-  [attr.aria-label]="'kitchen.how_much' | translate: { name: line().first.display_name }"
-  [attr.aria-valuetext]="'kitchen.percent' | translate: { count: percent() }"
-  (pointerdown)="beginGesture()"
-  (input)="slide($event)"
-  (change)="commitLevel($event)"
-/>
+<div class="slider">
+  <!-- The soonest pack, which a touch opens. Closed until then. -->
+  <span
+    class="lock"
+    [class.open]="opened()"
+    role="img"
+    [attr.aria-label]="(opened() ? 'kitchen.lock_open' : 'kitchen.lock_closed') | translate"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect class="body" x="5" y="11" width="14" height="10" rx="2" />
+      <path class="shackle" d="M8 11 V8.5 a4 4 0 0 1 8 0 V11" />
+    </svg>
+  </span>
+  <input
+    type="range"
+    class="level"
+    min="0"
+    max="100"
+    step="25"
+    [value]="percent()"
+    [style.background-image]="track()"
+    [attr.aria-label]="'kitchen.how_much' | translate: { name: line().first.display_name }"
+    [attr.aria-valuetext]="'kitchen.percent' | translate: { count: percent() }"
+    (pointerdown)="beginGesture()"
+    (input)="slide($event)"
+    (change)="commitLevel($event)"
+  />
+</div>
 @if (accidental()) {
   <p class="accidental" role="status">{{ 'kitchen.accidental_open' | translate }}</p>
 }
