@@ -190,10 +190,18 @@ main.with-tabs {
   color: var(--bg);
 
   /* When "Rückgängig ✕" leaves the sentence too little room, the buttons
-     wrap under it instead of squeezing it to a word per line. */
-  span {
+     wrap under it instead of squeezing it to a word per line. They wrap as
+     one row, so ✕ never ends up alone under Undo. */
+  .message {
     flex: 1 0 9rem;
     padding: 0.5rem 0;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    margin-left: auto;
   }
 
   button {
@@ -201,10 +209,6 @@ main.with-tabs {
     background: transparent;
     color: var(--accent-container);
     font-weight: 700;
-  }
-
-  span + button {
-    margin-left: auto;
   }
 
   .close {

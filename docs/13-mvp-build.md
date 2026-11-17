@@ -189,7 +189,7 @@ found four more, also fixed. The ones that change how the app behaves:
 | Area | Now |
 |---|---|
 | **Layout** | The page ends above the fixed tab bar and add button. Before, a phone could not reach Today's "Fine for now", the Kitchen's lower groups, or "Forget this fridge". |
-| **Undo** | Every one-tap outcome (used, gone, half, froze, opened, moved) shows a toast with Undo that stays until closed (WCAG 2.2.1); `POST /items/:id/undo` restores the item for ten minutes. The lists reorder after each tap, so a mis-tap used to be permanent. |
+| **Undo** | Every one-tap outcome (used, gone, half, froze, opened, moved) shows a toast with Undo for five seconds, held while a finger, pointer or focus is on it (WCAG 2.2.1); `POST /items/:id/undo` restores the item for ten minutes. The lists reorder after each tap, so a mis-tap used to be permanent. |
 | **Opened** | Failed with 422 on any food opened before its window began, which is most food. |
 | **Language** | The client never sent `X-Locale`, so every sentence the server wrote was English. It does now; Settings has a language switch. The tap grid shows the UI language but sends the receipt's word, so a tap and a Bon land on one Kitchen line. |
 | **Shop** | No suggestion for food still at home; suggestions can be dismissed (`suggestion_dismissals`); one open line per name; "Clear bought". |

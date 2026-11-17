@@ -18,13 +18,15 @@ export interface Notice {
  * themselves after every tap, so the next tap can land on a different food;
  * without this, that mistake was permanent.
  *
- * A notice that offers Undo stays until it is closed or replaced: an Undo
- * that runs away on a timer is one some people can never reach (WCAG 2.2.1).
- * A plain message still goes by itself.
+ * Every notice goes by itself after SHOW_MS, so it never sits over the list.
+ * The timer stops while a finger, pointer or keyboard focus is on the toast
+ * (`hold`) and starts again in full when it leaves (`release`): an Undo that
+ * runs away from someone reaching for it is one they can never use
+ * (WCAG 2.2.1).
  */
 @Injectable({ providedIn: 'root' })
 export class UndoService {
-  static readonly SHOW_MS = 6000;
+  static readonly SHOW_MS = 5000;
 
   private readonly items = inject(ItemsService);
   private readonly translate = inject(TranslateService);
@@ -35,7 +37,18 @@ export class UndoService {
   show(notice: Notice): void {
     this.clearTimer();
     this.notice.set(notice);
-    if (notice.itemId === undefined) {
+    this.release();
+  }
+
+  /** Someone is on the toast: keep it until they leave. */
+  hold(): void {
+    this.clearTimer();
+  }
+
+  /** They left: give them the whole time again. */
+  release(): void {
+    this.clearTimer();
+    if (this.notice() !== null) {
       this.timer = setTimeout(() => this.notice.set(null), UndoService.SHOW_MS);
     }
   }

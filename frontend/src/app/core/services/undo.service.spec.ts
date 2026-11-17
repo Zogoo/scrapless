@@ -28,11 +28,34 @@ describe('UndoService', () => {
     TestBed.resetTestingModule();
   });
 
-  // WCAG 2.2.1: an Undo on a timer is one some people can never reach.
-  it('keeps the offer to take back the tap until it is closed', () => {
+  it('lets the offer to take back the tap go by itself', () => {
     service.showOutcome(broccoli, 'wasted');
+    vi.advanceTimersByTime(UndoService.SHOW_MS - 1);
+    expect(service.notice()?.itemId).toBe(7);
+
+    vi.advanceTimersByTime(1);
+    expect(service.notice()).toBeNull();
+  });
+
+  // WCAG 2.2.1: an Undo that runs away from someone reaching for it is one
+  // they can never use.
+  it('waits while someone is on the toast, then gives them the whole time again', () => {
+    service.showOutcome(broccoli, 'wasted');
+    vi.advanceTimersByTime(UndoService.SHOW_MS - 1);
+
+    service.hold();
     vi.advanceTimersByTime(UndoService.SHOW_MS * 10);
     expect(service.notice()?.itemId).toBe(7);
+
+    service.release();
+    vi.advanceTimersByTime(UndoService.SHOW_MS - 1);
+    expect(service.notice()?.itemId).toBe(7);
+    vi.advanceTimersByTime(1);
+    expect(service.notice()).toBeNull();
+  });
+
+  it('closes when asked', () => {
+    service.showOutcome(broccoli, 'wasted');
 
     service.dismiss();
     expect(service.notice()).toBeNull();
@@ -43,6 +66,15 @@ describe('UndoService', () => {
 
     vi.advanceTimersByTime(UndoService.SHOW_MS);
     expect(service.notice()).toBeNull();
+  });
+
+  it('starts the time again when a new notice replaces the last one', () => {
+    service.showOutcome(broccoli, 'used');
+    vi.advanceTimersByTime(UndoService.SHOW_MS - 1);
+
+    service.showOutcome(broccoli, 'wasted');
+    vi.advanceTimersByTime(UndoService.SHOW_MS - 1);
+    expect(service.notice()).not.toBeNull();
   });
 
   it('undoes on the server and then reloads the kitchen', () => {
