@@ -44,7 +44,10 @@ export class ItemLine {
   private readonly undo = inject(UndoService);
 
   protected readonly moving = signal<ScoredItem | null>(null);
-  /** Set when this drag opened the pack and then came back to where it started. */
+  /**
+   * Set when a release undoes an open this slider made, so the pack is
+   * unopened again. That includes an open already saved earlier in the sitting.
+   */
   protected readonly accidental = signal(false);
   private readonly moveSheet = viewChild<ElementRef<HTMLDialogElement>>('moveSheet');
   private readonly preview = signal<{ key: string; percent: number } | null>(null);
@@ -56,6 +59,11 @@ export class ItemLine {
   private gesture: Gesture | null = null;
   private openingId: number | null = null;
   private openInFlight = false;
+  /**
+   * The lock follows the pack, except while a drag is ahead of the reload:
+   * the first move opens it, and an undone open closes it again.
+   */
+  private readonly openedNow = signal<{ id: number; open: boolean } | null>(null);
   private afterOpen: (() => void) | null = null;
 
   protected readonly storages: Storage[] = ['fridge', 'freezer', 'pantry'];
@@ -78,6 +86,15 @@ export class ItemLine {
 
   protected track(): string {
     return trackBackground(this.line(), this.level());
+  }
+
+  /** Closed until this slider opens the soonest pack. An undone open closes it. */
+  protected opened(): boolean {
+    const pack = this.line().first;
+    const now = this.openedNow();
+    const saved = pack.opened_on != null;
+    if (now && now.id === pack.id && now.open !== saved) return now.open;
+    return saved;
   }
 
   /** The thumb went down. Nothing is opened until the percent actually changes. */
@@ -115,12 +132,14 @@ export class ItemLine {
 
     gesture.openSent = true;
     this.openingId = pack.id;
+    this.openedNow.set({ id: pack.id, open: true });
     this.openInFlight = true;
     this.items.openFromSlider(pack.id, gesture.startPercent).subscribe({
       next: () => this.settleOpen(),
       error: () => {
         gesture.openSent = false;
         if (this.openingId === pack.id) this.openingId = null;
+        this.openedNow.set({ id: pack.id, open: false });
         this.settleOpen();
       },
     });
@@ -188,10 +207,15 @@ export class ItemLine {
     }
 
     this.items.revertSliderOpen(gesture.packId, percent).subscribe({
-      next: () => {
-        // Only the open this drag just made. A pack that was already open
-        // changes its amount and stays quiet.
-        if (gesture.openSent && percent === gesture.startPercent) this.accidental.set(true);
+      next: (item) => {
+        // The server clears opened_on only when this slider is what opened the
+        // pack. A later release in the same sitting counts: the open is already
+        // saved, so this drag did not send it. A pack that was open beforehand
+        // comes back still open, and stays quiet.
+        if (item.opened_on == null) {
+          this.accidental.set(true);
+          this.openedNow.set({ id: gesture.packId, open: false });
+        }
         writeAmount();
       },
       error: (err: { message?: string }) => this.fail(err),

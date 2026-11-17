@@ -201,6 +201,50 @@ describe('Item line', () => {
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
   });
 
+  it('shows a closed lock until the pack is opened', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('en', { kitchen: { lock_closed: 'Unopened', lock_open: 'Opened' } });
+    translate.use('en');
+    fixture.detectChanges();
+
+    const lock = (fixture.nativeElement as HTMLElement).querySelector('.lock');
+    expect(lock?.classList.contains('open')).toBe(false);
+    expect(lock?.getAttribute('aria-label')).toBe('Unopened');
+  });
+
+  it('shows an open lock when the pack is already open', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput(
+      'line',
+      toLines([pack(1, 1, 'milk', '2026-11-20', '2026-11-12')])[0],
+    );
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('en', { kitchen: { lock_closed: 'Unopened', lock_open: 'Opened' } });
+    translate.use('en');
+    fixture.detectChanges();
+
+    const lock = (fixture.nativeElement as HTMLElement).querySelector('.lock');
+    expect(lock?.classList.contains('open')).toBe(true);
+    expect(lock?.getAttribute('aria-label')).toBe('Opened');
+  });
+
+  it('opens the lock on the first move', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
+    fixture.detectChanges();
+    const screen = fixture.componentInstance as unknown as ItemLineScreen;
+
+    screen.slide(slider(50));
+    fixture.detectChanges();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.lock')?.classList.contains('open'),
+    ).toBe(true);
+    http.expectOne(`${environment.apiUrl}/items/1/resolve`).flush({});
+  });
+
   it('warns when this drag opened the pack and then came back', () => {
     const fixture = TestBed.createComponent(ItemLine);
     fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
@@ -215,13 +259,46 @@ describe('Item line', () => {
     screen.commitLevel(slider(100));
 
     http.expectOne(`${environment.apiUrl}/items/1/resolve`).flush({});
-    http.expectOne(`${environment.apiUrl}/items/1/revert_open`).flush({});
+    http.expectOne(`${environment.apiUrl}/items/1/revert_open`).flush({ opened_on: null });
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
     fixture.detectChanges();
 
     expect(
       (fixture.nativeElement as HTMLElement).querySelector('.accidental')?.textContent,
     ).toContain('Accidental touch. This is unopened again.');
+  });
+
+  // A new pack, opened on the previous release, then put back to full. This
+  // drag did not send the open, and it does not start at the percent the open
+  // was made from. The note still shows, because the pack is unopened again.
+  it('warns when a later release undoes an open this slider saved', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput(
+      'line',
+      toLines([pack(1, 0.5, 'potato', '2026-11-20', '2026-11-17')])[0],
+    );
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('en', {
+      kitchen: { accidental_open: 'Accidental touch. This is unopened again.' },
+    });
+    translate.use('en');
+    const screen = fixture.componentInstance as unknown as ItemLineScreen;
+
+    screen.slide(slider(100));
+    screen.commitLevel(slider(100));
+
+    http.expectNone(`${environment.apiUrl}/items/1/resolve`);
+    http.expectOne(`${environment.apiUrl}/items/1/revert_open`).flush({ opened_on: null });
+    http.expectOne(`${environment.apiUrl}/items/level`).flush({ items: [] });
+    http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
+    fixture.detectChanges();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.accidental')?.textContent,
+    ).toContain('Accidental touch. This is unopened again.');
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.lock')?.classList.contains('open'),
+    ).toBe(false);
   });
 
   it('does not warn when a pack that was already open comes back to the start', () => {
@@ -236,7 +313,8 @@ describe('Item line', () => {
     screen.commitLevel(slider(100));
 
     http.expectNone(`${environment.apiUrl}/items/1/resolve`);
-    http.expectOne(`${environment.apiUrl}/items/1/revert_open`).flush({});
+    // The server leaves opened_on set: this open was not the slider's to undo.
+    http.expectOne(`${environment.apiUrl}/items/1/revert_open`).flush({ opened_on: '2026-11-12' });
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
     fixture.detectChanges();
 

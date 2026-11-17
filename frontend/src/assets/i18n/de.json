@@ -132,7 +132,9 @@
     "move_label": "{{name}} ist im {{place}}. Woanders hin",
     "move_title": "Wo ist {{name}} jetzt?",
     "here_now": "gerade hier",
-    "accidental_open": "Aus Versehen berührt. Wieder ungeöffnet."
+    "accidental_open": "Aus Versehen berührt. Wieder ungeöffnet.",
+    "lock_closed": "Ungeöffnet",
+    "lock_open": "Geöffnet"
   },
   "storage": {
     "fridge": "Kühlschrank",
