@@ -90,6 +90,7 @@
   box-sizing: border-box;
   transform: translateY(-50%);
   pointer-events: none;
+  /* Pellets stay ink so they read on the track. The body is yellow below. */
   color: var(--ink);
 
   /* The circle sits inside the box. At the right end, shift by that gap. */
@@ -105,7 +106,8 @@
   }
 
   .body {
-    fill: currentColor;
+    /* Classic Pac-Man yellow, the same on light and dark. */
+    fill: #ffcc00;
   }
 
   .mouth {
@@ -116,7 +118,8 @@
   }
 
   .eye {
-    fill: var(--surface);
+    /* Dark pupil. --surface would turn white on a light screen and vanish on yellow. */
+    fill: #1a1c19;
   }
 
   /* Two pellets on the track, just ahead of the mouth. */

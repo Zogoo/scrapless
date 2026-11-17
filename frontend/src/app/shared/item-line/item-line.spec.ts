@@ -238,6 +238,8 @@ describe('Item line', () => {
     expect(bite?.querySelectorAll('.eye')).toHaveLength(1);
     expect(bite?.querySelector('.mouth')?.getAttribute('x2')).toBe('2');
     expect(bite?.querySelector('path')).toBeNull();
+    expect(getComputedStyle(bite!.querySelector('.body')!).fill).toBe('rgb(255, 204, 0)');
+    expect(getComputedStyle(bite!.querySelector('.eye')!).fill).toBe('rgb(26, 28, 25)');
     expect(bite?.querySelectorAll('.dot')).toHaveLength(0);
     expect(bite?.classList.contains('full')).toBe(true);
     expect(root.querySelector('.slider')?.getAttribute('style')).toContain('--p: 100');
