@@ -89,15 +89,15 @@ export class ItemLine {
   }
 
   /**
-   * Unopened is the closed mouth. Opened faces the track: a full pack is the
-   * classic mouth, and each step down opens that same mouth wider. The fourth
-   * takes the circle.
+   * 100% is the closed mouth. 75%, 50%, and 25% share one open mouth, the
+   * same wedge. 0% takes the circle.
    */
   protected bites(): number {
     if (!this.opened()) return 0;
     const steps = Math.round((100 - this.percent()) / 25);
-    const clamped = Math.min(4, Math.max(0, steps));
-    return clamped === 0 ? 1 : clamped;
+    if (steps <= 0) return 0;
+    if (steps >= 4) return 4;
+    return 1;
   }
 
   /** Closed until this slider opens the soonest pack. An undone open closes it. */

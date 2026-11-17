@@ -60,6 +60,11 @@
   pointer-events: none;
   color: var(--ink);
 
+  /* The circle sits inside the box. At the right end, shift by that gap. */
+  &.full {
+    left: calc(100% - var(--thumb) + var(--thumb) / 12);
+  }
+
   svg {
     display: block;
     width: 100%;
