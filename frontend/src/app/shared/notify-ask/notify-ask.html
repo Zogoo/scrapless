@@ -1,0 +1,21 @@
+@if (push.shouldAsk()) {
+  <aside class="notify-ask" aria-labelledby="notify-ask-head">
+    <p id="notify-ask-head" class="notify-head">{{ 'notify.ask_title' | translate }}</p>
+    @if (push.state() === 'needs_install') {
+      <p>{{ 'notify.needs_install' | translate }}</p>
+      <button type="button" class="ghost" (click)="answer(false)">
+        {{ 'notify.got_it' | translate }}
+      </button>
+    } @else {
+      <p>{{ 'notify.ask_body' | translate }}</p>
+      <div class="notify-actions">
+        <button type="button" class="primary" (click)="answer(true)">
+          {{ 'notify.turn_on' | translate }}
+        </button>
+        <button type="button" class="ghost" (click)="answer(false)">
+          {{ 'install.not_now' | translate }}
+        </button>
+      </div>
+    }
+  </aside>
+}
