@@ -37,18 +37,28 @@
   </main>
 
   @if (undo.notice(); as notice) {
-    <div class="toast" role="status" aria-live="polite">
-      <span>{{ notice.message }}</span>
+    <div
+      class="toast"
+      role="status"
+      aria-live="polite"
+      (pointerenter)="undo.hold()"
+      (pointerleave)="undo.release()"
+      (focusin)="undo.hold()"
+      (focusout)="undo.release()"
+    >
+      <span class="message">{{ notice.message }}</span>
       @if (notice.itemId !== undefined) {
-        <button type="button" (click)="undo.undo()">{{ 'undo.action' | translate }}</button>
-        <button
-          type="button"
-          class="close"
-          [attr.aria-label]="'common.close' | translate"
-          (click)="undo.dismiss()"
-        >
-          ✕
-        </button>
+        <span class="actions">
+          <button type="button" (click)="undo.undo()">{{ 'undo.action' | translate }}</button>
+          <button
+            type="button"
+            class="close"
+            [attr.aria-label]="'common.close' | translate"
+            (click)="undo.dismiss()"
+          >
+            ✕
+          </button>
+        </span>
       }
     </div>
   }
