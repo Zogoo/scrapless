@@ -209,9 +209,13 @@ describe('Item line', () => {
     translate.use('en');
     fixture.detectChanges();
 
-    const lock = (fixture.nativeElement as HTMLElement).querySelector('.lock');
+    const root = fixture.nativeElement as HTMLElement;
+    const lock = root.querySelector('.lock');
+    expect(root.querySelectorAll('.lock')).toHaveLength(1);
     expect(lock?.classList.contains('open')).toBe(false);
     expect(lock?.getAttribute('aria-label')).toBe('Unopened');
+    // A full pack's thumb is at the right end. The lock uses that same stop.
+    expect(root.querySelector('.slider')?.getAttribute('style')).toContain('--p: 100');
   });
 
   it('shows an open lock when the pack is already open', () => {
@@ -239,9 +243,9 @@ describe('Item line', () => {
     screen.slide(slider(50));
     fixture.detectChanges();
 
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('.lock')?.classList.contains('open'),
-    ).toBe(true);
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.lock')?.classList.contains('open')).toBe(true);
+    expect(root.querySelector('.slider')?.getAttribute('style')).toContain('--p: 50');
     http.expectOne(`${environment.apiUrl}/items/1/resolve`).flush({});
   });
 
