@@ -9,7 +9,7 @@ import { ScoredItem } from '../../core/models';
  */
 export interface KitchenLine {
   key: string;
-  /** Oldest added first (lowest id). The slider fills this order, left to right. */
+  /** Oldest added first (lowest id). The track paints this list in reverse. */
   packs: ScoredItem[];
   /** Soonest-dying pack: the headline, and the pack a slider touch marks opened. */
   first: ScoredItem;
@@ -60,8 +60,8 @@ export function toLines(items: ScoredItem[]): KitchenLine[] {
 
 /**
  * How a level spreads over the packs. Newest added is filled first, so lowering
- * drains the older pack (the left band) and raising refills that pack before any
- * newer one. Mirrors Inventory::SetLevel. Returned oldest → newest, left → right.
+ * drains the older pack and raising refills that pack before any newer one.
+ * Mirrors Inventory::SetLevel. Returned oldest → newest; the track paints the reverse.
  */
 export function segments(line: KitchenLine, level = line.level): Segment[] {
   let remaining = Math.max(0, Math.min(level, line.packs.length));
@@ -81,16 +81,18 @@ const PHASE_TOKEN: Record<ScoredItem['phase'], string> = {
 };
 
 /**
- * The slider track: one coloured band per pack. Left is the pack added first
- * (the band lowering drains), right is the one just added, then empty. Colour is
- * that pack's freshness, not its age. Length carries the meaning (see styles.scss).
+ * The slider track: one coloured band per pack in the filled part. Newest sits
+ * at the left edge, oldest flush against the thumb, then the empty track.
+ * Lowering eats that oldest band. Colour is the pack's freshness, not its age.
+ * Length carries the meaning (see styles.scss).
  */
 export function trackBackground(line: KitchenLine, level = line.level): string {
   const total = line.packs.length;
   const stops: string[] = [];
   let at = 0;
 
-  for (const segment of segments(line, level)) {
+  // segments() is oldest → newest. Paint newest first so the first bite is the older pack.
+  for (const segment of segments(line, level).reverse()) {
     if (segment.amount <= 0) continue;
     const from = (at / total) * 100;
     at += segment.amount;
