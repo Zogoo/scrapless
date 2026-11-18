@@ -37,8 +37,13 @@ module Captures
 
     # A deposit line is not food, and proving we filtered it is what makes the
     # parser trustworthy — so suppressed lines are returned, not dropped.
+    #
+    # A row the model labelled anything but food — a count or weight printed
+    # under a product, a saving, a deposit — is never an item of its own (see
+    # Ai::ImageReader::ROWS). Typed and spoken lines carry no row label.
     def food?(line)
       return false if line["food"] == false
+      return false unless line.fetch("row", "food") == "food"
 
       name = "#{line['name']} #{line['raw_text']}".downcase
       return false if name.match?(/pfand|leergut|tragetasche|tasche|rabatt|coupon|payback|summe|total/)

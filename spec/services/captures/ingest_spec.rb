@@ -100,4 +100,39 @@ RSpec.describe Captures::Ingest do
     expect(item.date_label_type).to eq("none")
     expect(item.high_risk?).to be(true)
   end
+
+  # Observed live: a till's count and weight rows came back as items named
+  # "(bundle)" and "(item line repeated)", flagged food, six months each.
+  it "turns only rows labelled food into items" do
+    result = described_class.call(capture: capture, payload: payload([
+      { "raw_text" => "JOGHURT MILD", "name" => "Joghurt mild", "row" => "food", "category" => "dairy" },
+      { "raw_text" => "2 Stk x 0,79", "name" => "(item line repeated)", "row" => "detail" },
+      { "raw_text" => "Bundle Rabatt", "name" => "(bundle)", "row" => "discount" },
+      { "raw_text" => "LEERGUT", "name" => "Leergut", "row" => "deposit" },
+      { "raw_text" => "1 x Gaucho Burger", "name" => "Gaucho Burger", "row" => "not_food" }
+    ]))
+
+    expect(result[:items].map(&:display_name)).to eq([ "🥛 Joghurt mild" ])
+    expect(result[:suppressed].size).to eq(4)
+  end
+
+  # A shared four-letter prefix once made "HAEHN.BRUSTFILET" chicken thighs.
+  it "keeps the model's name and category over a fuzzy dictionary guess" do
+    create(:product_alias, raw_text: "haehnchenschenkel", canonical_name: "Hähnchenschenkel", category: "meat_fish")
+
+    result = described_class.call(capture: capture, payload: payload([
+      { "raw_text" => "HAEHN.BRUSTFILET", "name" => "Hähnchenbrustfilet", "row" => "food",
+        "category" => "meat_fish", "storage" => "fridge" }
+    ]))
+
+    expect(result[:items].first).to have_attributes(display_name: "🍗 Hähnchenbrustfilet", category: "meat_fish")
+  end
+
+  it "still lets a fuzzy match fill in a line nobody categorised" do
+    create(:product_alias, raw_text: "haehnchenschenkel", canonical_name: "Hähnchenschenkel", category: "meat_fish")
+
+    result = described_class.call(capture: capture, payload: payload([ { "raw_text" => "HAEHNCH.SCHENK." } ]))
+
+    expect(result[:items].first.display_name).to end_with("Hähnchenschenkel")
+  end
 end

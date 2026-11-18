@@ -21,7 +21,7 @@ module Ai
           line("HAEHNCHENSCHENKEL", "Chicken legs", 500, "g", 4.49, "A"),
           line("GOUDA AM STUECK", "Gouda", 200, "g", 2.79, "A"),
           line("WEIZENBROETCHEN 6ER", "Bread rolls", 6, "piece", 1.50, "A"),
-          line("PFAND 0,25", "Deposit", 1, "piece", 0.25, "B", food: false)
+          line("PFAND 0,25", "Deposit", 1, "piece", 0.25, "B", row: "deposit")
         ],
         "totals" => { "sum" => 13.40 },
         "notes" => "stubbed response - no OPENAI_API_KEY configured"
@@ -84,9 +84,11 @@ module Ai
       { "item_id" => entry[:id], "name" => entry[:name], "amount" => nil, "optional" => false }
     end
 
-    def line(raw, name, quantity, unit, price, vat, food: true)
+    def line(raw, name, quantity, unit, price, vat, row: "food")
+      category = Categories.guess("#{raw} #{name}")
       { "raw_text" => raw, "name" => name, "quantity" => quantity, "unit" => unit,
-        "price" => price, "vat_class" => vat, "food" => food }
+        "price" => price, "vat_class" => vat, "row" => row,
+        "category" => category, "storage" => Categories.storage_for(category) }
     end
 
     def extract_quantity(text)

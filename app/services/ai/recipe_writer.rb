@@ -58,8 +58,6 @@ module Ai
       8. If nothing sensible can be made, return an empty list rather than forcing it.
     PROMPT
 
-    LANGUAGES = { en: "English", de: "German" }.freeze
-
     def initialize(pantry:, meal:, household: nil, locale: I18n.locale)
       @pantry = pantry
       @meal = meal.to_s
@@ -75,7 +73,7 @@ module Ai
         purpose: :recipe_suggest, schema: SCHEMA, max_output_tokens: 1500,
         messages: [
           { role: "system", content: format(SYSTEM, meal: @meal,
-                                            language: LANGUAGES.fetch(@locale.to_sym, "English")) },
+                                            language: Language.name(@locale)) },
           { role: "user", content: @pantry.to_json }
         ]
       )

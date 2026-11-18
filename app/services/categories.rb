@@ -2,7 +2,23 @@
 # seed data. Deliberately small: ten buckets that behave differently in a fridge,
 # not a taxonomy.
 module Categories
-  NAMES = %w[produce dairy meat_fish bakery deli prepared frozen pantry drinks other].freeze
+  # What each bucket holds, for the AI prompts that ask for a category
+  # (Ai::ImageReader, Ai::TextReader). Without it the model guessed at our
+  # names: milk became a drink, eggs and lollipops "other".
+  GUIDE = {
+    "produce" => "fresh fruit, vegetables and herbs",
+    "dairy" => "milk, cream, butter, cheese, yoghurt, eggs, and plant-based versions of these",
+    "meat_fish" => "raw meat, poultry, fish and seafood",
+    "bakery" => "bread, rolls, pastries and cakes",
+    "deli" => "ham, salami and other sliced or cured meats, olives, dips, antipasti",
+    "prepared" => "ready meals, cooked dishes, leftovers, salad in a tub",
+    "frozen" => "anything sold frozen",
+    "pantry" => "shelf-stable food: dry goods, tins, jars, sauces, oil, spices, salt, sweets, snacks",
+    "drinks" => "water, juice, soft drinks, beer, wine, coffee, tea",
+    "other" => "food that fits none of the above"
+  }.freeze
+
+  NAMES = GUIDE.keys.freeze
 
   HIGH_RISK = %w[meat_fish prepared deli].freeze
 
@@ -57,6 +73,9 @@ module Categories
   def matches?(keyword, key, words)
     keyword.length < WHOLE_WORD_BELOW ? words.include?(keyword) : key.include?(keyword)
   end
+
+  # One line per category, for a prompt.
+  def prompt_guide = GUIDE.map { |name, holds| "  #{name}: #{holds}" }.join("\n")
 
   def storage_for(category) = DEFAULT_STORAGE.fetch(category, "pantry")
 

@@ -53,6 +53,8 @@
     "voice_prompt": "Sag, was du gekauft hast.",
     "done_talking": "Fertig",
     "reading": "Wird gelesen…",
+    "reading_photo": "Dein Foto wird gelesen…",
+    "still_reading": "Wird noch gelesen — lange Bons dauern etwas länger.",
     "review_count": "{{count}} Artikel",
     "review_lede": "Das haben wir. Entferne, was nicht stimmt — nichts zu bestätigen.",
     "about_days": "~{{count}} Tage",

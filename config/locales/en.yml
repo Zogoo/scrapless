@@ -1,4 +1,7 @@
 en:
+  language:
+    # This language's name in English, for the AI prompts (Ai::Language).
+    english_name: "English"
   auth:
     no_fridge: "No fridge yet — start one and we'll remember it."
     too_many_fridges: "That is a lot of new fridges. Try again in an hour."

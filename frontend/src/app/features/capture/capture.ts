@@ -19,7 +19,15 @@ import { CaptureReview } from '../../core/models';
 import { AutoShutter, ShutterStatus } from '../../core/vision/auto-shutter';
 import { analyseFrame, toLuma } from '../../core/vision/frame-analysis';
 
-type Mode = 'choose' | 'camera' | 'voice' | 'manual' | 'review';
+type Mode = 'choose' | 'camera' | 'reading' | 'voice' | 'manual' | 'review';
+
+/**
+ * How long the reading screen loops before it says so. A looping animation
+ * suits a 2–10 second wait; past ten seconds it stops reassuring (Nielsen,
+ * "Response Times: The 3 Important Limits"; NN/g, "Progress Indicators Make a
+ * Slow System Less Insufferable"). Reading a photo measured 4–16 s.
+ */
+export const SLOW_READ_MS = 10_000;
 
 /**
  * Twenty perishables, big buttons, no typing (doc 2 §2.7).
@@ -79,6 +87,10 @@ export class Capture implements OnDestroy {
   protected readonly manualText = signal('');
   protected readonly picked = signal<string[]>([]);
   protected readonly removingId = signal<number | null>(null);
+  /** The photo being read, kept on screen so the wait does not look frozen. */
+  protected readonly shot = signal<string | null>(null);
+  protected readonly slow = signal(false);
+  private slowTimer: number | null = null;
   protected readonly tapGrid = TAP_GRID;
   /** Hides the notification question as soon as it is answered either way. */
 
@@ -90,6 +102,7 @@ export class Capture implements OnDestroy {
 
   ngOnDestroy(): void {
     this.stopCamera();
+    this.clearShot();
     this.speech.cancel();
   }
 
@@ -169,8 +182,7 @@ export class Capture implements OnDestroy {
       return;
     }
 
-    this.stopCamera();
-    this.send(this.captures.photo(blob, 'receipt'));
+    this.readPhoto(blob);
   }
 
   /**
@@ -196,8 +208,7 @@ export class Capture implements OnDestroy {
       bitmap.close();
       if (!blob) throw new Error('could not read that image');
 
-      this.stopCamera();
-      this.send(this.captures.photo(blob, 'receipt'));
+      this.readPhoto(blob);
     } catch {
       this.busy.set(false);
       this.error.set(this.translate.instant('capture.unreadable'));
@@ -226,6 +237,29 @@ export class Capture implements OnDestroy {
   protected retakePhoto(): void {
     this.review.set(null);
     void this.openCamera();
+  }
+
+  /**
+   * Stopping the camera blacks the video out, and reading takes seconds: a
+   * black screen with nothing moving read as frozen (WCAG 2.2.2 note 4 names
+   * exactly this). So the photo stays up, with a lens moving over it.
+   */
+  private readPhoto(blob: Blob): void {
+    this.stopCamera();
+    this.clearShot();
+    this.shot.set(URL.createObjectURL(blob));
+    this.slowTimer = window.setTimeout(() => this.slow.set(true), SLOW_READ_MS);
+    this.mode.set('reading');
+    this.send(this.captures.photo(blob, 'receipt'));
+  }
+
+  private clearShot(): void {
+    if (this.slowTimer !== null) clearTimeout(this.slowTimer);
+    this.slowTimer = null;
+    this.slow.set(false);
+    const url = this.shot();
+    if (url) URL.revokeObjectURL(url);
+    this.shot.set(null);
   }
 
   private stopFrameLoop(): void {
@@ -308,11 +342,15 @@ export class Capture implements OnDestroy {
 
     request.subscribe({
       next: (result) => {
+        this.clearShot();
         this.review.set(result);
         this.mode.set('review');
         this.busy.set(false);
       },
       error: (err: { message?: string }) => {
+        this.clearShot();
+        // The camera is off by now, so the error goes where the next try starts.
+        if (this.mode() === 'reading') this.mode.set('choose');
         this.error.set(err.message ?? this.translate.instant('capture.unreadable'));
         this.busy.set(false);
       },

@@ -5,6 +5,17 @@ module Ai
   # the per-capture cost to answer a question the extraction step already has to
   # answer to do its job.
   class ImageReader < ApplicationService
+    # What each returned row is. Only "food" becomes an item.
+    #
+    # A required label, not a yes/no: asked for "one entry per printed line",
+    # the model also returned the rows a till prints *under* a product — a count
+    # ("2 Stk x 0,79"), a weight, a multi-buy saving — and, having no product
+    # name for them, made one up: "(bundle)", "(item line repeated)". Those were
+    # flagged food and landed in the kitchen for six months. Making every row
+    # say what it is lets those be dropped by kind, on any till's layout,
+    # without a list of phrases to keep up to date.
+    ROWS = %w[food not_food detail discount deposit].freeze
+
     SCHEMA = {
       type: "object",
       additionalProperties: false,
@@ -18,15 +29,17 @@ module Ai
           items: {
             type: "object",
             additionalProperties: false,
-            required: %w[raw_text name quantity unit price vat_class food],
+            required: %w[raw_text name quantity unit price vat_class row category storage],
             properties: {
               raw_text: { type: "string", description: "verbatim, exactly as printed" },
-              name: { type: "string", description: "plain language, in the receipt's language" },
+              name: { type: "string", description: "what a shopper calls it, in the language the instructions name" },
               quantity: { type: %w[number null] },
               unit: { type: %w[string null], description: "g, kg, ml, l, piece" },
               price: { type: %w[number null] },
               vat_class: { type: %w[string null], enum: [ "A", "B", nil ] },
-              food: { type: "boolean" }
+              row: { type: "string", enum: ROWS },
+              category: { type: "string", enum: Categories::NAMES },
+              storage: { type: "string", enum: Item::STORAGES }
             }
           }
         },
@@ -48,15 +61,34 @@ module Ai
         "food"    - groceries, a fridge shelf, a worktop of shopping
         "unclear" - anything else, or too blurred to read
 
-      For a receipt: return one entry per printed line item, with raw_text copied
-      verbatim including abbreviations and typos. Set food=false for deposits
-      (Pfand), bags, discounts and non-grocery goods; on German receipts VAT class
-      A (7%) is almost always food and B (19%) usually is not, but the item name
-      wins over the VAT class when they disagree.
+      Every entry is one product bought, never one printed row. Tills print
+      rows under a product that only add to it: a count ("2 Stk x 0,79"), a
+      weight ("1,080 kg x 1,50 EUR/kg"), a repeat, a multi-buy or bundle saving.
+      Put a count or weight into that product's quantity and unit, and return
+      the row itself only with row="detail", or not at all.
 
-      For food: return one entry per distinct product you can actually see. Put a
-      short description in raw_text and a plain name in name. Leave price null.
-      Do not guess at items hidden behind other items.
+      row says what an entry is:
+        "food"     - something to eat or drink, kept at home
+        "not_food" - anything else sold: bags, household goods, and every dish
+                     or drink on a restaurant or cafe bill (it was eaten there)
+        "detail"   - a count, weight, repeat or other row belonging to a product
+        "discount" - a saving, coupon or bundle price
+        "deposit"  - Pfand or Leergut
+      On German receipts VAT class A (7%%) is almost always food and B (19%%)
+      usually is not, but the item name wins over the VAT class.
+
+      For a receipt: copy raw_text verbatim, abbreviations and typos included.
+      For a photo of food: one entry per distinct product you can actually see;
+      put a short description in raw_text and leave price null. Do not guess at
+      items hidden behind other items.
+
+      name is what a shopper calls the product, written in %<language>s whatever
+      language the receipt or packet is in: abbreviations spelled out, normal
+      capitalisation, no prices or VAT letters.
+      category is the closest of these:
+      %<categories>s
+      storage is where a household keeps it once home. Only a photo taken inside
+      a fridge or freezer shows that; shopping on a worktop does not.
 
       Never invent a line. If a line is unreadable, omit it and say so in notes.
       An omission is recoverable; an invented item is not, because it reads as
@@ -77,7 +109,7 @@ module Ai
       Router.new(household: @household).json_completion(
         purpose: purpose, schema: SCHEMA, max_output_tokens: 3000,
         messages: [
-          { role: "system", content: SYSTEM },
+          { role: "system", content: format(SYSTEM, language: Language.name, categories: Categories.prompt_guide) },
           { role: "user", content: [
             { type: "text", text: "Read this photo." },
             { type: "image_url", image_url: { url: data_url, detail: "high" } }

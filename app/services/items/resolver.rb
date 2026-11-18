@@ -28,8 +28,14 @@ module Items
 
     private
 
+    # A fuzzy match is a guess, and it may only fill a gap. When the model has
+    # already named and placed the food, a near-miss must not overrule it:
+    # "HAEHN.BRUSTFILET" became chicken thighs, and a photo's "bag baby
+    # carrots" became Babyspinat, from a shared four-letter prefix. An exact
+    # match — including the kitchen's own corrections — still wins.
     def from_dictionary
-      entry = ProductAlias.lookup([ @raw_text, @name ], merchant: @merchant, household: @household)
+      entry = ProductAlias.lookup([ @raw_text, @name ], merchant: @merchant, household: @household,
+                                                        fuzzy: !Categories.valid?(@category))
       return nil if entry.nil?
 
       build(display: entry.display_name, canonical: entry.canonical_name,
@@ -37,7 +43,7 @@ module Items
     end
 
     def from_hints
-      display = @name.presence || tidy(@raw_text)
+      display = tidy(@name.presence || @raw_text)
       category = Categories.valid?(@category) ? @category : Categories.guess("#{@name} #{@raw_text}")
       build(display: display, canonical: display.downcase, category: category, source: "heuristic")
     end

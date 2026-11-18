@@ -87,6 +87,20 @@
       </div>
     }
 
+    @case ('reading') {
+      <div class="reading" role="status" aria-live="polite">
+        <div class="photo">
+          @if (shot(); as src) {
+            <img [src]="src" alt="" />
+          }
+          <span class="lens" aria-hidden="true">🔍</span>
+        </div>
+        <p class="hint">
+          {{ (slow() ? 'capture.still_reading' : 'capture.reading_photo') | translate }}
+        </p>
+      </div>
+    }
+
     @case ('voice') {
       <div class="voice">
         <span class="pulse" [class.live]="speech.listening()" aria-hidden="true">🎙</span>
@@ -252,7 +266,7 @@
     }
   }
 
-  @if (busy()) {
+  @if (busy() && mode() !== 'reading') {
     <p class="loading">{{ 'capture.reading' | translate }}</p>
   }
 </section>
