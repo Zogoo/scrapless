@@ -97,7 +97,8 @@
       "salad": "Salat",
       "pasta": "Nudeln",
       "coffee": "Kaffee"
-    }
+    },
+    "mic_blocked": "Das Mikrofon ist für diese Seite gesperrt. Erlaube es in den Browser-Einstellungen oder tippe es ein."
   },
   "memo": {
     "title": "Einkauf",
@@ -130,7 +131,8 @@
     "empty_body": "Sobald Essen hier liegt, wähl eine Mahlzeit.",
     "minutes": "{{count}} Min.",
     "uses_first": "Verbraucht, was zuerst dran ist",
-    "optional": "optional"
+    "optional": "optional",
+    "pick": "Wähle eine Mahlzeit, dann schlagen wir etwas aus deiner Küche vor."
   },
   "kitchen": {
     "title": "Küche",
@@ -209,7 +211,8 @@
     "delete": "Löschen",
     "retry": "Nochmal",
     "by": "von {{name}}",
-    "delete_named": "{{name}} löschen"
+    "delete_named": "{{name}} löschen",
+    "done": "Fertig"
   },
   "join": {
     "title": "Diese Küche öffnen",
@@ -219,12 +222,14 @@
     "opening": "Wird geöffnet…",
     "invalid": "Dieser Link öffnet keine Küche.",
     "too_many": "Das sind viele Versuche. Probier es in einer Stunde nochmal.",
-    "title_named": "{{name}} öffnen?"
+    "title_named": "{{name}} öffnen?",
+    "already": "Dieses Handy ist schon in {{name}}.",
+    "go_home": "Zur Küche"
   },
   "undo": {
     "action": "Rückgängig",
     "used": "{{name}}: verbraucht",
-    "used_up": "Aufgebraucht",
+    "used_up": "{{name}}: aufgebraucht",
     "wasted": "Danke — notiert.",
     "partial": "{{name}}: Hälfte übrig",
     "froze": "{{name}} ist im Gefrierfach",
@@ -261,7 +266,7 @@
     "label": "Benachrichtigungen",
     "label_unread": "Benachrichtigungen, {{count}} ungelesen",
     "read_all": "Alle als gelesen markieren",
-    "empty": "Gerade braucht nichts deine Aufmerksamkeit.",
+    "empty": "Noch keine Erinnerung. Wenn etwas bald gegessen werden sollte, kommt sie hier gegen Abend.",
     "done": "erledigt",
     "today": "Heute",
     "yesterday": "Gestern",

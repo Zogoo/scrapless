@@ -1,21 +1,33 @@
 require "rails_helper"
 
-# The tap grid (frontend capture.ts) sends fixed words. Each must resolve from
+# The tap grid (frontend capture.ts) sends its labels. Each must resolve from
 # the seeded dictionary, or a tap — the cheapest capture there is — silently
 # becomes a paid model call, or a second Kitchen line for the same food.
 RSpec.describe "db/seeds.rb" do
-  grid = Rails.root.join("frontend/src/app/features/capture/capture.ts").read.scan(/word: '([^']+)'/).flatten
+  keys = Rails.root.join("frontend/src/app/features/capture/capture.ts").read.scan(/key: '([a-z_]+)'/).flatten
+  locales = Rails.root.glob("frontend/src/assets/i18n/*.json").map { |file| JSON.parse(file.read) }
+  grid = locales.flat_map { |strings| keys.map { |key| strings.dig("capture", "grid", key) } }
 
   before { Rails.application.load_seed }
 
-  it "finds the twenty tap-grid words" do
-    expect(grid.size).to eq(20)
+  it "finds the twenty tap-grid labels in every language" do
+    expect(keys.size).to eq(20)
+    expect(grid).to all(be_present)
   end
 
   it "resolves every tap-grid word for free, to itself" do
     unresolved = grid.reject { |word| ProductAlias.lookup(word)&.canonical_name == word }
 
     expect(unresolved).to be_empty
+  end
+
+  # An "Eggs" tap on an English phone and a Bon's "EIER" must be one food.
+  it "puts each tap-grid food on one product, whatever the language" do
+    split = keys.reject do |key|
+      locales.map { |strings| ProductAlias.lookup(strings.dig("capture", "grid", key))&.product_id }.uniq.one?
+    end
+
+    expect(split).to be_empty
   end
 
   # Doc 3: food we cannot place gets a wide "about a week?" band — never the

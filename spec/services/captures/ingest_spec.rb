@@ -110,6 +110,32 @@ RSpec.describe Captures::Ingest do
     end
   end
 
+  # Observed in QA: a restaurant bill put the steak and the wine in the fridge.
+  it "keeps nothing from a bill for a meal eaten out, and says why" do
+    result = described_class.call(capture: capture, payload: payload([
+      { "raw_text" => "Filetsteak", "name" => "Filet steak", "row" => "food", "category" => "meat_fish" },
+      { "raw_text" => "Merlot", "name" => "Merlot", "row" => "food", "category" => "drinks" }
+    ]).merge("kind" => "bill"))
+
+    expect(result[:items]).to be_empty
+    expect(result[:suppressed]).to contain_exactly("Filetsteak", "Merlot")
+    expect(result[:notes]).to eq(I18n.t("capture.bill"))
+  end
+
+  # The dictionary says what the food is; the name follows the model, which
+  # writes it in the person's language.
+  it "shows the model's name but takes the food's identity from the dictionary" do
+    milk = Product.for("milk")
+    create(:product_alias, raw_text: "frischmilch", canonical_name: "Frischmilch", category: "dairy", product: milk)
+
+    result = described_class.call(capture: capture, payload: payload([
+      { "raw_text" => "FRISCHMILCH 3,5%", "name" => "fresh milk", "row" => "food", "category" => "dairy" }
+    ]))
+
+    expect(result[:items].first).to have_attributes(product: milk, category: "dairy")
+    expect(result[:items].first.display_name).to include("Fresh milk")
+  end
+
   it "uses the dictionary in preference to the model's own naming" do
     result = described_class.call(capture: capture, payload: payload([
       { "raw_text" => "BROKKOLI", "name" => "Green Vegetable Thing", "food" => true }

@@ -15,6 +15,7 @@ module Captures
     def call
       lines = Array(@payload["lines"] || @payload["items"])
       food, suppressed = lines.partition { |line| food?(line) }
+      food, suppressed = [ [], lines ] if bill?
 
       built = food.filter_map { |line| build_item(line) }
       items = built.map(&:first)
@@ -32,10 +33,15 @@ module Captures
       )
 
       { items: items, suppressed: suppressed.map { |l| l["raw_text"].presence || l["name"] }.compact,
-        notes: @payload["notes"].presence, kind: @payload["kind"].presence || "receipt" }
+        notes: bill? ? I18n.t("capture.bill") : @payload["notes"].presence,
+        kind: @payload["kind"].presence || "receipt" }
     end
 
     private
+
+    # A meal eaten out (Ai::ImageReader::KINDS): nothing on it is in the
+    # kitchen, so every line is left out and listed.
+    def bill? = @payload["kind"] == "bill"
 
     # A deposit line is not food, and proving we filtered it is what makes the
     # parser trustworthy — so suppressed lines are returned, not dropped.

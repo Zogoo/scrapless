@@ -44,8 +44,12 @@ module Api
         render json: item_json(item.reload)
       end
 
+      # A line removed as read wrong. What the model said about it is taken
+      # back out of this kitchen's dictionary too, or the mistake would be
+      # free to repeat — and count as a vote for every kitchen.
       def destroy
         item = current_household.items.find(params[:id])
+        ProductAlias.forget!(household: current_household, raw_text: item.raw_text)
         item.destroy!
         head :no_content
       end
@@ -106,6 +110,7 @@ module Api
           id: item.id,
           display_name: item.display_name,
           canonical_name: item.canonical_name,
+          product_id: item.product_id,
           category: item.category,
           raw_text: item.raw_text,
           quantity: item.quantity&.to_f,

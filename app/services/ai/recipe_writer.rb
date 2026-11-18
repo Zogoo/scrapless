@@ -53,8 +53,10 @@ module Ai
       4. Invent nothing. The only things you may add that are not on the list are
          salt, pepper, oil and water - and only as optional, with item_id null.
       5. Every non-optional ingredient must be named in the steps and actually used.
+         Optional is only for salt, pepper, oil, water and a garnish the dish is
+         just as good without - never for what the recipe is built on.
       6. Never call food expired, off or bad, and never tell anyone off.
-      7. Write titles and steps in %<language>s.
+      7. Write titles, steps and amounts in %<language>s.
       8. If nothing sensible can be made, return an empty list rather than forcing it.
     PROMPT
 

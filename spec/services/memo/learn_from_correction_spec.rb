@@ -19,8 +19,8 @@ RSpec.describe Memo::LearnFromCorrection do
   it "learns the words cut off either end as this kitchen's filler" do
     correct("Ich hätt gern Milch bitte schön", "Milch")
 
-    expect(learned("leading")).to eq([ "ich hätt gern" ])
-    expect(learned("trailing")).to eq([ "bitte schön" ])
+    expect(learned("leading")).to eq([ "ich haett gern" ])
+    expect(learned("trailing")).to eq([ "bitte schoen" ])
   end
 
   it "learns the corrected name as an item phrase" do

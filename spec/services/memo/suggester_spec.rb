@@ -54,6 +54,16 @@ RSpec.describe Memo::Suggester do
     expect(described_class.call(household: household).map(&:name)).not_to include("Gouda")
   end
 
+  # "Bananas" was suggested beside "Banane Chiquita": same food, other name.
+  it "knows a staple is at home under another name" do
+    banana = Product.for("banana")
+    create(:product_alias, raw_text: "bananen", canonical_name: "Bananen", category: "produce", product: banana)
+    create(:item, household: household, canonical_name: "banane chiquita", display_name: "🍌 Banane Chiquita",
+                  product: banana, window_end: Date.current + 5)
+
+    expect(described_class.call(household: household).map(&:name)).not_to include(I18n.t("memo.staples.bananas"))
+  end
+
   it "suggests it again once it has outlived its window" do
     create(:item, household: household, canonical_name: "gouda", display_name: "🧀 Gouda",
                   acquired_on: Date.current - 20, window_start: Date.current - 9, window_end: Date.current - 1)

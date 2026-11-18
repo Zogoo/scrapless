@@ -35,7 +35,8 @@ module Ai
 
       Rules:
       - One entry per distinct food. "two chicken breasts" is one entry, quantity 2.
-      - name is plain language, written in %<language>s whatever language the input is in.
+      - name is the food only, with a capital first letter, written in %<language>s
+        whatever language the input is in.
       - %<product>s
       - category is the closest of these:
       %<categories>s

@@ -16,12 +16,19 @@ module Ai
     # without a list of phrases to keep up to date.
     ROWS = %w[food not_food detail discount deposit].freeze
 
+    # What the whole photo is. A "bill" is a meal eaten out: nothing on it is
+    # in the kitchen. Asked per row ("every dish on a restaurant bill is
+    # not_food") the model never applied it — 3 of 3 runs put the steak and the
+    # wine in the fridge — because it is a judgement about the document, not
+    # about any one line. Captures::Ingest keeps nothing from a bill.
+    KINDS = %w[receipt bill food unclear].freeze
+
     SCHEMA = {
       type: "object",
       additionalProperties: false,
       required: %w[kind merchant purchased_on lines totals notes],
       properties: {
-        kind: { type: "string", enum: %w[receipt food unclear] },
+        kind: { type: "string", enum: KINDS },
         merchant: { type: %w[string null] },
         purchased_on: { type: %w[string null], description: "ISO 8601 date" },
         lines: {
@@ -58,7 +65,10 @@ module Ai
       You read photographs taken in a kitchen and return structured JSON.
 
       First decide what the photo shows:
-        "receipt" - a till receipt / Kassenbon / invoice
+        "receipt" - a shop's till receipt / Kassenbon: food bought to take home
+        "bill"    - a restaurant, cafe, bar or takeaway bill: food and drink
+                    that was eaten or drunk there, with a table number, a
+                    service charge or dishes rather than groceries
         "food"    - groceries, a fridge shelf, a worktop of shopping
         "unclear" - anything else, or too blurred to read
 
@@ -70,27 +80,30 @@ module Ai
 
       row says what an entry is:
         "food"     - something to eat or drink, kept at home
-        "not_food" - anything else sold: bags, household goods, and every dish
-                     or drink on a restaurant or cafe bill (it was eaten there)
+        "not_food" - anything else sold: bags, household goods
         "detail"   - a count, weight, repeat or other row belonging to a product
         "discount" - a saving, coupon or bundle price
         "deposit"  - Pfand or Leergut
       On German receipts VAT class A (7%%) is almost always food and B (19%%)
       usually is not, but the item name wins over the VAT class.
 
-      For a receipt: copy raw_text verbatim, abbreviations and typos included.
+      For a receipt: raw_text is the product's text as printed, abbreviations
+      and typos included, but not the price, the VAT letter or a count or
+      weight printed on a row of its own.
       For a photo of food: one entry per distinct product you can actually see;
       put a short description in raw_text and leave price null. Do not guess at
       items hidden behind other items.
 
-      name is what a shopper calls the product, written in %<language>s whatever
-      language the receipt or packet is in: abbreviations spelled out, normal
-      capitalisation, no prices or VAT letters.
+      name is what a shopper calls the food, written in %<language>s whatever
+      language the receipt or packet is in: abbreviations spelled out, a capital
+      first letter, and the food only, without price, VAT letter, size, fat
+      content, packaging ("bottle", "carton") or offer ("3+1 gratis").
       %<product>s
       category is the closest of these:
       %<categories>s
-      storage is where a household keeps it once home. Only a photo taken inside
-      a fridge or freezer shows that; shopping on a worktop does not.
+      storage is where this product is normally kept at home: chilled products
+      in the fridge, frozen ones in the freezer, shelf-stable ones in the
+      pantry. In a photo taken inside a fridge or freezer, that is where it is.
 
       Never invent a line. If a line is unreadable, omit it and say so in notes.
       An omission is recoverable; an invented item is not, because it reads as
@@ -114,7 +127,7 @@ module Ai
           { role: "system", content: format(SYSTEM, language: Language.name, categories: Categories.prompt_guide,
                                             product: Product::PROMPT_RULE) },
           { role: "user", content: [
-            { type: "text", text: "Read this photo." },
+            { type: "text", text: "Read this photo. Write every name in #{Language.name}." },
             { type: "image_url", image_url: { url: data_url, detail: "high" } }
           ] }
         ]

@@ -18,6 +18,8 @@ export interface Item {
   id: number;
   display_name: string;
   canonical_name: string;
+  /** One food under any name ("Eier", "Eggs"); null for a line no model has named. */
+  product_id?: number | null;
   category: string;
   raw_text: string | null;
   quantity: number | null;
@@ -80,7 +82,7 @@ export interface CaptureReview {
   capture: {
     id: number;
     source: string;
-    kind: 'receipt' | 'food' | 'unclear';
+    kind: 'receipt' | 'bill' | 'food' | 'unclear';
     merchant: string | null;
     purchased_on: string | null;
     status: string;

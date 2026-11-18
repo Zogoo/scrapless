@@ -35,6 +35,8 @@ export class LocaleService {
     if (!this.available.includes(locale)) return;
 
     this.translate.use(locale);
+    // Screen readers pick their voice from <html lang>; it said "en" in German.
+    document.documentElement.lang = locale;
     try {
       localStorage.setItem(LOCALE_KEY, locale);
     } catch {

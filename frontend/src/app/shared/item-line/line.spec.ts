@@ -88,6 +88,14 @@ describe('toLines', () => {
     expect(toLines([fresh, pack({ id: 4, storage: 'freezer' })])).toHaveLength(2);
   });
 
+  // Observed in QA: "Eier" from a tap and "Eggs" from a photo were two lines.
+  it('puts one food on one line whatever it is called', () => {
+    const eier = pack({ id: 5, canonical_name: 'eier', product_id: 9 });
+    const eggs = pack({ id: 6, canonical_name: 'eggs', product_id: 9 });
+
+    expect(toLines([eier, eggs])).toHaveLength(1);
+  });
+
   it('drops a pack with nothing left instead of an empty card', () => {
     const gone = pack({ id: 1, amount_left: 0 });
     const left = pack({ id: 2, amount_left: 1 });

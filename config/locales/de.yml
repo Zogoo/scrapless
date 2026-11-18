@@ -1,4 +1,14 @@
 de:
+  i18n:
+    # German spells an umlaut two ways ("Hähnchen", "HAEHNCHEN" on a till), so
+    # dictionary keys fold them (ProductAlias.normalize_key). Data, not code: a
+    # language with its own spelling pairs adds them in its own locale file.
+    transliterate:
+      rule:
+        ä: "ae"
+        ö: "oe"
+        ü: "ue"
+        ß: "ss"
   language:
     # This language's name in English, for the AI prompts (Ai::Language).
     english_name: "German"
@@ -24,8 +34,17 @@ de:
       audio_too_large: "Die Aufnahme ist zu lang. Versuch eine kürzere."
     unreadable: "Der Bon war schwer zu lesen. Nochmal, oder sag mir einfach das Frische."
     partial_parse: "Wir haben übernommen, was wir kannten. Damit kamen wir nicht klar: %{list}"
+    bill: "Das ist eine Rechnung vom Essen auswärts – da kommt nichts in die Küche."
     ai_unavailable: "Fotos lesen geht gerade nicht. Tippen oder sagen klappt aber immer."
     too_many: "Das sind viele Fotos auf einmal. Probier es in einer Stunde nochmal."
+  units:
+    g: "g"
+    kg: "kg"
+    ml: "ml"
+    l: "l"
+    piece:
+      one: "Stück"
+      other: "Stück"
   recipes:
     add_step: "%{name} dazugeben."
     ai_unavailable: "Rezeptideen gehen gerade nicht. Deine Liste weiß trotzdem, was zuerst dran ist."

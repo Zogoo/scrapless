@@ -123,15 +123,24 @@ aliases = [
   # frozen
   [ "tk erbsen", "TK-Erbsen", "frozen", "🧊", "frozen peas" ],
   [ "tiefkuehlpizza", "Tiefkühlpizza", "frozen", "🍕", "frozen pizza" ],
-  # The tap grid sends these words (capture.ts TAP_GRID), so every one must
-  # resolve for free — including the umlaut spellings people type.
+  # The tap grid sends its labels (capture.ts TAP_GRID, in each locale file),
+  # so every one must resolve for free.
   [ "käse", "Käse", "dairy", "🧀", "cheese" ],
   [ "kaese", "Käse", "dairy", "🧀", "cheese" ],
   [ "äpfel", "Äpfel", "produce", "🍎", "apple" ],
   [ "hähnchen", "Hähnchen", "meat_fish", "🍗", "chicken" ],
   [ "haehnchen", "Hähnchen", "meat_fish", "🍗", "chicken" ],
   [ "fisch", "Fisch", "meat_fish", "🐟", "fish" ],
-  [ "salat", "Salat", "produce", "🥗", "lettuce" ]
+  [ "salat", "Salat", "produce", "🥗", "lettuce" ],
+  # ...and their English labels, on the same products.
+  [ "cheese", "Cheese", "dairy", "🧀", "cheese" ],
+  [ "carrots", "Carrots", "produce", "🥕", "carrot" ],
+  [ "tomatoes", "Tomatoes", "produce", "🍅", "tomato" ],
+  [ "potatoes", "Potatoes", "produce", "🥔", "potato" ],
+  [ "onions", "Onions", "produce", "🧅", "onion" ],
+  [ "mince", "Mince", "meat_fish", "🥩", "minced meat" ],
+  [ "fish", "Fish", "meat_fish", "🐟", "fish" ],
+  [ "salad", "Salad", "produce", "🥗", "lettuce" ]
 ]
 
 aliases.each do |raw, canonical, category, emoji, product|

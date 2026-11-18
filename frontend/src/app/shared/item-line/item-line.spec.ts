@@ -352,7 +352,7 @@ describe('Item line', () => {
     expect(req.request.body).toEqual({ outcome: 'wasted' });
     req.flush({});
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
-    expect(TestBed.inject(UndoService).notice()?.itemId).toBe(2);
+    expect(TestBed.inject(UndoService).notice()?.itemIds).toEqual([2]);
   });
 
   it('draws one bar per pack, even when both are the same colour', () => {
@@ -641,6 +641,23 @@ describe('Item line', () => {
     req.flush({});
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
 
-    expect(TestBed.inject(UndoService).notice()?.itemId).toBe(4);
+    expect(TestBed.inject(UndoService).notice()?.itemIds).toEqual([4]);
+  });
+
+  // "Where is the Sojaghurt now?" moved one of its two packs and split the line.
+  it('moves every pack on the line, and one Undo puts them all back', () => {
+    const line = toLines([pack(4, 1, 'Joghurt'), pack(5, 1, 'Joghurt')])[0];
+    const screen = mount(line);
+
+    screen.move(line.first, 'fridge');
+
+    for (const id of [4, 5]) {
+      const req = http.expectOne(`${environment.apiUrl}/items/${id}/resolve`);
+      expect(req.request.body).toEqual({ outcome: 'moved', to: 'fridge' });
+      req.flush({});
+    }
+    http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
+
+    expect(TestBed.inject(UndoService).notice()?.itemIds).toEqual([4, 5]);
   });
 });

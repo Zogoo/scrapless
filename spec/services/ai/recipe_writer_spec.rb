@@ -58,7 +58,7 @@ RSpec.describe Ai::RecipeWriter do
       expect(router).to have_received(:json_completion) do |purpose:, messages:, **|
         expect(purpose).to eq(:recipe_suggest)
         expect(messages.first[:content]).to include("up to 3 short breakfast recipes")
-        expect(messages.first[:content]).to include("Write titles and steps in German")
+        expect(messages.first[:content]).to include("Write titles, steps and amounts in German")
         expect(JSON.parse(messages.last[:content]).map { |e| e["id"] }).to eq([ 1, 2, 3 ])
       end
     end

@@ -11,12 +11,12 @@
 class Product < ApplicationRecord
   # What both readers are told, so a photo and a typed word land on one key.
   PROMPT_RULE = <<~RULE.squish
-    product is the food's generic name translated into English, lowercase and
-    singular. Always English, even when the name and everything else is German:
-    it is a key for matching, never shown. No brand, size, weight or fat
-    content, but keep what changes how it is kept. "H-MILCH 3,5%" is "uht
-    milk", "Vollmilch" is "milk", "HAEHNCHENSCHENKEL" is "chicken thigh",
-    "Babyspinat 260g" is "baby spinach".
+    product is the food's generic name translated into English, in American
+    spelling, lowercase and singular. Always English, even when the name and everything else is German:
+    it is a key for matching, never shown. Specific enough to buy the same thing
+    again, nothing more: no brand, size, weight, fat content, packaging or
+    offer. "H-MILCH 3,5%" is "uht milk", "Vollmilch" is "milk",
+    "HAEHNCHENSCHENKEL" is "chicken thigh", "Babyspinat 260g" is "baby spinach".
   RULE
 
   has_many :product_aliases, dependent: :nullify

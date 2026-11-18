@@ -9,9 +9,7 @@ import { ItemsService } from './items.service';
 /** What the toast shows: a sentence, and the food it can take back, if any. */
 export interface Notice {
   message: string;
-  /** One tap, one food. */
-  itemId?: number;
-  /** The slider used up every pack on a line. Undo puts each of them back. */
+  /** The packs the tap changed, all put back by one Undo. */
   itemIds?: number[];
 }
 
@@ -62,22 +60,22 @@ export class UndoService {
   }
 
   /** "Broccoli: used", "Brot ist jetzt im Vorrat" — after any one-tap outcome. */
-  showOutcome(item: ScoredItem, outcome: Outcome, place?: Storage): void {
+  showOutcome(item: ScoredItem, outcome: Outcome, place?: Storage, ids = [item.id]): void {
     const message = this.translate.instant(`undo.${outcome}`, {
       name: item.display_name,
       place: place ? this.translate.instant(`storage.${place}`) : '',
     });
-    this.show({ itemId: item.id, message });
+    this.show({ itemIds: ids, message });
   }
 
   /**
    * The slider was released at 0% and those packs are already marked used.
    * Same toast as a tap: a short line, and Rückgängig for a few seconds.
    */
-  showUsedUp(ids: number[]): void {
+  showUsedUp(ids: number[], name: string): void {
     if (ids.length === 0) return;
 
-    this.show({ itemIds: ids, message: this.translate.instant('undo.used_up') });
+    this.show({ itemIds: ids, message: this.translate.instant('undo.used_up', { name }) });
   }
 
   undo(): void {
@@ -98,8 +96,7 @@ export class UndoService {
 
   private undoIds(notice: Notice | null): number[] {
     if (!notice) return [];
-    if (notice.itemIds && notice.itemIds.length > 0) return notice.itemIds;
-    return notice.itemId === undefined ? [] : [notice.itemId];
+    return notice.itemIds ?? [];
   }
 
   private clearTimer(): void {

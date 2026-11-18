@@ -57,7 +57,7 @@
       (focusout)="undo.release()"
     >
       <span class="message">{{ notice.message }}</span>
-      @if (notice.itemId !== undefined || notice.itemIds?.length) {
+      @if (notice.itemIds?.length) {
         <span class="actions">
           <button type="button" (click)="undo.undo()">{{ 'undo.action' | translate }}</button>
           <button

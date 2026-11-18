@@ -80,6 +80,7 @@
   <p class="by">{{ 'common.by' | translate: { name: line().first.added_by_name } }}</p>
 }
 <div class="row-actions" role="group" [attr.aria-labelledby]="'line-' + line().first.id">
+  <button type="button" (click)="useAll()">✔ {{ 'today.used' | translate }}</button>
   <button
     type="button"
     class="place"

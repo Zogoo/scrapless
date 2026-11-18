@@ -40,7 +40,11 @@ module Items
                                                         fuzzy: !Categories.valid?(@category))
       return nil if entry.nil?
 
-      build(display: entry.display_name, canonical: entry.canonical_name,
+      # The dictionary says what the food is; the name shown is the model's
+      # when it gave one, so it is in the person's language. With no model
+      # answer (a typed word the dictionary knew) the dictionary's name stands.
+      display = @name.present? && Categories.valid?(@category) ? tidy(@name) : entry.display_name
+      build(display: display, canonical: display.downcase,
             category: entry.category, emoji: entry.emoji, source: "dictionary", storage: entry.storage,
             product: entry.product || Product.for(@product))
     end
@@ -65,10 +69,12 @@ module Items
     end
 
     # "BABYSPINAT 260G" reads badly in a list; "Babyspinat 260G" reads fine.
+    # A capital first letter whatever the model sent ("chicken breast" came
+    # back lowercase in about half the runs).
     def tidy(text)
       cleaned = text.to_s.gsub(/[*#]/, " ").squeeze(" ").strip
       cleaned = cleaned.downcase.titleize if cleaned == cleaned.upcase
-      cleaned.presence || "Item"
+      cleaned.upcase_first.presence || "Item"
     end
   end
 end

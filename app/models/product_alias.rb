@@ -29,8 +29,20 @@ class ProductAlias < ApplicationRecord
 
   normalizes :raw_text, with: ->(t) { ProductAlias.normalize_key(t) }
 
+  # "Hähnchenbrust" and "HAEHNCHENBRUST" are one key: every locale's
+  # transliteration rules (config/locales) are applied, and any other letter,
+  # in any script, is kept as it is.
   def self.normalize_key(text)
-    text.to_s.downcase.gsub(/[^a-z0-9äöüß ]/, " ").squeeze(" ").strip
+    key = text.to_s.downcase
+    key = key.gsub(Regexp.union(spelling_pairs.keys), spelling_pairs) if spelling_pairs.any?
+    key.gsub(/[^\p{L}\p{N} ]/, " ").squeeze(" ").strip
+  end
+
+  def self.spelling_pairs
+    @spelling_pairs ||= I18n.available_locales.each_with_object({}) do |locale, pairs|
+      rules = I18n.t("i18n.transliterate.rule", locale: locale, default: {})
+      pairs.merge!(rules.to_h.transform_keys(&:to_s)) if rules.is_a?(Hash)
+    end
   end
 
   # Exact match first, then the same words in any order — enough to catch
@@ -147,6 +159,15 @@ class ProductAlias < ApplicationRecord
     promote!(key)
   rescue ActiveRecord::RecordNotUnique
     nil # the same kitchen sent the same line twice at once; the first one won
+  end
+
+  # Takes back what the model taught this kitchen about a line, when the
+  # person removed that line as read wrong. Their own corrections stay.
+  def self.forget!(household:, raw_text:)
+    key = without_quantities(normalize_key(raw_text)).presence || normalize_key(raw_text)
+    return if key.blank?
+
+    where(household: household, raw_text: key, source: "ai").delete_all
   end
 
   # Shares a spelling with every kitchen once PROMOTE_AT of them, each on its
