@@ -7,7 +7,6 @@
       <button
         type="button"
         [class.primary]="selected() === meal"
-        [class.ghost]="selected() !== meal"
         [attr.aria-pressed]="selected() === meal"
         [disabled]="loading()"
         (click)="ask(meal)"
@@ -16,6 +15,10 @@
       </button>
     }
   </div>
+
+  @if (!selected()) {
+    <p class="hint">{{ 'recipes.pick' | translate }}</p>
+  }
 
   @if (error()) {
     <p class="error">

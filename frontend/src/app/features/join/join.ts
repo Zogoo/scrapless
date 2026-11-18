@@ -17,18 +17,30 @@ import { FridgeService, joinCodeFromLocation } from '../../core/services/fridge.
   template: `
     <div class="join">
       <div class="hero">
-        <span class="mark" aria-hidden="true">🧊</span>
+        <img
+          class="mark"
+          src="/branding/rettich/app-icon/favicon.svg"
+          alt=""
+          width="56"
+          height="56"
+        />
         <h1>
-          @if (kitchenName(); as name) {
+          @if (already) {
+            {{ kitchenName() }}
+          } @else if (kitchenName(); as name) {
             {{ 'join.title_named' | translate: { name } }}
           } @else {
             {{ 'join.title' | translate }}
           }
         </h1>
-        <p class="lede">{{ 'join.lede' | translate }}</p>
+        @if (!already) {
+          <p class="lede">{{ 'join.lede' | translate }}</p>
+        }
       </div>
 
-      @if (switching) {
+      @if (already) {
+        <p class="lede">{{ 'join.already' | translate: { name: kitchenName() } }}</p>
+      } @else if (switching) {
         <p class="lede">{{ 'join.switch' | translate }}</p>
       }
 
@@ -38,7 +50,11 @@ import { FridgeService, joinCodeFromLocation } from '../../core/services/fridge.
         <p class="error">{{ error() }}</p>
       }
 
-      @if (kitchenName()) {
+      @if (already) {
+        <button type="button" class="primary" (click)="home()">
+          {{ 'join.go_home' | translate }}
+        </button>
+      } @else if (kitchenName()) {
         <button type="button" class="primary" [disabled]="busy()" (click)="open()">
           {{ (busy() ? 'join.opening' : 'join.open') | translate }}
         </button>
@@ -57,6 +73,8 @@ export class Join implements OnInit {
     typeof location === 'undefined' ? '' : location.hash,
   );
   protected readonly switching = this.fridge.isKnown();
+  /** The link to the kitchen this phone is already in: nothing to switch. */
+  protected readonly already = !!this.code && this.fridge.fridge()?.join_code === this.code;
   protected readonly busy = signal(false);
   protected readonly error = signal('');
   /** Known only once the server recognised the code; until then, no button. */
@@ -69,6 +87,10 @@ export class Join implements OnInit {
       next: ({ name }) => this.kitchenName.set(name),
       error: (err: { status?: number }) => this.failed(err),
     });
+  }
+
+  protected home(): void {
+    void this.router.navigate(['/today']);
   }
 
   protected open(): void {

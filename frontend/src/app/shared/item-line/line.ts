@@ -33,8 +33,9 @@ export function lineFor(item: ScoredItem): KitchenLine {
   };
 }
 
+/** One line per food per place: by product when known, so "Eier" and "Eggs" are one line. */
 export function lineKey(item: ScoredItem): string {
-  return `${item.storage}:${item.canonical_name}`;
+  return `${item.storage}:${item.product_id ?? item.canonical_name}`;
 }
 
 export function toLines(items: ScoredItem[]): KitchenLine[] {

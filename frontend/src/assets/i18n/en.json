@@ -24,7 +24,7 @@
     "used": "Used",
     "partial": "Used half",
     "froze": "Froze it",
-    "gone": "It's gone",
+    "gone": "Thrown away",
     "safety_date": "Go by the date",
     "fine_for_now": "Fine for now",
     "probably_gone": "{{count}} probably gone — already tidied away",
@@ -98,6 +98,7 @@
       "pasta": "Pasta",
       "coffee": "Coffee"
     },
+    "mic_blocked": "The microphone is blocked for this page. Allow it in your browser's settings, or type it instead.",
     "detect": {
       "loading": "Outlines: loading…",
       "on": "Outlines on · {{ms}} ms",
@@ -136,7 +137,8 @@
     "empty_body": "Once there's food in here, pick a meal.",
     "minutes": "{{count}} min",
     "uses_first": "Uses what should go first",
-    "optional": "optional"
+    "optional": "optional",
+    "pick": "Pick a meal and we'll suggest something from what's in the kitchen."
   },
   "kitchen": {
     "title": "Kitchen",
@@ -215,7 +217,8 @@
     "delete": "Delete",
     "retry": "Try again",
     "by": "by {{name}}",
-    "delete_named": "Delete {{name}}"
+    "delete_named": "Delete {{name}}",
+    "done": "Done"
   },
   "join": {
     "title": "Open this kitchen",
@@ -225,12 +228,14 @@
     "opening": "Opening…",
     "invalid": "That link doesn't open a kitchen.",
     "too_many": "That is a lot of tries. Give it an hour.",
-    "title_named": "Open {{name}}?"
+    "title_named": "Open {{name}}?",
+    "already": "This phone is already in {{name}}.",
+    "go_home": "Go to the kitchen"
   },
   "undo": {
     "action": "Undo",
     "used": "{{name}}: used",
-    "used_up": "Used up",
+    "used_up": "{{name}}: used up",
     "wasted": "Thanks, noted.",
     "partial": "{{name}}: half left",
     "froze": "{{name}} is in the freezer",
@@ -267,7 +272,7 @@
     "label": "Notifications",
     "label_unread": "Notifications, {{count}} unread",
     "read_all": "Mark all as read",
-    "empty": "Nothing needs you right now.",
+    "empty": "No reminders yet. When food is worth using, one comes here around dinner time.",
     "done": "done",
     "today": "Today",
     "yesterday": "Yesterday",

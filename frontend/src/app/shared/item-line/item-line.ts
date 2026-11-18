@@ -9,6 +9,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { Outcome, ScoredItem, Storage } from '../../core/models';
@@ -392,7 +393,7 @@ export class ItemLine {
   private useUp(): void {
     const ids = this.line().packs.map((pack) => pack.id);
     this.preview.set(null);
-    this.undo.showUsedUp(ids);
+    this.undo.showUsedUp(ids, this.line().first.display_name);
     this.items.removeFromList(ids);
   }
 
@@ -430,11 +431,22 @@ export class ItemLine {
     if (event.target === event.currentTarget) (event.currentTarget as HTMLDialogElement).close();
   }
 
+  /**
+   * The same as sliding to 0%, as one tap: eaten food was otherwise recorded
+   * by the only button there was, "gone" — which counts it as waste.
+   */
+  protected useAll(): void {
+    this.useUp();
+    this.setLevel(0);
+  }
+
+  /** The whole line moves: "Where is the Sojaghurt now?" means both packs. */
   protected move(item: ScoredItem, storage: Storage): void {
     this.moveSheet()?.nativeElement.close();
-    this.items.move(item.id, storage).subscribe({
+    const ids = this.line().packs.map((pack) => pack.id);
+    forkJoin(ids.map((id) => this.items.move(id, storage))).subscribe({
       next: () => {
-        this.undo.showOutcome(item, 'moved', storage);
+        this.undo.showOutcome(item, 'moved', storage, ids);
         this.items.load().subscribe();
       },
       error: (err: { message?: string }) => this.fail(err),

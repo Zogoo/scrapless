@@ -41,7 +41,7 @@ module Recipes
     private
 
     def remembered
-      @household.meal_suggestions.find_by(meal: @meal, served_on: @on)
+      @household.meal_suggestions.find_by(meal: @meal, served_on: @on, locale: @locale.to_s)
     end
 
     # A second request that slipped in while this one was writing loses the
@@ -65,6 +65,14 @@ module Recipes
         .first(MAX_RECIPES)
     end
 
+    # "3 Stück", not "3 piece": the unit is a code from the readers' schema, and
+    # the model copied it into the recipe as it was. Unknown units pass through.
+    def amount(item)
+      quantity = item.quantity&.to_f&.then { |q| q % 1 == 0 ? q.to_i : q }
+      unit = item.unit.presence && I18n.t("units.#{item.unit}", count: quantity || 1, locale: @locale, default: item.unit)
+      [ quantity, unit ].compact.join(" ").presence
+    end
+
     def calls_this_hour
       AiCall.where(household: @household, purpose: "recipe_suggest", created_at: 1.hour.ago..).count
     end
@@ -84,12 +92,15 @@ module Recipes
       @use_first_ids ||= scored.select(&:worth_showing?).map { |s| s.item.id }
     end
 
+    # One entry per food, however many packs or names it came in under:
+    # "Hähnchenbrustfilet" and "chicken breast" were offered as two
+    # ingredients. The most urgent pack speaks for the product.
     def pantry
-      @pantry ||= scored.map do |s|
+      @pantry ||= scored.uniq { |s| s.item.product_id || s.item.canonical_name.downcase }.map do |s|
         {
           id: s.item.id,
           name: Copy.bare_name(s.item).strip,
-          amount: [ s.item.quantity&.to_f&.then { |q| q % 1 == 0 ? q.to_i : q }, s.item.unit ].compact.join(" ").presence,
+          amount: amount(s.item),
           storage: s.item.storage,
           priority: use_first_ids.include?(s.item.id) ? "use_first" : nil
         }.compact

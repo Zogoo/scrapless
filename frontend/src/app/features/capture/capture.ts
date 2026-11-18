@@ -39,32 +39,32 @@ export const SLOW_READ_MS = 10_000;
 /**
  * Twenty perishables, big buttons, no typing (doc 2 §2.7).
  *
- * The label is in the UI's language; what is sent is the word the receipt
- * prints. Receipts here are German, so a tap and a Bon for the same food land
- * on one Kitchen line — an English grid used to make "Broccoli" beside
- * "Brokkoli". Every word is in the seeded dictionary, so a tap costs nothing.
+ * What is sent is the label, in the UI's language: "Eggs" on an English phone,
+ * "Eier" on a German one. Both are in the seeded dictionary under one product,
+ * so a tap costs nothing and lands on the same Kitchen line as a Bon's "EIER"
+ * (spec/db/seeds_spec.rb checks every label in every locale file).
  */
-export const TAP_GRID: readonly { emoji: string; key: string; word: string }[] = [
-  { emoji: '🥛', key: 'milk', word: 'Milch' },
-  { emoji: '🥖', key: 'bread', word: 'Brot' },
-  { emoji: '🥚', key: 'eggs', word: 'Eier' },
-  { emoji: '🧈', key: 'butter', word: 'Butter' },
-  { emoji: '🧀', key: 'cheese', word: 'Käse' },
-  { emoji: '🥦', key: 'broccoli', word: 'Brokkoli' },
-  { emoji: '🥬', key: 'spinach', word: 'Spinat' },
-  { emoji: '🥕', key: 'carrots', word: 'Karotten' },
-  { emoji: '🍅', key: 'tomatoes', word: 'Tomaten' },
-  { emoji: '🥔', key: 'potatoes', word: 'Kartoffeln' },
-  { emoji: '🧅', key: 'onions', word: 'Zwiebeln' },
-  { emoji: '🍌', key: 'bananas', word: 'Bananen' },
-  { emoji: '🍎', key: 'apples', word: 'Äpfel' },
-  { emoji: '🍗', key: 'chicken', word: 'Hähnchen' },
-  { emoji: '🥩', key: 'mince', word: 'Hackfleisch' },
-  { emoji: '🐟', key: 'fish', word: 'Fisch' },
-  { emoji: '🥣', key: 'yoghurt', word: 'Joghurt' },
-  { emoji: '🥗', key: 'salad', word: 'Salat' },
-  { emoji: '🍝', key: 'pasta', word: 'Nudeln' },
-  { emoji: '☕', key: 'coffee', word: 'Kaffee' },
+export const TAP_GRID: readonly { emoji: string; key: string }[] = [
+  { emoji: '🥛', key: 'milk' },
+  { emoji: '🥖', key: 'bread' },
+  { emoji: '🥚', key: 'eggs' },
+  { emoji: '🧈', key: 'butter' },
+  { emoji: '🧀', key: 'cheese' },
+  { emoji: '🥦', key: 'broccoli' },
+  { emoji: '🥬', key: 'spinach' },
+  { emoji: '🥕', key: 'carrots' },
+  { emoji: '🍅', key: 'tomatoes' },
+  { emoji: '🥔', key: 'potatoes' },
+  { emoji: '🧅', key: 'onions' },
+  { emoji: '🍌', key: 'bananas' },
+  { emoji: '🍎', key: 'apples' },
+  { emoji: '🍗', key: 'chicken' },
+  { emoji: '🥩', key: 'mince' },
+  { emoji: '🐟', key: 'fish' },
+  { emoji: '🥣', key: 'yoghurt' },
+  { emoji: '🥗', key: 'salad' },
+  { emoji: '🍝', key: 'pasta' },
+  { emoji: '☕', key: 'coffee' },
 ];
 
 @Component({
@@ -335,6 +335,14 @@ export class Capture implements OnDestroy {
 
   // --- voice ----------------------------------------------------------------
 
+  /** A refused microphone is a setting to change, not silence. */
+  private micError(err: Error): string {
+    const blocked =
+      ['not-allowed', 'service-not-allowed'].includes(err?.message) ||
+      err?.name === 'NotAllowedError';
+    return this.translate.instant(blocked ? 'capture.mic_blocked' : 'capture.no_mic');
+  }
+
   protected startVoice(): void {
     this.mode.set('voice');
     this.error.set('');
@@ -347,14 +355,14 @@ export class Capture implements OnDestroy {
           this.transcript.set(text);
           if (text) this.send(this.captures.spoken(text));
         },
-        error: () => this.error.set(this.translate.instant('capture.no_mic')),
+        error: (err: Error) => this.error.set(this.micError(err)),
       });
       return;
     }
 
     // Safari: no SpeechRecognition, so record and pay for a transcription.
-    void this.speech.startRecording().catch(() => {
-      this.error.set(this.translate.instant('capture.no_mic'));
+    void this.speech.startRecording().catch((err: Error) => {
+      this.error.set(this.micError(err));
       this.mode.set('choose');
     });
   }
@@ -379,11 +387,9 @@ export class Capture implements OnDestroy {
 
   // --- manual ---------------------------------------------------------------
 
-  protected toggleTap(name: string): void {
+  protected toggleTap(key: string): void {
     const current = this.picked();
-    this.picked.set(
-      current.includes(name) ? current.filter((n) => n !== name) : [...current, name],
-    );
+    this.picked.set(current.includes(key) ? current.filter((k) => k !== key) : [...current, key]);
   }
 
   /**
@@ -393,7 +399,7 @@ export class Capture implements OnDestroy {
    */
   protected submitManual(): void {
     const typed = this.manualText().trim();
-    const tapped = this.picked();
+    const tapped = this.picked().map((key) => this.translate.instant(`capture.grid.${key}`));
     const all = [...tapped, ...(typed ? [typed] : [])].join(', ');
 
     if (!all) return;

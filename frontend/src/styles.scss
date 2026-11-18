@@ -120,7 +120,10 @@ a {
   color: var(--accent);
 }
 
-button {
+/* .as-button: a <label> that wraps a hidden file input and must look like the
+   buttons beside it ("Pick a photo"). */
+button,
+.as-button {
   font: inherit;
   min-height: var(--tap);
   padding: 0.6rem 1rem;

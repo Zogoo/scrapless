@@ -6,7 +6,7 @@ class MealSuggestion < ApplicationRecord
 
   validates :meal, inclusion: { in: MEALS }
   validates :served_on, :locale, :body, presence: true
-  validates :meal, uniqueness: { scope: %i[household_id served_on] }
+  validates :meal, uniqueness: { scope: %i[household_id served_on locale] }
 
   def payload
     JSON.parse(body).map { |recipe| recipe.deep_symbolize_keys }

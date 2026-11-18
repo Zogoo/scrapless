@@ -342,6 +342,44 @@ the prompt changes. Promotion also counts *fridges*, which are free to create, s
 Live check, typed "milchreis, butterkekse, maultaschen, mango, kartoffelchips, milch": the first
 capture made one model call for five words; the same words again made **none**.
 
+### And what a second full QA pass found
+
+Every screen again, in both languages and themes, with real receipts and photos read by the live
+model. The AI problems were measured before they were fixed: the same three images (a REWE
+receipt, a restaurant bill, a fridge shelf) through the photo reader, three runs each, before and
+after.
+
+| Problem | Before | After | What changed |
+|---|---|---|---|
+| A restaurant bill filled the kitchen (steak, wine) | 3/3 runs | 0 | A document-level `kind: "bill"`; `Captures::Ingest` keeps nothing from one. Asked per row, the model never applied it. |
+| Chilled food filed in the cupboard (soy yoghurt "6 months") | 1 in 3 | 0 in 9 | Storage stated as where the product is *normally kept*. |
+| Price and VAT letter copied into `raw_text`, so into dictionary keys (`sojaghurt natur a`) | 15/15 lines | 0 food lines | `raw_text` defined as the product's text only. |
+| Names not in the app's language | 2 in 3 | 0 | Asked again in the request, and the model's name is shown even when the dictionary knew the line — the dictionary says *what* it is (product, category, storage). |
+| Lowercase names, packaging in names | most runs | none | A capital first letter in code; "food only" in the prompt. |
+| Product keys split by spelling (`yogurt`/`yoghurt`) or granularity | yes | consistent | Rule and examples agree; American spelling. |
+
+**Same food, any name.** Kitchen lines, Shop's "already at home" and the recipe pantry now group by
+`product_id`, so "Eier" and "Eggs" are one line and "Bananas" is not suggested beside "Banane
+Chiquita". The tap grid sends its label in the UI's language; `spec/db/seeds_spec.rb` checks every
+label in every locale file resolves, and to one product per food.
+
+**Dictionary.** Keys fold spelling pairs from the locale files (`de.yml`: ä→ae, ö→oe, ü→ue, ß→ss), so
+"Hähnchenbrust" finds the seeded "haehnchenbrust"; a migration re-keys existing rows. Removing a line
+on the review screen takes back what the model taught the kitchen about it.
+
+**Also:** recipes are cached per language (once a day per language a kitchen uses) and amounts use the
+meal's language; "optional" is only for salt, pepper, oil, water and garnish; an explicit "Used"
+button (the twin of sliding to 0%) so eaten food is not recorded as waste, and "It's gone" reads
+"Thrown away"; moving a line moves every pack; `<html lang>` follows the language; the join link to
+the kitchen a phone is already in says so; a blocked microphone says it is blocked.
+
+⚠️ **Still open, by design or measurement.** The model sometimes misses an item on a busy shelf (milk
+found in 1 of 2 runs) and keeps offers or fat content in names ("3+1 free", "3.5%"). Product keys are
+as specific as the model makes them, so a staple ("chicken") is still suggested beside a more specific
+food at home ("chicken breast"): matching them would need a food hierarchy, and word matching would
+be wrong elsewhere ("milk chocolate" is not milk). Every toast still leaves after five seconds, as #44
+chose.
+
 ---
 
 ## 13.4c Deployment
@@ -406,7 +444,7 @@ fly deploy --remote-only -a scrapless-app
 
 ## 13.5 Verification
 
-Backend 334 examples, frontend 61, RuboCop and Brakeman clean. Beyond the suites, the running app was
+Backend 482 examples, frontend 151, RuboCop and Brakeman clean. Beyond the suites, the running app was
 driven end to end: fridge created and named, four items added through the tap grid with
 **zero** billed model calls, the shop rewound a week to exercise the risk model, chicken
 correctly suppressed, localStorage cleared and the fridge restored from the cookie alone, and

@@ -23,8 +23,10 @@ module Memo
     ].freeze
 
     # `key` is what "already at home" is checked against; it is the name
-    # itself except for staples.
-    Suggestion = Struct.new(:name, :category, :reason, :score, :key, keyword_init: true) do
+    # itself except for staples. `product_id` catches the same food under
+    # another name: "Bananas" beside "Banane Chiquita", "Chicken" beside
+    # "chicken breast" were both suggested while at home.
+    Suggestion = Struct.new(:name, :category, :reason, :score, :key, :product_id, keyword_init: true) do
       def at_home_key = (key || name).downcase
     end
 
@@ -38,8 +40,8 @@ module Memo
     # those are not held back by the at-home rule; history and staples are.
     def call
       candidates = (due_to_run_out.reject { |s| hidden?(s) } +
-                    (previously_bought + staples).reject { |s| hidden?(s) || at_home.include?(s.at_home_key) })
-                   .uniq { |s| s.name.downcase }
+                    (previously_bought + staples).reject { |s| hidden?(s) || home?(s) })
+                   .uniq { |s| s.product_id || s.name.downcase }
 
       candidates = matching(candidates) if @query.present?
       candidates.sort_by { |s| -s.score }.first(@limit)
@@ -59,6 +61,7 @@ module Memo
 
     def boost(suggestion)
       Suggestion.new(name: suggestion.name, category: suggestion.category, key: suggestion.key,
+                     product_id: suggestion.product_id,
                      reason: suggestion.reason, score: suggestion.score + 1000)
     end
 
@@ -77,7 +80,7 @@ module Memo
         next if elapsed < cadence
 
         overdue = elapsed - cadence
-        Suggestion.new(name: display_name(name), category: category_for(name),
+        Suggestion.new(name: display_name(name), category: category_for(name), product_id: product_for(name),
                        reason: I18n.t("memo.reason.due", cadence: cadence, elapsed: elapsed),
                        score: 100 + [ overdue, 30 ].min)
       end
@@ -86,7 +89,7 @@ module Memo
     def previously_bought
       counts = @household.items.group(:canonical_name).count
       counts.map do |name, count|
-        Suggestion.new(name: display_name(name), category: category_for(name),
+        Suggestion.new(name: display_name(name), category: category_for(name), product_id: product_for(name),
                        reason: I18n.t("memo.reason.bought", count: count), score: 40 + [ count, 20 ].min)
       end
     end
@@ -94,6 +97,7 @@ module Memo
     def staples
       STAPLES.map.with_index do |(label, category, word), index|
         Suggestion.new(name: I18n.t("memo.staples.#{label}"), category: category, key: word,
+                       product_id: staple_products[ProductAlias.normalize_key(word)],
                        reason: I18n.t("memo.reason.common"), score: 20 - index * 0.1)
       end
     end
@@ -107,9 +111,25 @@ module Memo
 
     # Food that is here and has not outlived its window. Past the window we are
     # no longer sure it is here, so suggesting it again is fair.
-    def at_home
-      @at_home ||= @household.items.active.where(window_end: Date.current..)
-                             .distinct.pluck(:canonical_name).to_set(&:downcase)
+    def home?(suggestion)
+      at_home.include?(suggestion.at_home_key) || at_home_products.include?(suggestion.product_id)
+    end
+
+    def at_home = (@at_home ||= fresh_items.distinct.pluck(:canonical_name).to_set(&:downcase))
+
+    def at_home_products = (@at_home_products ||= fresh_items.where.not(product_id: nil).distinct.pluck(:product_id).to_set)
+
+    def fresh_items = @household.items.active.where(window_end: Date.current..)
+
+    # One query for every staple's product, from the shared dictionary.
+    def staple_products
+      @staple_products ||= ProductAlias.shared.where(raw_text: STAPLES.map { |*, word| ProductAlias.normalize_key(word) })
+                                       .pluck(:raw_text, :product_id).to_h
+    end
+
+    def product_for(canonical)
+      @products ||= @household.items.where.not(product_id: nil).order(:id).pluck(:canonical_name, :product_id).to_h
+      @products[canonical]
     end
 
     def purchase_history

@@ -80,7 +80,10 @@ export class Kitchen implements OnInit {
 
   protected startEdit(line: KitchenLine): void {
     this.editingKey.set(line.key);
-    this.draftName.set(line.first.display_name);
+    // The server keeps the emoji (Items::Correct); the field is just the name.
+    this.draftName.set(
+      line.first.display_name.replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, ''),
+    );
   }
 
   /**

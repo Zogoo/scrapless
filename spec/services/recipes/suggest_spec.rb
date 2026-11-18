@@ -55,6 +55,32 @@ RSpec.describe Recipes::Suggest do
     end
   end
 
+  # "Hähnchenbrustfilet" and "chicken breast" were offered as two ingredients.
+  it "offers each food once, however many names and packs it has" do
+    chicken = Product.for("chicken breast")
+    first = create(:item, :at_risk, household: household, display_name: "Hähnchenbrustfilet", product: chicken)
+    create(:item, household: household, display_name: "Chicken breast", canonical_name: "chicken breast",
+                  product: chicken)
+    model_answers
+
+    suggest
+
+    expect(Ai::RecipeWriter).to have_received(:call) do |pantry:, **|
+      expect(pantry.map { |entry| entry[:id] }).to eq([ first.id ])
+    end
+  end
+
+  it "names the amount's unit in the meal's language" do
+    create(:item, :at_risk, household: household, display_name: "Paprika", quantity: 3, unit: "piece")
+    model_answers
+
+    suggest(locale: :de)
+
+    expect(Ai::RecipeWriter).to have_received(:call) do |pantry:, **|
+      expect(pantry.first[:amount]).to eq("3 Stück")
+    end
+  end
+
   # Food we have stopped believing in must not become dinner.
   it "leaves out food that is probably already gone" do
     create(:item, :ghost, household: household, display_name: "Old salad")
@@ -115,13 +141,17 @@ RSpec.describe Recipes::Suggest do
       expect(Ai::RecipeWriter).to have_received(:call).twice
     end
 
-    it "shows the stored answer when the same meal is asked in another language" do
+    # Observed in QA: after switching to German, the day's English dinner was
+    # served until midnight. Still once a day — once per language the kitchen
+    # actually asks in, which for most kitchens is one.
+    it "writes the meal again for a phone in another language, once" do
       suggest(locale: :en)
-      second = suggest(locale: :de)
+      german = suggest(locale: :de)
+      suggest(locale: :de)
 
-      expect(Ai::RecipeWriter).to have_received(:call).once
-      expect(second.cached).to be(true)
-      expect(second.recipes).to eq(suggest(locale: :en).recipes)
+      expect(Ai::RecipeWriter).to have_received(:call).twice
+      expect(german.cached).to be(false)
+      expect(suggest(locale: :en).cached).to be(true)
     end
 
     it "does not share answers between fridges" do

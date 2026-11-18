@@ -167,6 +167,23 @@ RSpec.describe "Api::V1::Items", type: :request do
     end
   end
 
+  describe "DELETE /api/v1/items/:id" do
+    # A line removed on the review screen was read wrong; what the model said
+    # about it must not stay in the dictionary, nor count as a vote.
+    it "takes back what the model taught this kitchen about the line" do
+      item = create(:item, household: household, raw_text: "1 x Filetsteak")
+      create(:product_alias, household: household, raw_text: "x filetsteak", canonical_name: "Filet steak",
+                             category: "meat_fish", source: "ai")
+      kept = create(:product_alias, household: household, raw_text: "brot", canonical_name: "Brot",
+                                    category: "bakery", source: "correction")
+
+      delete "/api/v1/items/#{item.id}", headers: headers
+
+      expect(response).to have_http_status(:no_content)
+      expect(ProductAlias.where(household: household)).to contain_exactly(kept)
+    end
+  end
+
   describe "POST /api/v1/items/:id/undo" do
     let(:item) { create(:item, household: household) }
 

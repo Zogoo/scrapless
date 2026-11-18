@@ -31,7 +31,7 @@ describe('UndoService', () => {
   it('lets the offer to take back the tap go by itself', () => {
     service.showOutcome(broccoli, 'wasted');
     vi.advanceTimersByTime(UndoService.SHOW_MS - 1);
-    expect(service.notice()?.itemId).toBe(7);
+    expect(service.notice()?.itemIds).toEqual([7]);
 
     vi.advanceTimersByTime(1);
     expect(service.notice()).toBeNull();
@@ -45,11 +45,11 @@ describe('UndoService', () => {
 
     service.hold();
     vi.advanceTimersByTime(UndoService.SHOW_MS * 10);
-    expect(service.notice()?.itemId).toBe(7);
+    expect(service.notice()?.itemIds).toEqual([7]);
 
     service.release();
     vi.advanceTimersByTime(UndoService.SHOW_MS - 1);
-    expect(service.notice()?.itemId).toBe(7);
+    expect(service.notice()?.itemIds).toEqual([7]);
     vi.advanceTimersByTime(1);
     expect(service.notice()).toBeNull();
   });
@@ -78,7 +78,7 @@ describe('UndoService', () => {
   });
 
   it('puts back every pack the slider used up, then reloads the kitchen', () => {
-    service.showUsedUp([1, 2]);
+    service.showUsedUp([1, 2], 'Milch');
     expect(service.notice()?.itemIds).toEqual([1, 2]);
     expect(service.notice()?.message).toBe('undo.used_up');
 
@@ -108,6 +108,6 @@ describe('UndoService', () => {
       .expectOne(`${environment.apiUrl}/items/7/undo`)
       .flush({ error: "That one can't be undone any more." }, { status: 422, statusText: 'x' });
 
-    expect(service.notice()?.itemId).toBeUndefined();
+    expect(service.notice()?.itemIds).toBeUndefined();
   });
 });

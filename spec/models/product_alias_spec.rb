@@ -116,6 +116,18 @@ RSpec.describe ProductAlias do
     end
   end
 
+  # "Hähnchenbrust" typed missed the seeded "haehnchenbrust" and cost a call.
+  it "finds a word however its umlauts are spelled" do
+    create(:product_alias, raw_text: "haehnchenbrust", canonical_name: "Hähnchenbrust", category: "meat_fish")
+
+    expect(described_class.lookup("Hähnchenbrust", fuzzy: false)&.canonical_name).to eq("Hähnchenbrust")
+    expect(described_class.normalize_key("Süßkartoffel")).to eq("suesskartoffel")
+  end
+
+  it "keeps letters of any script in a key" do
+    expect(described_class.normalize_key("Сүү 1л")).to eq("сүү 1л")
+  end
+
   describe "learning and sharing what kitchens agree on" do
     let(:pudding) { Product.for("rice pudding") }
 

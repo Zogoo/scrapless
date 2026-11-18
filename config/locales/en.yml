@@ -24,8 +24,17 @@ en:
       audio_too_large: "That recording is too long. Try a shorter one."
     unreadable: "That one was hard to read. Want to try again, or just tell us the fresh stuff?"
     partial_parse: "We added what we recognised. Couldn't make sense of: %{list}"
+    bill: "This is a bill from eating out, so there's nothing to add to the kitchen."
     ai_unavailable: "Photo reading is off right now. You can still type or say what you got — that always works."
     too_many: "That is a lot of photos in one go. Give it an hour and try again."
+  units:
+    g: "g"
+    kg: "kg"
+    ml: "ml"
+    l: "l"
+    piece:
+      one: "piece"
+      other: "pieces"
   recipes:
     add_step: "Add the %{name}."
     ai_unavailable: "Recipe ideas are off for now. Your list still knows what to use first."

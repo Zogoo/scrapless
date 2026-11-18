@@ -21,7 +21,7 @@
         </span>
       </button>
 
-      <label class="option file-option">
+      <label class="option file-option as-button">
         <span class="glyph" aria-hidden="true">🖼</span>
         <span class="text">
           <strong>{{ 'capture.pick_photo' | translate }}</strong>
@@ -172,9 +172,9 @@
           <button
             type="button"
             class="chip"
-            [class.picked]="picked().includes(cell.word)"
-            [attr.aria-pressed]="picked().includes(cell.word)"
-            (click)="toggleTap(cell.word)"
+            [class.picked]="picked().includes(cell.key)"
+            [attr.aria-pressed]="picked().includes(cell.key)"
+            (click)="toggleTap(cell.key)"
           >
             <span aria-hidden="true">{{ cell.emoji }}</span>
             {{ 'capture.grid.' + cell.key | translate }}
@@ -208,21 +208,28 @@
         </header>
 
         @if (result.items.length === 0) {
-          <!-- Never a dead end: three ways forward (doc 4 §4.4). -->
+          <!-- Never a dead end: three ways forward (doc 4 §4.4). A bill was read
+               fine; there is just nothing to keep, so it ends here. -->
           <p class="lede">{{ result.capture.notes || ('capture.hard_to_read' | translate) }}</p>
-          <div class="fallbacks">
-            <button type="button" (click)="retakePhoto()">
-              {{ 'capture.retake' | translate }}
+          @if (result.capture.kind === 'bill') {
+            <button type="button" class="primary wide" (click)="done()">
+              {{ 'common.done' | translate }}
             </button>
-            @if (speech.supported) {
-              <button type="button" (click)="startVoice()">
-                {{ 'capture.voice' | translate }}
+          } @else {
+            <div class="fallbacks">
+              <button type="button" (click)="retakePhoto()">
+                {{ 'capture.retake' | translate }}
               </button>
-            }
-            <button type="button" (click)="mode.set('manual')">
-              {{ 'capture.manual' | translate }}
-            </button>
-          </div>
+              @if (speech.supported) {
+                <button type="button" (click)="startVoice()">
+                  {{ 'capture.voice' | translate }}
+                </button>
+              }
+              <button type="button" (click)="mode.set('manual')">
+                {{ 'capture.manual' | translate }}
+              </button>
+            </div>
+          }
         } @else {
           <p class="lede">{{ 'capture.review_lede' | translate }}</p>
 
