@@ -826,6 +826,30 @@ real `Memo::ListReader`, with OpenAI only. It prints the rows right per set, the
 counts, the model wait and the cost from the `AiCall` ledger. With AI off it reproduces the
 gate: 130 of 152 `sure`, as in the simulation above.
 
+**Measured end to end, 2026-11-18 🧪** (`results/2026-11-18-hybrid-live.txt`; one run, from a
+laptop):
+
+| | Right | Model called |
+|---|---|---|
+| Fixtures | 11/12 | 3 |
+| Hard sentences | 18/20 | 19 |
+| Generated EN / DE | 60/60 / 60/60 | 0 / 0 |
+| **All** | **149/152 (98 %)** | **22** |
+
+- **Path.** 130 dictations went to the segmenter (sure) and 22 to the model. None fell back:
+  no timeout, no error and no ungrounded answer.
+- **Wait for a model answer.** Median 1.5 s, 90th percentile 1.8 s, slowest 2.7 s. All are
+  inside the 4 s deadline.
+- **Cost.** $0.000057 per model call by the `AiCall` ledger, $0.0013 for all 22.
+- **The production code matches the simulation exactly.** It got 149 of 152 right, with
+  the same three cases wrong:
+  - "something for Sunday" was dropped as not an item;
+  - "Yuzu Tahini" was kept as one line;
+  - "Tomaten aus der Dose" came back as "Dose Tomaten".
+- **These numbers do not give production's model-call rate or wait.** The hard sentences
+  were written to contain unknown words, and the wait was measured from a laptop. Production
+  logs (`path`, `model_ms`) answer both.
+
 **Known limits, not handled**
 - **The model can come back short.** Across 152 cases `gpt-6-luna` returned 15 items fewer
   than expected, mostly merged neighbours and removed duplicates, plus a few real drops

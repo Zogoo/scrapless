@@ -1,0 +1,14 @@
+seeded 33 shelf-life rules and 76 dictionary entries
+Memo::ListReader, AI mode live, 152 cases
+set             right model used
+fixture         11/12      3
+hard            18/20     19
+generated_en    60/60      0
+generated_de    60/60      0
+ALL            149/152    22
+paths: {"segmenter/sure" => 130, "model/unsure" => 22}
+model wait ms: median 1511, p90 1818, max 2716
+model calls: 22, cost $0.001259 total, $0.000057 per call
+  wrong [model/unsure] milk toilet paper and something for Sunday -> milk · toilet paper
+  wrong [model/unsure] Yuzu Tahini und Gochujang -> Yuzu Tahini · Gochujang
+  wrong [model/unsure] Rinderhack Tomaten aus der Dose und Basilikum -> Rinderhack · Dose Tomaten · Basilikum
