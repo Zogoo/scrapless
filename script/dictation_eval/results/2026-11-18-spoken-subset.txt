@@ -1,0 +1,13 @@
+model                  subset          cases    lists    items
+segmenter              generated_en*      28     100%        -
+gpt-4o-mini            generated_en*      28      96%      98%
+gpt-5-nano_minimal     generated_en*      28      79%      92%
+gpt-5.4-nano_none      generated_en*      27      89%      96%
+gpt-6-luna_low         generated_en*      28      93%      97%
+gpt-6-luna_none        generated_en*      28      89%      96%
+segmenter              generated_de*      34     100%        -
+gpt-4o-mini            generated_de*      33      91%      95%
+gpt-5-nano_minimal     generated_de*      34      79%      90%
+gpt-5.4-nano_none      generated_de*      34      79%      88%
+gpt-6-luna_low         generated_de*      34      94%      97%
+gpt-6-luna_none        generated_de*      34      91%      96%

@@ -39,6 +39,12 @@ it cannot turn a natural sentence like "I want to buy bread, milk, eggs" into th
 >
 > **Cost per use stays $0** wherever the browser recogniser exists, and **$0.00075** per 15 s on
 > the recording fallback (§15.5). Plan in §15.6.
+>
+> **LLM splitting, measured 2026-11-18 (§15.11):** `gpt-6-luna` costs about **$0.000064 per
+> dictation**. It got 18 of 20 hard natural sentences right, where the segmenter got 3. Used
+> only when the segmenter does not know every word, it got 149 of 152 cases right. It adds
+> 1–2 s after release and needs a timeout with the segmenter as fallback. Also found:
+> `gpt-5-nano` and `gpt-5-mini`, the app's OpenAI defaults, **shut down on 11 Dec 2026**.
 
 ---
 
@@ -633,6 +639,151 @@ clipping, the hold threshold), iOS Safari, Android Chrome, and the iOS home-scre
 - **Filler lists.** The data files are curated starting points; coverage grows with learning and
   the evaluation set.
 
+---
+
+## 15.11 An LLM as the splitter: measured cost and quality 🧪
+
+**Question.** What does it cost to send the transcript to a GPT model and get back only the clean
+items, and is it better than `Text::Segmenter`?
+
+> **Answer, from one run on 2026-11-18.**
+> - **Cost: about $0.000064 per dictation** with `gpt-6-luna` (reasoning effort `none`). At
+>   13 dictations a household a month (§15.4) that is **≈ $0.0008 a month**. It is about a
+>   twelfth of one 15 s recording fallback ($0.00075, §15.5).
+> - **Quality: much better on natural speech, worse on clean lists.** On 20 hard sentences the
+>   model got **18** lists exactly right and the segmenter **3**. On clean dictionary lists
+>   the segmenter was right every time and the model was not.
+> - **Best measured: segmenter first, model only when the segmenter did not know every word.**
+>   That got **149 of 152** cases right and called the model on 22 of them.
+> - **The price is latency:** a median of 1.5 s and a 90th percentile of 2.3 s from this
+>   machine, after the finger is lifted. Also, 4 of 760 calls got no answer within 60 s.
+
+### Setup
+
+- **Cases (152):** the 12 sentences of `spec/fixtures/dictation`, plus 20 hand-written hard
+  sentences, plus 60 generated lists per locale built from the seeded dictionary with that
+  language's filler and separators (the generator from `segmenter_spec.rb`, seed 42).
+  - The hard sentences contain self-corrections ("Milch nee warte Hafermilch"), compounds the
+    dictionary lacks ("peanut butter", "chicken thighs"), quantities with units, words for
+    where and why ("at the bakery", "für den Kuchen"), non-food items, unknown foods
+    ("Yuzu Tahini und Gochujang") and an empty request.
+  - **They are not from real users**; no dictation log exists yet. They show which *kinds* of
+    input break each approach, not how often those kinds occur.
+- **Models:** `gpt-6-luna` (effort `none` and `low`), `gpt-5.4-nano` (`none`), `gpt-5-nano`
+  (`minimal`, today's default for `text_parse`) and `gpt-4o-mini` (temperature 0).
+- **Request:** Chat Completions with a strict JSON schema: `name`, `quantity`, `unit` and
+  `food` for each item. One system prompt covers every language and contains **no word
+  lists**, so a new language needs nothing added.
+- **Scoring:** a list counts only if every item is right, in order, with case and punctuation
+  ignored. The unit may be split off the name: "2 bottles of organic milk" can come back as
+  2 + bottles + "organic milk". The `food` flag is scored on the hard sentences.
+- **Reproduce:** `script/dictation_eval/run.sh` (README beside it). It uses a throwaway test
+  database, never the development one. The tables are in `script/dictation_eval/results/`.
+  The five models together cost about $0.07.
+- **Prices** are OpenAI's Standard tier, per 1M tokens input / output ✅
+  ([pricing](https://developers.openai.com/api/docs/pricing), read 2026-11-18):
+  `gpt-6-luna` $0.10 / $0.50, `gpt-5.4-nano` $0.20 / $1.25, `gpt-5-nano` $0.05 / $0.40,
+  `gpt-4o-mini` $0.15 / $0.60.
+
+### Results 🧪
+
+"Lists" is the share of lists exactly right. "Items" is the share of expected items that
+appear at all. Costs use the measured average tokens per call.
+
+| | Hard (20) lists | Hard items | All 152 lists | Tokens in / out | **USD per dictation** | Median / 90th pct. latency |
+|---|---|---|---|---|---|---|
+| `Text::Segmenter` | 15 % (3) | 63 % | 89 % | – | **$0** | ≈ 0 |
+| `gpt-6-luna` none | **90 % (18)** | 94 % | 82 % | 301 / 67 | **$0.000064** | 1.5 s / 2.3 s |
+| `gpt-6-luna` low | 90 % (18) | 94 % | 84 % | 301 / 168 | $0.000114 | 2.1 s / 3.8 s |
+| `gpt-4o-mini` | 90 % (18) | 94 % | 82 % | 302 / 61 | $0.000082 | 1.5 s / 2.2 s |
+| `gpt-5.4-nano` none | 85 % (17) | 93 % | 79 % | 301 / 67 | $0.000144 | 1.1 s / 1.4 s |
+| `gpt-5-nano` minimal | 75 % (15) | 81 % | 74 % | 301 / 73 | $0.000044 | 1.3 s / 2.0 s |
+
+- **Margin of error.** With 20 hard cases, 18 right has a 95 % Wilson interval of about
+  70–97 %, and 3 right about 5–36 %. The gap is real; the order among the top three models is
+  not established.
+- **Reasoning effort `low` bought nothing:** same accuracy, 2.5× the output tokens, and slower.
+- **Food flag:** on every hard list whose items were right, every `food` flag was right too
+  (17 of 17 for `gpt-6-luna`). Toilet paper, Spülmittel, Küchenrolle and Kerzen were all
+  marked non-food.
+- **No prompt caching applies.** The prompt is about 300 tokens, and OpenAI caches only from
+  1,024 ✅ ([prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching)).
+
+**Why the models score lower on the generated lists.** The seeded dictionary is built for
+receipts: it holds abbreviations ("gurk sal stck") and transliterations ("kaese", "aepfel"). The
+generator then puts two names for the same product side by side ("käse kaese"). The models
+"fixed" these: they split the abbreviation, respelled "broetchen" as "Brötchen", and merged
+duplicates. A recogniser never writes "kaese", so those lists are not speech. On the subset a
+person could say (spoken spellings only, no product twice; 28 EN and 34 DE lists, scored by
+`rescore.rb`), `gpt-6-luna` none got **89 % / 91 %** and the segmenter 100 %.
+
+**What the models still get wrong.** All of these are plausible readings without commas:
+- Adjacent nouns are merged: "rice toast", "spinach quark", "Yuzu Tahini".
+- A phrase is rewritten: "Tomaten aus der Dose" came back as "Dose Tomaten".
+- An item after "wir haben keinen" ("we have no") is sometimes dropped: "wir haben keinen
+  spaetzle dann salmon" gave only salmon.
+- "something for Sunday" is dropped as not an item.
+
+**What the segmenter gets wrong** is the opposite: it is literal. Every hard failure keeps the
+spoken words, in the wrong lines:
+- `ähm · Milch · nee warte Hafermilch`
+- `peanut · butter`
+- `chicken · breast · chicken · thighs`
+- `bread · at the bakery · milk`
+
+### Segmenter first, model only when it is unsure 🧪
+
+The gate is a fact the segmenter already has, not a new rule: whether **every line was
+accounted for by the lexicon**, i.e. an optional amount, unit or modifier, then a known item
+(`confident.rb`).
+
+| Hybrid with | Fixture | Hard | Generated EN | Generated DE | **All** |
+|---|---|---|---|---|---|
+| `gpt-6-luna` none | 11/12 | 18/20 | 60/60 | 60/60 | **149/152 (98 %)** |
+| `gpt-4o-mini` | 11/12 | 18/20 | 60/60 | 60/60 | 149/152 |
+| `gpt-5.4-nano` none | 11/12 | 17/20 | 60/60 | 60/60 | 148/152 |
+| `gpt-5-nano` minimal | 11/12 | 15/20 | 60/60 | 60/60 | 146/152 |
+
+- **The gate was never wrong when sure:** 0 of 130 confident answers were wrong. It sent 22
+  cases to the model: 19 of the 20 hard ones, and 3 fixtures.
+- **What the hybrid costs is unknown.** It is at most $0.000064 a dictation. It depends on how
+  often real speech contains a word the kitchen's lexicon lacks. This set's 22 of 152 says
+  nothing about that, because the hard cases were written to be unknown.
+- **The rate falls as kitchens are used.** Every correction and typed line grows that kitchen's
+  lexicon (§15.9), so fewer dictations need the model.
+- **Measure it, don't guess it:** log `escalated=true|false` beside the gesture fields
+  (§15.8.5).
+
+### What it would take, and the risks
+
+- **Latency is the real cost.** The lines would appear 1–2 s after release instead of at once.
+  4 of 760 calls (`gpt-5.4-nano` 3, `gpt-4o-mini` 1) got no answer within 60 s.
+  - A hybrid therefore needs a **short timeout with the segmenter's lines as the fallback**,
+    so the mic never waits on OpenAI.
+  - The right timeout is a heuristic to measure, not a figure from this run. Latency here was
+    measured from this Mac, not from the Fly region.
+- **Single run, model drift.** Reasoning models take no temperature, and answers can change
+  between runs and model versions. Rerun `run.sh` when a model changes.
+- **Transcripts would leave our server.** Today a browser transcript stops at our API. With
+  a hybrid, the unsure ones go to OpenAI, which already receives recordings and receipt photos.
+  They also count toward the daily AI budget (`Ai::Budget`).
+- **Dropping non-food is a product decision, not a model one.** The model flags it reliably. But
+  the memo is a shopping list, and toilet paper belongs on it. The flag fits capture (what goes
+  into the fridge) better than the memo.
+
+**Found on the way: deprecations that affect the app now** ✅
+([deprecations](https://developers.openai.com/api/docs/deprecations), read 2026-11-18):
+- **`gpt-5-nano` and `gpt-5-mini` shut down on 11 Dec 2026.** They are `Ai::Config`'s
+  OpenAI defaults for receipts, text and recipes. OpenAI names `gpt-6-luna` and
+  `gpt-6.1-terra` as replacements.
+- **`gpt-4o-mini-2024-07-18` shuts down on 14 Jan 2027.**
+- **`gpt-4o-mini-transcribe` shuts down on 26 Feb 2027.** The replacements are
+  `gpt-transcribe` and `gpt-live-transcribe`, and their prices were not checked here.
+
+`gpt-6-luna` is "Our most efficient model for focused, high-volume tasks". It supports
+Chat Completions, structured outputs and reasoning effort `none` ✅
+([model page](https://developers.openai.com/api/docs/models/gpt-6-luna)).
+
 ### Sources
 
 - **Code:**
@@ -665,6 +816,11 @@ clipping, the hold threshold), iOS Safari, Android Chrome, and the iOS home-scre
   [Android `SpeechRecognizer`](https://developer.android.com/reference/android/speech/SpeechRecognizer).
 - **Vendors:**
   [OpenAI pricing](https://developers.openai.com/api/docs/pricing) ·
+  [OpenAI `gpt-6-luna`](https://developers.openai.com/api/docs/models/gpt-6-luna) ·
+  [OpenAI `gpt-5.4-nano`](https://developers.openai.com/api/docs/models/gpt-5.4-nano) ·
+  [OpenAI `gpt-5-nano`](https://developers.openai.com/api/docs/models/gpt-5-nano) ·
+  [OpenAI deprecations](https://developers.openai.com/api/docs/deprecations) ·
+  [OpenAI prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching) ·
   [OpenAI transcription API](https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create) ·
   [OpenAI speech-to-text guide](https://developers.openai.com/api/docs/guides/speech-to-text) ·
   [Groq speech-to-text](https://console.groq.com/docs/speech-to-text) ·
