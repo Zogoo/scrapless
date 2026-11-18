@@ -102,9 +102,9 @@
   transform: translateY(-50%);
   pointer-events: none;
 
-  /* The bite is cut in from that edge. Pull the face left until the bite meets the bar. */
+  /* The bite's inner edge is 44% across the drawing. Sit that edge on the bar. */
   &.bitten {
-    left: calc(var(--p) * 1% - var(--radish) * 0.394);
+    left: calc(var(--p) * 1% - var(--radish) * 0.44);
   }
 
   img {
