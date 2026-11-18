@@ -103,7 +103,9 @@
   height: calc(var(--radish) * 300 / 200);
   box-sizing: border-box;
   transform: translateY(calc(-50% - var(--stand)));
-  pointer-events: none;
+  /* The radish is the thumb. A press here drags the same slider as the bar. */
+  touch-action: none;
+  cursor: pointer;
 
   /* Opened: both feet are on the bar, and the bar ends at the back foot. */
   &.bitten {
@@ -116,6 +118,8 @@
     display: block;
     width: 100%;
     height: 100%;
+    /* The bite receives the pointer, so the picture cannot start an image drag. */
+    pointer-events: none;
   }
 
   img {
