@@ -43,6 +43,25 @@ RSpec.describe Items::Resolve do
     expect(milk.reload).to have_attributes(opened_on: Date.current - 2, window_end: Date.current + 1)
   end
 
+  it "records a half-used pack as half wasted, not a whole pack" do
+    item = create(:item, household: household, amount_left: 0.5, quantity: 1)
+
+    described_class.call(item: item, outcome: "wasted")
+
+    expect(item.reload).to have_attributes(state: "wasted", amount_left: 0.5)
+    expect(item.quantity.to_f).to eq(0.5)
+    expect(item.item_events.last.meta_payload["amount"]).to eq(0.5)
+  end
+
+  it "records an untouched pack as one wasted" do
+    item = create(:item, household: household, amount_left: 1)
+
+    described_class.call(item: item, outcome: "wasted")
+
+    expect(item.reload.quantity.to_f).to eq(1)
+    expect(item.item_events.last.meta_payload["amount"]).to eq(1)
+  end
+
   it "records the item as it was, so the tap can be undone" do
     item = create(:item, household: household)
 

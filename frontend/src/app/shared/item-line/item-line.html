@@ -9,22 +9,25 @@
   @if (line().first.safety_date) {
     <span class="badge">{{ 'today.safety_date' | translate }}</span>
   }
-  <span class="amount">{{ 'kitchen.percent' | translate: { count: percent() } }}</span>
+  <span class="amount">{{ 'kitchen.packs' | translate: { amount: packsLabel() } }}</span>
 </div>
-<!-- One slider, five stops. Each pack is its own rounded bar: newest at the
-     left edge, oldest flush against the thumb, a gap between them. Sliding
-     down eats that older bar. 0% uses the line. Empty track stays sunken. -->
+<!-- Stops depend on how many packs are on the line. Up to two, each move is
+     a quarter. Past that, each move is one whole pack until two remain.
+     The label is the pack amount. Newest bar at the left, oldest against the
+     thumb. 0 uses the line. Empty track stays sunken. -->
 <div class="slider" [style.--p]="percent()">
   <input
     type="range"
     class="level"
     min="0"
     max="100"
-    step="25"
+    step="any"
     [value]="percent()"
     [attr.aria-label]="'kitchen.how_much' | translate: { name: line().first.display_name }"
-    [attr.aria-valuetext]="'kitchen.percent' | translate: { count: percent() }"
+    [attr.aria-valuetext]="'kitchen.packs' | translate: { amount: packsLabel() }"
     (pointerdown)="beginGesture()"
+    (keydown)="nudge($event)"
+    (keyup)="releaseNudge($event)"
     (input)="slide($event)"
     (change)="commitLevel($event)"
   />
@@ -40,6 +43,7 @@
   <span
     class="bite"
     [class.full]="percent() === 100"
+    [class.open]="bites() === 1"
     role="img"
     [attr.data-bites]="bites()"
     [attr.aria-label]="(opened() ? 'kitchen.lock_open' : 'kitchen.lock_closed') | translate"
@@ -53,10 +57,14 @@
     @if (bites() < 4) {
       <svg viewBox="0 0 24 24" aria-hidden="true">
         @if (bites() === 0) {
-          <circle class="body" cx="12" cy="12" r="10" />
+          <circle class="body" cx="12" cy="12" r="10" [style.fill]="pac.color()" />
           <line class="mouth" x1="12" y1="12" x2="2" y2="12" />
         } @else {
-          <path class="body" d="M 12 12 L 4.929 4.929 A 10 10 0 1 1 4.929 19.071 Z" />
+          <path
+            class="body"
+            d="M 12 12 L 4.929 4.929 A 10 10 0 1 1 4.929 19.071 Z"
+            [style.fill]="pac.color()"
+          />
         }
         @if (bites() < 3) {
           <circle class="eye" cx="14" cy="6.5" r="1.5" />

@@ -44,7 +44,10 @@ interface ItemLineScreen {
   beginGesture(): void;
   slide(event: Event): void;
   commitLevel(event: Event): void;
+  nudge(event: KeyboardEvent): void;
+  releaseNudge(event: KeyboardEvent): void;
   move(item: ScoredItem, storage: Storage): void;
+  resolve(item: ScoredItem, outcome: 'wasted'): void;
 }
 
 function slider(percent: number): Event {
@@ -63,6 +66,7 @@ describe('Item line', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
+    localStorage.removeItem('scrapless_pac');
     TestBed.configureTestingModule({
       imports: [ItemLine],
       providers: [
@@ -103,6 +107,42 @@ describe('Item line', () => {
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
   });
 
+  it('takes one whole pack off a 4-pack line, and the label stays a pack amount', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('en', { kitchen: { packs: '{{amount}} pk.' } });
+    translate.use('en');
+    fixture.componentRef.setInput('line', toLines([pack(1), pack(2), pack(3), pack(4)])[0]);
+    fixture.detectChanges();
+    const screen = fixture.componentInstance as unknown as ItemLineScreen;
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.amount')?.textContent).toContain('4 pk.');
+
+    const target = root.querySelector('.level') as HTMLInputElement;
+    const down = {
+      key: 'ArrowLeft',
+      preventDefault() {},
+      target,
+    } as unknown as KeyboardEvent;
+    screen.nudge(down);
+    fixture.detectChanges();
+    expect(root.querySelector('.amount')?.textContent).toContain('3 pk.');
+    expect(root.querySelector('.amount')?.textContent).not.toContain('%');
+
+    screen.releaseNudge(down);
+
+    const opened = http.expectOne(`${environment.apiUrl}/items/1/resolve`);
+    expect(opened.request.body).toEqual(sliderOpen(100));
+    opened.flush({});
+    const revert = http.expectOne(`${environment.apiUrl}/items/1/revert_open`);
+    expect(revert.request.body).toEqual({ percent: 75 });
+    revert.flush({});
+    const req = http.expectOne(`${environment.apiUrl}/items/level`);
+    expect(req.request.body).toEqual({ ids: [1, 2, 3, 4], level: 3 });
+    req.flush({ items: [] });
+    http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
+  });
+
   it('uses the whole line when the slider reaches 0%', () => {
     const screen = mount(toLines([pack(1), pack(2, 0.5)])[0]);
 
@@ -118,6 +158,8 @@ describe('Item line', () => {
     expect(req.request.body).toEqual({ ids: [1, 2], level: 0 });
     req.flush({ items: [] });
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
+
+    expect(TestBed.inject(UndoService).notice()?.itemIds).toEqual([1, 2]);
   });
 
   it('opens the soonest pack on the first move, and not again', () => {
@@ -204,6 +246,40 @@ describe('Item line', () => {
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
   });
 
+  it('labels the bars in packs, including a quarter of one', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('en', {
+      kitchen: { packs: '{{amount}} pk.', lock_closed: 'Unopened', lock_open: 'Opened' },
+    });
+    translate.use('en');
+    fixture.componentRef.setInput('line', toLines([pack(1), pack(2)])[0]);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.amount')?.textContent).toContain('2 pk.');
+    expect(root.querySelector('.level')?.getAttribute('aria-valuetext')).toBe('2 pk.');
+
+    fixture.componentRef.setInput('line', toLines([pack(3, 0.25)])[0]);
+    fixture.detectChanges();
+    expect(root.querySelector('.amount')?.textContent).toContain('¼ pk.');
+  });
+
+  it('throws away the soonest pack on a grouped line', () => {
+    const later = pack(1, 1, 'milk', '2026-11-20');
+    const soon = pack(2, 0.5, 'milk', '2026-11-14');
+    const line = toLines([later, soon])[0];
+    const screen = mount(line);
+
+    screen.resolve(line.first, 'wasted');
+
+    const req = http.expectOne(`${environment.apiUrl}/items/2/resolve`);
+    expect(req.request.body).toEqual({ outcome: 'wasted' });
+    req.flush({});
+    http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
+    expect(TestBed.inject(UndoService).notice()?.itemId).toBe(2);
+  });
+
   it('draws one bar per pack, even when both are the same colour', () => {
     const fixture = TestBed.createComponent(ItemLine);
     const translate = TestBed.inject(TranslateService);
@@ -242,7 +318,19 @@ describe('Item line', () => {
     expect(getComputedStyle(bite!.querySelector('.eye')!).fill).toBe('rgb(26, 28, 25)');
     expect(bite?.querySelectorAll('.dot')).toHaveLength(0);
     expect(bite?.classList.contains('full')).toBe(true);
+    expect(bite?.classList.contains('open')).toBe(false);
     expect(root.querySelector('.slider')?.getAttribute('style')).toContain('--p: 100');
+  });
+
+  it('paints the thumb in the color saved on this phone', () => {
+    localStorage.setItem('scrapless_pac', 'coral');
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
+    fixture.detectChanges();
+
+    const bite = (fixture.nativeElement as HTMLElement).querySelector('.bite');
+    expect(getComputedStyle(bite!.querySelector('.body')!).fill).toBe('rgb(255, 138, 101)');
+    expect(getComputedStyle(bite!.querySelector('.eye')!).fill).toBe('rgb(26, 28, 25)');
   });
 
   it('keeps one open mouth at 75, 50, and 25, with two dots ahead', () => {
@@ -266,6 +354,7 @@ describe('Item line', () => {
     expect(full.querySelector('.eye')).not.toBeNull();
     expect(full.querySelectorAll('.dot')).toHaveLength(0);
     expect(full.querySelector('.bite')?.classList.contains('full')).toBe(true);
+    expect(full.querySelector('.bite')?.classList.contains('open')).toBe(false);
 
     for (const amount of [0.75, 0.5, 0.25]) {
       const open = show(amount);
@@ -277,6 +366,7 @@ describe('Item line', () => {
       expect(open.querySelector('.eye')).not.toBeNull();
       expect(open.querySelector('.mouth')).toBeNull();
       expect(open.querySelector('.bite')?.classList.contains('full')).toBe(false);
+      expect(open.querySelector('.bite')?.classList.contains('open')).toBe(true);
     }
 
     const gone = show(0);

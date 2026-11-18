@@ -98,16 +98,18 @@
     left: calc(100% - var(--thumb) + var(--thumb) / 12);
   }
 
+  /* The range inset leaves empty track in front of an open mouth at 25%, and
+     covers the mouth at 75%. Center the face on the colour so the bite meets
+     the bar and both pellets sit on it. */
+  &.open {
+    left: calc(var(--p) * 1% - var(--thumb) / 2);
+  }
+
   svg {
     display: block;
     width: 100%;
     height: 100%;
     overflow: hidden;
-  }
-
-  .body {
-    /* Classic Pac-Man yellow, the same on light and dark. */
-    fill: #ffcc00;
   }
 
   .mouth {

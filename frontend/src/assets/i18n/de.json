@@ -126,7 +126,7 @@
     "title": "Küche",
     "empty_group": "Hier ist nichts.",
     "how_much": "Wie viel {{name}} noch da ist",
-    "percent": "{{count}} %",
+    "packs": "{{amount}} Pck.",
     "remove": "Aus der Küche entfernen",
     "jump": "Orte in der Küche",
     "move_label": "{{name}} ist im {{place}}. Woanders hin",
@@ -177,6 +177,14 @@
     "forget_confirm": "Ja, alles löschen",
     "failures": "{{count}} Lesevorgänge haben nicht geklappt. Du kannst jederzeit tippen oder sagen, was du gekauft hast.",
     "language": "Sprache",
+    "pac_color": "Pac-Man-Farbe",
+    "pac_color_note": "Auf diesem Handy. Das Auge bleibt dunkel.",
+    "pac_colors": {
+      "yellow": "Gelb",
+      "orange": "Orange",
+      "coral": "Koralle",
+      "sky": "Himmelblau"
+    },
     "jobs": {
       "receipt_extract": "Fotos lesen",
       "shelf_photo_extract": "Lebensmittelfotos lesen",
@@ -214,6 +222,7 @@
   "undo": {
     "action": "Rückgängig",
     "used": "{{name}}: verbraucht",
+    "used_up": "Aufgebraucht",
     "wasted": "Danke — notiert.",
     "partial": "{{name}}: Hälfte übrig",
     "froze": "{{name}} ist im Gefrierfach",

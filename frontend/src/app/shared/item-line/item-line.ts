@@ -12,8 +12,17 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { Outcome, ScoredItem, Storage } from '../../core/models';
 import { ItemsService } from '../../core/services/items.service';
+import { PacColorService } from '../../core/services/pac-color.service';
 import { UndoService } from '../../core/services/undo.service';
-import { KitchenLine, TrackDraw, levelFromPercent, levelPercent, trackBars } from './line';
+import {
+  KitchenLine,
+  TrackDraw,
+  levelFromPercent,
+  levelPercent,
+  packAmount,
+  stepLevel,
+  trackBars,
+} from './line';
 
 /**
  * One food line: the percentage slider, Move, and Gone.
@@ -42,6 +51,7 @@ export class ItemLine {
 
   private readonly items = inject(ItemsService);
   private readonly undo = inject(UndoService);
+  protected readonly pac = inject(PacColorService);
 
   protected readonly moving = signal<ScoredItem | null>(null);
   /**
@@ -68,6 +78,14 @@ export class ItemLine {
 
   protected readonly storages: Storage[] = ['fridge', 'freezer', 'pantry'];
 
+  /** Ignores a second commit of the same stop, from keyup and change together. */
+  private lastCommit: number | null = null;
+
+  /** The bars, in packs: "2", "¼", "1½". The translation adds Pck. / pk. */
+  protected packsLabel(): string {
+    return packAmount(levelFromPercent(this.percent(), this.line().packs.length));
+  }
+
   protected percent(): number {
     const line = this.line();
     const preview = this.preview();
@@ -89,14 +107,14 @@ export class ItemLine {
   }
 
   /**
-   * 100% is the closed mouth. 75%, 50%, and 25% share one open mouth, the
-   * same wedge. 0% takes the circle.
+   * A full line is the closed mouth. Anything still left shares one open
+   * wedge. Nothing left takes the circle.
    */
   protected bites(): number {
     if (!this.opened()) return 0;
-    const steps = Math.round((100 - this.percent()) / 25);
-    if (steps <= 0) return 0;
-    if (steps >= 4) return 4;
+    const left = this.level();
+    if (left <= 0) return 4;
+    if (left >= this.line().packs.length) return 0;
     return 1;
   }
 
@@ -174,9 +192,27 @@ export class ItemLine {
     resume?.();
   }
 
+  /** Arrow keys move one stop. The pointer still lands on the nearest stop. */
+  protected nudge(event: KeyboardEvent): void {
+    const direction = nudgeDirection(event.key);
+    if (direction === 0) return;
+
+    event.preventDefault();
+    const count = this.line().packs.length;
+    const percent = levelPercent(stepLevel(this.level(), count, direction), count);
+    (event.target as HTMLInputElement).value = String(percent);
+    this.slide(event);
+  }
+
+  protected releaseNudge(event: KeyboardEvent): void {
+    if (nudgeDirection(event.key) === 0) return;
+    this.commitLevel(event);
+  }
+
   protected slide(event: Event): void {
     this.beginGesture();
-    const percent = Number((event.target as HTMLInputElement).value);
+    const percent = this.percentFromPointer(event);
+    if (percent !== this.lastCommit) this.lastCommit = null;
     this.preview.set({ key: this.line().key, percent });
     if (this.gesture && percent !== this.gesture.startPercent) this.openOnFirstMove();
   }
@@ -188,8 +224,11 @@ export class ItemLine {
    * A pack that was already open only changes its amount. 0% still uses the line.
    */
   protected commitLevel(event: Event): void {
+    const percent = this.percentFromPointer(event);
+    if (percent === this.lastCommit) return;
+    this.lastCommit = percent;
+
     this.beginGesture();
-    const percent = Number((event.target as HTMLInputElement).value);
     const gesture = this.gesture;
     if (!gesture) return;
 
@@ -255,13 +294,18 @@ export class ItemLine {
     this.preview.set({ key: line.key, percent: levelPercent(level, line.packs.length) });
 
     this.items.level(ids, level).subscribe({
-      next: () =>
+      next: () => {
+        // 0% has already marked every pack on the line used. The toast can
+        // put them back, the same way Weggeworfen can.
+        if (level === 0) this.undo.showUsedUp(ids);
         this.items.load().subscribe({
           next: () => {
             this.preview.set(null);
             this.openingId = null;
+            this.lastCommit = null;
           },
-        }),
+        });
+      },
       error: (err: { message?: string }) => this.fail(err),
     });
   }
@@ -296,12 +340,28 @@ export class ItemLine {
     });
   }
 
+  private percentFromPointer(event: Event): number {
+    const input = event.target as HTMLInputElement;
+    const raw = Number(input.value);
+    const count = this.line().packs.length;
+    const percent = levelPercent(levelFromPercent(raw, count, this.percent()), count);
+    input.value = String(percent);
+    return percent;
+  }
+
   private fail(err: { message?: string }): void {
     this.preview.set(null);
     this.openingId = null;
+    this.lastCommit = null;
     this.failed.emit(err.message ?? '');
     this.items.load().subscribe();
   }
+}
+
+function nudgeDirection(key: string): -1 | 1 | 0 {
+  if (key === 'ArrowLeft' || key === 'ArrowDown') return -1;
+  if (key === 'ArrowRight' || key === 'ArrowUp') return 1;
+  return 0;
 }
 
 /** Dates from before a drag's first move. A cancelled open puts these back. */

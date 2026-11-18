@@ -77,6 +77,19 @@ describe('UndoService', () => {
     expect(service.notice()).not.toBeNull();
   });
 
+  it('puts back every pack the slider used up, then reloads the kitchen', () => {
+    service.showUsedUp([1, 2]);
+    expect(service.notice()?.itemIds).toEqual([1, 2]);
+    expect(service.notice()?.message).toBe('undo.used_up');
+
+    service.undo();
+    http.expectOne(`${environment.apiUrl}/items/1/undo`).flush({});
+    http.expectOne(`${environment.apiUrl}/items/2/undo`).flush({});
+    http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
+
+    expect(service.notice()).toBeNull();
+  });
+
   it('undoes on the server and then reloads the kitchen', () => {
     service.showOutcome(broccoli, 'used');
 
