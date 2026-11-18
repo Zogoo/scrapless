@@ -17,4 +17,20 @@ RSpec.describe "db/seeds.rb" do
 
     expect(unresolved).to be_empty
   end
+
+  # Doc 3: food we cannot place gets a wide "about a week?" band — never the
+  # half year a cupboard used to give it.
+  it "gives food nobody could place about a week, in the cupboard too" do
+    %w[fridge pantry].each do |storage|
+      window = Freshness::Estimator.call(category: "other", storage: storage, acquired_on: Date.current)
+      expect(window.window_end - Date.current).to be <= 14
+    end
+  end
+
+  # Tins are pantry; meat or fish in the cupboard is raw food left out.
+  it "never keeps meat or fish in the cupboard for more than a day" do
+    window = Freshness::Estimator.call(category: "meat_fish", storage: "pantry", acquired_on: Date.current)
+
+    expect(window.window_end - Date.current).to be <= 1
+  end
 end

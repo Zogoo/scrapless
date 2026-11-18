@@ -105,6 +105,59 @@
   }
 }
 
+/* --- reading: the photo stays up while a lens works its way down it --- */
+.reading {
+  display: grid;
+  gap: 0.75rem;
+
+  .photo {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 3 / 4;
+    border-radius: var(--radius);
+  }
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(0.7);
+  }
+
+  .lens {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    font-size: 3.5rem;
+    translate: -50% -50%;
+    animation: read-lines 3s ease-in-out infinite;
+  }
+}
+
+/* Left to right, line by line, down the page: how a receipt is read. */
+@keyframes read-lines {
+  0%,
+  100% {
+    left: 25%;
+    top: 25%;
+  }
+  33% {
+    left: 72%;
+    top: 45%;
+  }
+  66% {
+    left: 28%;
+    top: 68%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reading .lens {
+    animation: none;
+  }
+}
+
 .hint {
   margin: 0;
   text-align: center;
@@ -212,25 +265,13 @@
 
 /* A <label> wrapping a hidden file input has to carry the button's own hit area
    and focus affordance, or it is a 48px target that looks like one and is not. */
-.file-option,
-.pick-fallback {
+.file-option {
   cursor: pointer;
 
   &:focus-within {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
-}
-
-.pick-fallback {
-  display: grid;
-  place-items: center;
-  flex: 1 1 auto;
-  min-height: var(--tap);
-  padding: 0.6rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-  text-align: center;
 }
 
 /* --- review --- */

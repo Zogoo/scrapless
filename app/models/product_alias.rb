@@ -30,14 +30,18 @@ class ProductAlias < ApplicationRecord
   #
   # The kitchen's own corrections are tried before the shared dictionary at
   # each step, but an exact shared hit still beats a fuzzy household one.
-  def self.lookup(texts, merchant: nil, household: nil)
+  #
+  # `fuzzy: false` stops after the exact matches (see Items::Resolver).
+  def self.lookup(texts, merchant: nil, household: nil, fuzzy: true)
     keys = Array(texts).flat_map { |text| [ normalize_key(text), without_quantities(normalize_key(text)) ] }
                        .reject(&:blank?).uniq
     return nil if keys.empty?
 
     layers = [ household && where(household: household), shared ].compact
-    first_hit(layers, keys) { |layer, key| layer.exact_match(key, merchant) } ||
-      first_hit(layers, keys) { |layer, key| layer.token_match(key) }
+    exact = first_hit(layers, keys) { |layer, key| layer.exact_match(key, merchant) }
+    return exact if exact || !fuzzy
+
+    first_hit(layers, keys) { |layer, key| layer.token_match(key) }
   end
 
   # "h milch 3 5" -> "h milch"; "babyspinat 260g" -> "babyspinat".

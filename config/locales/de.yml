@@ -1,4 +1,7 @@
 de:
+  language:
+    # This language's name in English, for the AI prompts (Ai::Language).
+    english_name: "German"
   auth:
     no_fridge: "Noch kein Kühlschrank — leg einen an, wir merken ihn uns."
     too_many_fridges: "Das sind viele neue Kühlschränke. Probier es in einer Stunde nochmal."

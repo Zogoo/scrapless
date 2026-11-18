@@ -12,15 +12,23 @@ rules = {
   #                 fridge            freezer            pantry
   "produce" =>    [ [ 5,   9,  5 ], [ 180, 300,  90 ], [   4,   8,   5 ] ],
   "dairy" =>      [ [ 8,  14,  6 ], [  60,  90,  60 ], [  60, 180,  30 ] ],
-  "meat_fish" =>  [ [ 2,   3,  2 ], [ 120, 270,  60 ], [ 365, 730,  90 ] ],
+  # Meat or fish in the cupboard is raw food left out — tins are "pantry" (see
+  # Categories::GUIDE) — and goes off within hours (USDA FSIS, "Danger Zone").
+  # It used to get 365–730 days: a kitchen saw "Meat — fine for about 24 months".
+  "meat_fish" =>  [ [ 2,   3,  2 ], [ 120, 270,  60 ], [   1,   1,  1 ] ],
   "bakery" =>     [ [ 5,   8,  4 ], [  60,  90,  45 ], [   3,   5,   3 ] ],
   "deli" =>       [ [ 4,   7,  4 ], [  30,  60,  30 ], [  30,  60,  30 ] ],
   "prepared" =>   [ [ 2,   3,  2 ], [  60,  90,  45 ], [   5,  10,   5 ] ],
   "frozen" =>     [ [ 1,   2,  1 ], [ 120, 240,  90 ], [   1,   1,   1 ] ],
   "pantry" =>     [ [ 30,  90, 30 ], [ 180, 365,  90 ], [ 180, 365,  60 ] ],
   "drinks" =>     [ [ 10,  20,  7 ], [  90, 180,  60 ], [ 120, 365,  20 ] ],
-  "other" =>      [ [ 6,  10,  5 ], [ 120, 240,  90 ], [  60, 180,  45 ] ],
-  "unknown" =>    [ [ 6,  10,  5 ], [ 120, 240,  90 ], [  60, 180,  45 ] ]
+  # Food we cannot place gets doc 3's wide "about a week?" band, in the
+  # cupboard too. It used to get up to 180 days there, so anything the parser
+  # did not recognise — scallops, cold cuts, soy yoghurt — sat "fine for about 6
+  # months". Too short means an early nudge; too long means food that rots
+  # unseen. The freezer keeps its months: freezing really does stop the clock.
+  "other" =>      [ [ 6,  10,  5 ], [ 120, 240,  90 ], [   6,  10,  5 ] ],
+  "unknown" =>    [ [ 6,  10,  5 ], [ 120, 240,  90 ], [   6,  10,  5 ] ]
 }
 
 rules.each do |category, (fridge, freezer, pantry)|

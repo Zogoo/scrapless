@@ -22,7 +22,7 @@ module Ai
               quantity: { type: %w[number null] },
               unit: { type: %w[string null] },
               category: { type: "string", enum: Categories::NAMES },
-              storage: { type: "string", enum: %w[fridge freezer pantry] }
+              storage: { type: "string", enum: Item::STORAGES }
             }
           }
         }
@@ -34,8 +34,9 @@ module Ai
 
       Rules:
       - One entry per distinct food. "two chicken breasts" is one entry, quantity 2.
-      - name is plain language in the input's own language.
-      - category must be one of the allowed values; use "other" when unsure.
+      - name is plain language, written in %<language>s whatever language the input is in.
+      - category is the closest of these:
+      %<categories>s
       - storage is where a normal household would put it once home.
       - Ignore words that are not food ("I bought", "and", "also").
       - Return an empty list rather than guessing at an unintelligible input.
@@ -53,7 +54,7 @@ module Ai
       Router.new(household: @household).json_completion(
         purpose: :text_parse, schema: SCHEMA, max_output_tokens: 1200,
         messages: [
-          { role: "system", content: SYSTEM },
+          { role: "system", content: format(SYSTEM, language: Language.name, categories: Categories.prompt_guide) },
           { role: "user", content: @text }
         ]
       )

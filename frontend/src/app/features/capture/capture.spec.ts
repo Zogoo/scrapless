@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { environment } from '../../../environments/environment';
 import { CaptureReview } from '../../core/models';
 import { PushService } from '../../core/services/push.service';
-import { Capture } from './capture';
+import { Capture, SLOW_READ_MS } from './capture';
 
 function reviewOf(...ids: number[]): CaptureReview {
   return {
@@ -117,6 +117,68 @@ describe('Capture review', () => {
 
       expect(fixture.nativeElement.querySelector('.notify-ask')).toBeNull();
       expect(push.shouldAsk()).toBe(false);
+    });
+  });
+
+  // A stopped camera is a black screen, and reading takes seconds: users took
+  // that for a frozen app. The photo stays up with a lens moving over it.
+  describe('while a photo is read', () => {
+    interface Reader {
+      readPhoto(blob: Blob): void;
+      mode(): string;
+      shot(): string | null;
+      slow(): boolean;
+      error(): string;
+    }
+
+    let fixture: ReturnType<typeof TestBed.createComponent<Capture>>;
+    let reader: Reader;
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      URL.createObjectURL = vi.fn(() => 'blob:photo');
+      URL.revokeObjectURL = vi.fn();
+      fixture = TestBed.createComponent(Capture);
+      reader = fixture.componentInstance as unknown as Reader;
+      reader.readPhoto(new Blob(['x'], { type: 'image/jpeg' }));
+      fixture.detectChanges();
+    });
+
+    afterEach(() => vi.useRealTimers());
+
+    it('shows the photo with a moving lens, not a black screen', () => {
+      const screen = fixture.nativeElement.querySelector('.reading');
+      expect(screen.querySelector('img').getAttribute('src')).toBe('blob:photo');
+      expect(screen.querySelector('.lens')).not.toBeNull();
+      expect(screen.getAttribute('role')).toBe('status');
+      http.expectOne(`${environment.apiUrl}/captures`);
+    });
+
+    it('says it is still working once the wait passes ten seconds', () => {
+      vi.advanceTimersByTime(SLOW_READ_MS - 1);
+      expect(reader.slow()).toBe(false);
+
+      vi.advanceTimersByTime(1);
+      expect(reader.slow()).toBe(true);
+      http.expectOne(`${environment.apiUrl}/captures`);
+    });
+
+    it('moves on to the review and lets the photo go', () => {
+      http.expectOne(`${environment.apiUrl}/captures`).flush(reviewOf(1));
+
+      expect(reader.mode()).toBe('review');
+      expect(reader.shot()).toBeNull();
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:photo');
+    });
+
+    it('goes back to the start with the error when reading fails', () => {
+      http
+        .expectOne(`${environment.apiUrl}/captures`)
+        .flush({ error: 'nope' }, { status: 503, statusText: 'Service Unavailable' });
+
+      expect(reader.mode()).toBe('choose');
+      expect(reader.shot()).toBeNull();
+      expect(reader.error()).not.toBe('');
     });
   });
 });

@@ -53,6 +53,8 @@
     "voice_prompt": "Say what you bought.",
     "done_talking": "Done",
     "reading": "Reading that…",
+    "reading_photo": "Reading your photo…",
+    "still_reading": "Still reading — long receipts take a little longer.",
     "review_count": "{{count}} items",
     "review_lede": "We got these. Remove anything that is not right — nothing to confirm.",
     "about_days": "~{{count}} days",

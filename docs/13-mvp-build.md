@@ -294,6 +294,26 @@ request log, now filtered.
 the tap on a real lock-screen notification (a synthetic click cannot focus a window), the
 app-icon badge, and Fly's scheduled machine.
 
+
+### And what reading real receipts and photos found
+
+A German kitchen's photos came back as "(bundle)" and "(item line repeated)", each "fine for
+about 6 months", and "Meat" at 24, behind a camera that went black for the whole read. Reproduced
+with the live model on a REWE-style Bon, a restaurant bill and three fridge photos; the
+fixes were re-run against the same images.
+
+| Found | Fix |
+|---|---|
+| **Detail rows became food.** Asked for "one entry per printed line", the model also returned the rows a till prints *under* a product — a count, a weight, a multi-buy saving — and invented names for them. | Every row now carries a required `row` label (`Ai::ImageReader::ROWS`); only `food` becomes an item, the rest is listed as left out. A restaurant bill is all `not_food`. |
+| **Names in the wrong language.** Nothing told the model the person's language; photos came back in English, and the dictionary then fuzzy-matched those English descriptions ("bag baby carrots" → Babyspinat). | `Ai::Language` puts the app's language (from `X-Locale`) into every prompt; each locale file names its own language. A fuzzy dictionary match may only fill a category the model left empty. |
+| **Unknown meant half a year.** The photo reader never asked for a category, so a hand-written keyword list guessed — Erdbeer Mascarpone was a drink ("erdBEER") — and every miss fell to "other" in the cupboard at 60–180 days. | The model picks category and storage from a shared description (`Categories::GUIDE`); "other" gets doc 3's "about a week?" band wherever it is kept. |
+| **Raw meat kept two years in the cupboard.** The seeded meat-in-pantry rule (365–730 days) was meant for tins, which the guide now files as pantry. | Meat or fish in the cupboard gets a day, as frozen food there already did: perishables left out go off within hours (USDA FSIS, "Danger Zone"). |
+| **The camera looked frozen.** The stream stops at the shutter and reading takes 4–16 s, with only a small line of text below the black viewfinder. | The photo stays on screen with a lens moving over it; past ten seconds it says it is still reading (NN/g: a looping indicator suits 2–10 s). |
+
+⚠️ **Still open:** the shared dictionary's own names are German, so an English app reading a
+German Bon still gets "Frischmilch" for an exact hit; and items already captured keep the
+windows they were given.
+
 ---
 
 ## 13.4c Deployment
