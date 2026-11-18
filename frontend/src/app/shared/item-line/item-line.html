@@ -40,6 +40,7 @@
   <span
     class="bite"
     [class.full]="percent() === 100"
+    [class.open]="bites() === 1"
     role="img"
     [attr.data-bites]="bites()"
     [attr.aria-label]="(opened() ? 'kitchen.lock_open' : 'kitchen.lock_closed') | translate"

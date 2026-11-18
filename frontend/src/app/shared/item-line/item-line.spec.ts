@@ -242,6 +242,7 @@ describe('Item line', () => {
     expect(getComputedStyle(bite!.querySelector('.eye')!).fill).toBe('rgb(26, 28, 25)');
     expect(bite?.querySelectorAll('.dot')).toHaveLength(0);
     expect(bite?.classList.contains('full')).toBe(true);
+    expect(bite?.classList.contains('open')).toBe(false);
     expect(root.querySelector('.slider')?.getAttribute('style')).toContain('--p: 100');
   });
 
@@ -266,6 +267,7 @@ describe('Item line', () => {
     expect(full.querySelector('.eye')).not.toBeNull();
     expect(full.querySelectorAll('.dot')).toHaveLength(0);
     expect(full.querySelector('.bite')?.classList.contains('full')).toBe(true);
+    expect(full.querySelector('.bite')?.classList.contains('open')).toBe(false);
 
     for (const amount of [0.75, 0.5, 0.25]) {
       const open = show(amount);
@@ -277,6 +279,7 @@ describe('Item line', () => {
       expect(open.querySelector('.eye')).not.toBeNull();
       expect(open.querySelector('.mouth')).toBeNull();
       expect(open.querySelector('.bite')?.classList.contains('full')).toBe(false);
+      expect(open.querySelector('.bite')?.classList.contains('open')).toBe(true);
     }
 
     const gone = show(0);
