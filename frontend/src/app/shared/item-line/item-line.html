@@ -59,7 +59,10 @@
       [attr.aria-label]="(opened() ? 'kitchen.lock_open' : 'kitchen.lock_closed') | translate"
     >
       @if (radishSrc(); as src) {
-        <img [src]="src" alt="" />
+        <picture>
+          <source [attr.srcset]="src.dark" media="(prefers-color-scheme: dark)" />
+          <img [src]="src.light" alt="" />
+        </picture>
       }
     </span>
   </div>

@@ -42,7 +42,8 @@
   white-space: nowrap;
 }
 
-/* The thumb is the radish. The drawing is 200×266, and the body starts 27% in. */
+/* The thumb is the radish, 48px wide. The viewBox grew upward for the leaves
+   (200×300), so the height follows that instead of the old 200×266 crop. */
 .slider {
   --thumb: 26px;
   --bar-gap: 3px;
@@ -50,7 +51,7 @@
   display: flex;
   align-items: center;
   /* Room for the root, which hangs past the end of the bar. */
-  height: calc(var(--radish) * 266 / 200);
+  height: calc(var(--radish) * 300 / 200);
   padding-right: calc(var(--radish) * 0.46);
 }
 
@@ -94,25 +95,41 @@
   position: absolute;
   z-index: 1;
   top: 50%;
-  /* The body's left edge, not the viewBox, meets the end of the bar. */
-  left: calc(var(--p) * 1% - var(--radish) * 0.27);
+  /* Light files pad 8px around the art. The shoulder, not that padding, meets the bar. */
+  --inset: 0.29;
+  left: calc(var(--p) * 1% - var(--radish) * var(--inset));
   width: var(--radish);
-  height: calc(var(--radish) * 266 / 200);
+  height: calc(var(--radish) * 300 / 200);
   box-sizing: border-box;
   transform: translateY(-50%);
   pointer-events: none;
 
-  /* 21px of this 48px drawing is empty before the deepest point of the bite. */
+  /* The opened face ends at the foot, about a quarter of the way in. */
   &.bitten {
-    left: calc(var(--p) * 1% - var(--radish) * 0.44);
+    --inset: 0.24;
   }
 
+  picture,
   img {
     display: block;
     width: 100%;
     height: 100%;
+  }
+
+  img {
     /* The drawn bite is on the right. The bar is on the left. */
     transform: scaleX(-1);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .bite {
+    /* Dark files are the 200-wide viewBox: the shoulder is 27% in, the foot 23%. */
+    --inset: 0.27;
+
+    &.bitten {
+      --inset: 0.23;
+    }
   }
 }
 
