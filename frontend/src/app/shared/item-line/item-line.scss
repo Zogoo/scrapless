@@ -43,8 +43,7 @@
 }
 
 /* The thumb is the radish, 48px wide. The viewBox is 200×300, so the height
-   follows that. It stands on the bar: the track stays at the bottom and the
-   leaves use the room above. */
+   follows that. The track stays at the bottom and the leaves use the room above. */
 .slider {
   --thumb: 26px;
   --bar-gap: 3px;
@@ -95,8 +94,9 @@
   position: absolute;
   z-index: 1;
   top: 50%;
-  /* Light files pad the art. The bar ends under the root, and the root sits on it. */
-  --inset: 0.55;
+  /* Closed stands beside the bar. The root meets the fill, and its bottom
+     lines up with the bottom of the bar. Light files pad the art. */
+  --inset: 0.44;
   --stand: calc(var(--radish) * 0.571);
   left: calc(var(--p) * 1% - var(--radish) * var(--inset));
   width: var(--radish);
@@ -126,8 +126,8 @@
 
 @media (prefers-color-scheme: dark) {
   .bite {
-    /* Dark files have no padding, so the root and the feet sit differently. */
-    --inset: 0.55;
+    /* Dark files have no padding, so the root meets the fill a little further in. */
+    --inset: 0.45;
     --stand: calc(var(--radish) * 0.644);
 
     &.bitten {
