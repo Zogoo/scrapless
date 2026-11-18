@@ -20,9 +20,19 @@ export class ItemsService {
   private readonly recount = <T>() => tap<T>(() => this.notifications.recount());
 
   readonly today = signal<Today | null>(null);
+  /**
+   * A reload that started before the slider used a line up must not put that
+   * card back. Only the newest read of the kitchen is drawn.
+   */
+  private listEpoch = 0;
 
   load(): Observable<Today> {
-    return this.http.get<Today>(this.url).pipe(tap((today) => this.today.set(this.stocked(today))));
+    const epoch = ++this.listEpoch;
+    return this.http.get<Today>(this.url).pipe(
+      tap((today) => {
+        if (epoch === this.listEpoch) this.today.set(this.stocked(today));
+      }),
+    );
   }
 
   /**
@@ -31,6 +41,7 @@ export class ItemsService {
    * left is not a card either: the reload must not put an empty one back.
    */
   removeFromList(ids: number[]): void {
+    this.listEpoch++;
     const today = this.today();
     if (!today) return;
 

@@ -31,6 +31,8 @@
       (keyup)="releaseNudge($event)"
       (input)="slide($event)"
       (change)="commitLevel($event)"
+      (pointerup)="commitLevel($event)"
+      (pointercancel)="commitLevel($event)"
     />
     @let drawn = bars();
     @if (drawn.bars.length > 0) {

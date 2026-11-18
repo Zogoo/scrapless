@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  effect,
   inject,
   input,
   output,
@@ -69,10 +70,26 @@ export class ItemLine {
   private openInFlight = false;
   private afterOpen: (() => void) | null = null;
   /**
-   * The open this drag has decided, while the line still has the old one.
-   * The first move opens the mouth. An undone open closes it.
+   * What this sitting has decided, and the `opened_on` on the line at that
+   * moment. Once the list's date moves on, the latch is dropped: a restored
+   * unopened pack closes the radish.
    */
-  private readonly openedNow = signal<{ id: number; open: boolean } | null>(null);
+  private readonly openedNow = signal<{
+    id: number;
+    open: boolean;
+    seen: string | null;
+  } | null>(null);
+
+  constructor() {
+    // The list caught up, or caught up and was restored. Either way the latch
+    // was about an older date, so it must not keep the bitten face.
+    effect(() => {
+      const pack = this.line().first;
+      const now = this.openedNow();
+      if (!now || now.id !== pack.id || pack.opened_on === now.seen) return;
+      this.openedNow.set(null);
+    });
+  }
 
   protected readonly storages: Storage[] = ['fridge', 'freezer', 'pantry'];
 
@@ -135,8 +152,6 @@ export class ItemLine {
   protected opened(): boolean {
     const pack = this.line().first;
     const now = this.openedNow();
-    const saved = pack.opened_on != null;
-    const open = now && now.id === pack.id && now.open !== saved ? now.open : saved;
     const gesture = this.gesture;
     const preview = this.preview();
     // Back at the percent that opened it, the mouth closes before the reply.
@@ -147,7 +162,16 @@ export class ItemLine {
     ) {
       return false;
     }
-    return open;
+    // Same date we latched against: the sitting still knows better than the line.
+    // A newer date — the list came back unopened — is a closed radish.
+    if (now && now.id === pack.id && pack.opened_on === now.seen) return now.open;
+    return pack.opened_on != null;
+  }
+
+  /** Remember an open or a shut, against the date the line is showing now. */
+  private rememberOpen(id: number, open: boolean): void {
+    const pack = this.line().packs.find((item) => item.id === id) ?? this.line().first;
+    this.openedNow.set({ id, open, seen: pack.opened_on });
   }
 
   /** The thumb went down. Nothing is opened until the percent actually changes. */
@@ -185,14 +209,14 @@ export class ItemLine {
 
     gesture.openSent = true;
     this.openingId = pack.id;
-    this.openedNow.set({ id: pack.id, open: true });
+    this.rememberOpen(pack.id, true);
     this.openInFlight = true;
     this.items.openFromSlider(pack.id, gesture.startPercent).subscribe({
       next: () => this.settleOpen(),
       error: () => {
         gesture.openSent = false;
         if (this.openingId === pack.id) this.openingId = null;
-        this.openedNow.set({ id: pack.id, open: false });
+        this.rememberOpen(pack.id, false);
         this.settleOpen();
       },
     });
@@ -247,11 +271,20 @@ export class ItemLine {
 
     if (percent !== gesture.startPercent) this.openOnFirstMove();
     if (gesture.openSent && percent === gesture.startPercent) {
-      this.openedNow.set({ id: gesture.packId, open: false });
+      this.rememberOpen(gesture.packId, false);
     }
     this.gesture = null;
 
     if (percent === gesture.startPercent) this.preview.set(null);
+    // 0% has used the line. Take the card off the shared list now, before the
+    // reply: a 0% preview is an empty card, and Home and the Kitchen both draw
+    // this list. The toast puts the packs back.
+    if (
+      percent !== gesture.startPercent &&
+      levelFromPercent(percent, this.line().packs.length) <= 0
+    ) {
+      this.useUp();
+    }
 
     const run = () => this.finishRelease(gesture, percent);
     if (this.openInFlight) this.afterOpen = run;
@@ -291,9 +324,9 @@ export class ItemLine {
         // comes back still open, and stays quiet.
         if (item.opened_on == null) {
           this.accidental.set(true);
-          this.openedNow.set({ id: gesture.packId, open: false });
+          this.rememberOpen(gesture.packId, false);
         } else {
-          this.openedNow.set({ id: gesture.packId, open: true });
+          this.rememberOpen(gesture.packId, true);
         }
         writeAmount();
       },
@@ -301,20 +334,27 @@ export class ItemLine {
     });
   }
 
+  /** Every pack on the line is used. The card leaves both screens with the toast. */
+  private useUp(): void {
+    const ids = this.line().packs.map((pack) => pack.id);
+    this.preview.set(null);
+    this.undo.showUsedUp(ids);
+    this.items.removeFromList(ids);
+  }
+
   private setLevel(level: number): void {
     const line = this.line();
     const ids = line.packs.map((pack) => pack.id);
-    this.preview.set({ key: line.key, percent: levelPercent(level, line.packs.length) });
+    // A used line is already off the list. Leaving the preview at 0% would
+    // paint that same card empty if it were still here.
+    if (level > 0) {
+      this.preview.set({ key: line.key, percent: levelPercent(level, line.packs.length) });
+    } else {
+      this.preview.set(null);
+    }
 
     this.items.level(ids, level).subscribe({
       next: () => {
-        // 0% has already marked every pack on the line used. Take the card
-        // off the shared list now — a reload that still mentions an empty
-        // pack must not draw it again. The toast puts them back.
-        if (level === 0) {
-          this.undo.showUsedUp(ids);
-          this.items.removeFromList(ids);
-        }
         this.items.load().subscribe({
           next: () => {
             this.preview.set(null);

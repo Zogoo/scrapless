@@ -162,6 +162,12 @@ describe('Item line', () => {
 
     screen.commitLevel(slider(0));
 
+    // The card leaves with the toast on release, before any reply. A 0% preview
+    // would otherwise stay on screen as an empty card.
+    expect(items.today()?.use_first).toEqual([]);
+    expect(TestBed.inject(UndoService).notice()?.itemIds).toEqual([1, 2]);
+    expect(TestBed.inject(UndoService).notice()?.message).toBe('undo.used_up');
+
     const opened = http.expectOne(`${environment.apiUrl}/items/1/resolve`);
     expect(opened.request.body).toEqual(sliderOpen(75));
     opened.flush({});
@@ -171,10 +177,7 @@ describe('Item line', () => {
     const req = http.expectOne(`${environment.apiUrl}/items/level`);
     expect(req.request.body).toEqual({ ids: [1, 2], level: 0 });
     req.flush({ items: [] });
-    // The card leaves with the toast, before the reload, on the list both screens read.
     expect(items.today()?.use_first).toEqual([]);
-    expect(TestBed.inject(UndoService).notice()?.itemIds).toEqual([1, 2]);
-    expect(TestBed.inject(UndoService).notice()?.message).toBe('undo.used_up');
 
     http.expectOne(`${environment.apiUrl}/items`).flush({
       use_first: [{ ...packs[0], amount_left: 0 }],
@@ -512,6 +515,44 @@ describe('Item line', () => {
       'Accidental touch. This is unopened again.',
     );
     expect(thumb(root)).toBe(`${RADISH}-fresh.svg`);
+  });
+
+  // The open was latched while the line still had no date. The list then
+  // caught up, and a later release restored the unopened window. The thumb
+  // follows that pack: closed, and the freshness the list sent back.
+  it('closes the radish when the restored pack is unopened', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    const opened = pack(1, 0.5, 'potato', '2026-11-20', '2026-11-17', 'aging');
+    fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
+    fixture.detectChanges();
+    const screen = fixture.componentInstance as unknown as ItemLineScreen;
+
+    screen.slide(slider(50));
+    http.expectOne(`${environment.apiUrl}/items/1/resolve`).flush({ opened_on: '2026-11-17' });
+    screen.commitLevel(slider(50));
+    http.expectOne(`${environment.apiUrl}/items/1/revert_open`).flush({ opened_on: '2026-11-17' });
+    http.expectOne(`${environment.apiUrl}/items/level`).flush({ items: [] });
+    http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
+
+    fixture.componentRef.setInput('line', toLines([opened])[0]);
+    fixture.detectChanges();
+    expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-soon-opened.svg`);
+
+    const restored = pack(1, 1, 'potato', '2026-11-25', null, 'fresh');
+    screen.slide(slider(100));
+    screen.commitLevel(slider(100));
+    // The reply can still carry the old date. The list is what was restored.
+    http.expectOne(`${environment.apiUrl}/items/1/revert_open`).flush({ opened_on: '2026-11-17' });
+    http.expectOne(`${environment.apiUrl}/items/level`).flush({ items: [] });
+    http.expectOne(`${environment.apiUrl}/items`).flush({
+      use_first: [restored],
+      fine_for_now: [],
+      probably_gone: [],
+    });
+    fixture.componentRef.setInput('line', toLines([restored])[0]);
+    fixture.detectChanges();
+
+    expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-fresh.svg`);
   });
 
   it('does not warn when a pack that was already open comes back to the start', () => {
