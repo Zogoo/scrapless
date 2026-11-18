@@ -862,8 +862,22 @@ Each case was compared across all five models:
 | "Rinderhack Tomaten aus der Dose und Basilikum" | The model read it correctly: name "Tomaten", unit "Dose". Our line format, amount + unit + name, then wrote "Dose Tomaten". | **Lines keep the speaker's words.** The line is the shortest stretch of the transcript holding the item's name and unit words, used only when the words in between belong to no other item and, given an amount, are not a number. Otherwise it falls back to amount + unit + name, and the amount is always digits. |
 
 Replaying the saved `gpt-6-luna` answers through the changed code, with no new calls, gives
-**151 of 152**. The one left is "Yuzu Tahini". Confirm it live with
-`script/dictation_eval/run.sh live`.
+**151 of 152**. The one left is "Yuzu Tahini".
+
+**Second live run, after these changes** 🧪 (`results/2026-11-18-hybrid-live-2.txt`):
+**150 of 152**. Fixtures 12/12, hard sentences 18/20, generated lists 120/120.
+- **Both fixes held:** the reminder is gone, and "Tomaten aus der Dose" is kept as spoken.
+- **One timeout.** "zwei Kilo Kartoffeln drei Zwiebeln und eine Packung Spaghetti" got no
+  answer within 4 s.
+  - The reader fell back to the segmenter's lines (`2 Kilo · Kartoffeln · 3 Zwiebeln ·
+    Packung Spaghetti`), so nothing was lost, just less tidy.
+  - Our ledger records the call as failed and unbilled. Whether OpenAI bills a request we
+    abandoned was not checked.
+- **Model waits over this run's 22 calls:** median 1.6 s, 90th percentile 2.1 s, then 3.4 s
+  and the timed-out call. The first run's slowest was 2.7 s.
+- **Two runs (44 calls) are too few to set the deadline.** One call in 44 timed out, from a
+  laptop. Raising the deadline trades a longer wait for fewer untidy fallbacks. That should
+  be decided from production's `model_ms` and `reason=timeout` counts, not from this.
 
 **Known limits, not handled**
 - **The model can come back short.** Across 152 cases `gpt-6-luna` returned 15 items fewer
