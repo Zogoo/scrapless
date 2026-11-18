@@ -101,7 +101,7 @@ RSpec.describe "Api::V1::Captures", type: :request do
     # money, so the ceiling has to come from somewhere.
     it "stops a fridge uploading without limit" do
       described_class = Api::V1::CapturesController
-      create_list(:capture, described_class::MAX_CAPTURES_PER_HOUR, household: household)
+      create_list(:capture, InputLimits::MAX_CAPTURES_PER_HOUR, household: household)
 
       post "/api/v1/captures", params: { source: "text", text: "milch" }, headers: headers
 
@@ -109,7 +109,7 @@ RSpec.describe "Api::V1::Captures", type: :request do
     end
 
     it "counts the budget out of the database, so a cache flush cannot reset it" do
-      create_list(:capture, Api::V1::CapturesController::MAX_CAPTURES_PER_HOUR,
+      create_list(:capture, InputLimits::MAX_CAPTURES_PER_HOUR,
                   household: household, created_at: 2.hours.ago)
 
       post "/api/v1/captures", params: { source: "text", text: "milch" }, headers: headers

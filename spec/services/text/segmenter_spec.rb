@@ -1,0 +1,171 @@
+require "rails_helper"
+
+# These examples are built to find what the rules miss, not to restate them:
+# an evaluation set kept as data, lists generated from the real seeded
+# dictionary and every phrase in config/dictation, and an invariant over
+# random input.
+RSpec.describe Text::Segmenter do
+  before do
+    Rails.application.load_seed
+    Text::Lexicon.reset!
+  end
+
+  def parts(text, household: nil) = described_class.call(text: text, household: household).parts
+  def key(text) = ProductAlias.normalize_key(text)
+
+  describe "the evaluation set (spec/fixtures/dictation)" do
+    Dir[Rails.root.join("spec/fixtures/dictation/*.yml")].sort.each do |file|
+      YAML.safe_load_file(file).each do |example|
+        # Right, or unsure so a model reads it instead; never confidently wrong.
+        it "#{File.basename(file, '.yml')}: #{example['said'].inspect}" do
+          result = described_class.call(text: example["said"])
+
+          expect(result.parts == example["lines"] || !result.sure).to be(true),
+                                                                     "sure of #{result.parts}, want #{example['lines']}"
+        end
+      end
+    end
+  end
+
+  # Lists of real dictionary entries, in every language, with every filler and
+  # separator the data knows, no punctuation: each item must come back alone.
+  describe "generated lists" do
+    let(:lexicon) { Text::Lexicon.for(nil) }
+    let(:random) { Random.new(RSpec.configuration.seed) }
+    let(:reserved) do
+      lexicon.leading | lexicon.trailing | lexicon.separators | lexicon.modifiers | lexicon.units |
+        lexicon.numbers.keys.to_set
+    end
+    # Entries that are also a filler or unit word cannot be said alone and
+    # recognised as an item, by definition; everything else is fair game.
+    let(:items) do
+      ProductAlias.shared.pluck(:raw_text).uniq.reject do |raw|
+        raw.split.any? { |word| reserved.include?(word) || word.match?(/\d/) }
+      end
+    end
+
+    # Two neighbours that together spell a longer known phrase are one item.
+    def spans_known_phrase?(chosen)
+      words = chosen.flat_map(&:split)
+      (2..lexicon.items_longest).any? do |n|
+        words.each_cons(n).any? { |run| lexicon.items.include?(run.join(" ")) && !chosen.include?(run.join(" ")) }
+      end
+    end
+
+    Dictation::Vocabulary.locales.each do |locale|
+      it "recovers every item from 200 generated #{locale} lists" do
+        language = Dictation::Vocabulary.for(locale)
+        failures = []
+        tried = 0
+
+        200.times do
+          chosen = items.sample(random.rand(2..5), random: random)
+          next if spans_known_phrase?(chosen)
+
+          tried += 1
+
+          glue = [ " ", " #{language.separators.sample(random: random)} " ]
+          said = chosen.map.with_index { |item, i| i.zero? ? item : glue.sample(random: random) + item }.join
+          said = "#{language.leading.sample(random: random)} #{said} #{language.trailing.sample(random: random)}"
+
+          result = described_class.call(text: said)
+          got = result.parts.map { |part| key(part) }
+          # Every word is known here, so the segmenter must also say it is sure:
+          # an unsure answer would cost a model call for nothing.
+          failures << [ said, got, result.sure ] unless got == chosen && result.sure
+        end
+
+        expect(tried).to be > 150
+        expect(items.size).to be > 40
+        expect(failures).to be_empty,
+                            failures.first(5).map { |said, got, sure| "#{said.inspect} -> #{got} sure=#{sure}" }.join("\n")
+      end
+    end
+  end
+
+  # Whatever is said, nothing but known filler and separators is thrown away.
+  it "never drops a word it does not know as filler" do
+    lexicon = Text::Lexicon.for(nil)
+    droppable = lexicon.leading | lexicon.trailing | lexicon.separators
+    random = Random.new(RSpec.configuration.seed)
+    vocabulary = ProductAlias.shared.pluck(:raw_text) + %w[quark yuzu tortillas something nice weekend zwiebeln]
+
+    300.times do
+      said = Array.new(random.rand(1..8)) { vocabulary.sample(random: random) }.join(" ")
+      kept = parts(said).flat_map { |part| key(part).split }
+      lost = key(said).split - kept
+
+      expect(lost.reject { |word| droppable.include?(word) }).to be_empty, "#{said.inspect} lost #{lost}"
+    end
+  end
+
+  describe "sure" do
+    it "is sure when every line is a known item, with or without an amount" do
+      expect(described_class.call(text: "ich brauche Brot Milch und zwei Zwiebeln").sure).to be(true)
+    end
+
+    it "is not sure when any word is left that it could not place" do
+      expect(described_class.call(text: "peanut butter").sure).to be(false)
+      expect(described_class.call(text: "Milch nee warte Hafermilch").sure).to be(false)
+      expect(described_class.call(text: "Milch für den Kuchen").sure).to be(false)
+    end
+
+    it "is not sure about an amount with no item after it" do
+      expect(described_class.call(text: "Milch und zwei").sure).to be(false)
+    end
+
+    # Whatever is said, sure means every line is a lexicon item, so a model
+    # is never skipped for a line the lexicon does not know.
+    it "never claims to be sure about a line the lexicon does not know" do
+      lexicon = Text::Lexicon.for(nil)
+      attachable = ->(word) { word.match?(/\A\d/) || lexicon.units.include?(word) || lexicon.modifiers.include?(word) }
+      random = Random.new(RSpec.configuration.seed)
+      vocabulary = ProductAlias.shared.pluck(:raw_text) + %w[quark yuzu tortillas für den kuchen zwei kilo bio]
+
+      300.times do
+        said = Array.new(random.rand(1..6)) { vocabulary.sample(random: random) }.join(" ")
+        result = described_class.call(text: said)
+        next unless result.sure
+
+        result.parts.each do |line|
+          words = key(line).split
+          # Some leading words are amounts, units or modifiers; the rest is an item.
+          known = (0...words.size).any? do |k|
+            words.first(k).all?(&attachable) && lexicon.items.include?(words.drop(k).join(" "))
+          end
+          expect(known).to be(true), "#{said.inspect}: #{line.inspect} counted as sure"
+        end
+      end
+    end
+  end
+
+  it "reports a group of several words it could not split at all" do
+    expect(described_class.call(text: "something nice for the weekend party").unresolved)
+      .to eq([ "something nice for the weekend party" ])
+  end
+
+  describe "what a kitchen has taught it" do
+    let(:household) { create(:household) }
+
+    it "keeps a phrase it learned as one line" do
+      create(:vocabulary_entry, household: household, kind: "item", phrase: "hafer milch")
+
+      expect(parts("hafer milch brot", household: household)).to eq([ "hafer milch", "brot" ])
+      expect(parts("hafer milch brot")).to eq(%w[hafer milch brot])
+    end
+
+    it "drops filler it learned, in that kitchen only" do
+      create(:vocabulary_entry, household: household, kind: "leading", phrase: "ich hätt gern")
+
+      expect(parts("ich hätt gern Milch", household: household)).to eq([ "Milch" ])
+      expect(parts("ich hätt gern Milch", household: create(:household))).to eq([ "ich hätt gern", "Milch" ])
+    end
+
+    it "learns from lines a person typed, not from lines the mic wrote" do
+      create(:memo_item, household: household, name: "Hafer Milch", source: "text")
+      create(:memo_item, household: household, name: "bread milk", source: "voice")
+
+      expect(parts("hafer milch bread milk", household: household)).to eq([ "hafer milch", "bread", "milk" ])
+    end
+  end
+end

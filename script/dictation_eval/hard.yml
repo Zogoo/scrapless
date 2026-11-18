@@ -1,0 +1,43 @@
+# Hand-written, NOT from real users: there is no dictation log yet. Each case is
+# a way speech differs from the clean lists the segmenter was built on.
+# items: name (as spoken, any case), qty (number or null), food (true/false).
+- said: ähm also ich brauch noch Milch nee warte Hafermilch und Brot
+  items: [{name: Hafermilch, qty: null, food: true}, {name: Brot, qty: null, food: true}]
+- said: I need milk oh and don't forget the eggs
+  items: [{name: milk, qty: null, food: true}, {name: eggs, qty: null, food: true}]
+- said: zwei Kilo Kartoffeln drei Zwiebeln und eine Packung Spaghetti
+  items: [{name: Kartoffeln, qty: 2, food: true}, {name: Zwiebeln, qty: 3, food: true}, {name: Spaghetti, qty: 1, food: true}]
+- said: Brot Milch Eier Butter Käse Joghurt Äpfel Bananen
+  items: [{name: Brot, qty: null, food: true}, {name: Milch, qty: null, food: true}, {name: Eier, qty: null, food: true}, {name: Butter, qty: null, food: true}, {name: Käse, qty: null, food: true}, {name: Joghurt, qty: null, food: true}, {name: Äpfel, qty: null, food: true}, {name: Bananen, qty: null, food: true}]
+- said: we're out of olive oil and peanut butter
+  items: [{name: olive oil, qty: null, food: true}, {name: peanut butter, qty: null, food: true}]
+- said: Spülmittel und Tomaten und Küchenrolle
+  items: [{name: Spülmittel, qty: null, food: false}, {name: Tomaten, qty: null, food: true}, {name: Küchenrolle, qty: null, food: false}]
+- said: a bag of frozen peas and some fresh basil
+  items: [{name: frozen peas, qty: 1, food: true}, {name: fresh basil, qty: null, food: true}]
+- said: Yuzu Tahini und Gochujang
+  items: [{name: Yuzu, qty: null, food: true}, {name: Tahini, qty: null, food: true}, {name: Gochujang, qty: null, food: true}]
+- said: ich hätte gern zwei Liter Vollmilch und ein halbes Kilo Hackfleisch
+  items: [{name: Vollmilch, qty: 2, food: true}, {name: Hackfleisch, qty: 0.5, food: true}]
+- said: Hafermilch toilet paper und Brötchen for the weekend
+  items: [{name: Hafermilch, qty: null, food: true}, {name: toilet paper, qty: null, food: false}, {name: Brötchen, qty: null, food: true}]
+- said: nothing never mind
+  items: []
+- said: chicken breast chicken thighs and chicken stock
+  items: [{name: chicken breast, qty: null, food: true}, {name: chicken thighs, qty: null, food: true}, {name: chicken stock, qty: null, food: true}]
+- said: Rinderhack Tomaten aus der Dose und Basilikum
+  items: [{name: Rinderhack, qty: null, food: true}, {name: Tomaten aus der Dose, qty: null, food: true}, {name: Basilikum, qty: null, food: true}]
+- said: buy bread at the bakery and milk
+  items: [{name: bread, qty: null, food: true}, {name: milk, qty: null, food: true}]
+- said: Apfelsaft Orangensaft Mineralwasser
+  items: [{name: Apfelsaft, qty: null, food: true}, {name: Orangensaft, qty: null, food: true}, {name: Mineralwasser, qty: null, food: true}]
+- said: six apples a dozen eggs and two litres of milk
+  items: [{name: apples, qty: 6, food: true}, {name: eggs, qty: 12, food: true}, {name: milk, qty: 2, food: true}]
+- said: ich brauch Milch für den Kuchen am Sonntag
+  items: [{name: Milch, qty: null, food: true}]
+- said: Paprika rot und gelb und eine Gurke
+  items: [{name: Paprika rot, qty: null, food: true}, {name: Paprika gelb, qty: null, food: true}, {name: Gurke, qty: 1, food: true}]
+- said: uh let me think coffee and um cream cheese
+  items: [{name: coffee, qty: null, food: true}, {name: cream cheese, qty: null, food: true}]
+- said: Mehl Zucker Backpulver für den Kuchen und Kerzen
+  items: [{name: Mehl, qty: null, food: true}, {name: Zucker, qty: null, food: true}, {name: Backpulver, qty: null, food: true}, {name: Kerzen, qty: null, food: false}]

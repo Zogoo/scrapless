@@ -14,24 +14,110 @@
   gap: 1rem;
 }
 
+.voice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lang {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+
+.lang-option {
+  min-width: 2.75rem;
+  min-height: var(--tap);
+  padding: 0 0.5rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+
+  &.on {
+    background: var(--accent-container);
+    color: var(--ink);
+  }
+}
+
+// Held, not tapped: no iOS callout, no text selection, no scroll stealing the
+// gesture (doc 15 §15.8.4).
 .mic {
   width: var(--tap);
   min-width: var(--tap);
   border-radius: 50%;
   font-size: 1.25rem;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 
   &.live {
     border-color: var(--accent);
     background: var(--accent);
+    transform: scale(1.12);
   }
 }
 
+.mic-hint {
+  margin: -0.25rem 0 0;
+  text-align: right;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .interim {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   margin: 0;
   padding: 0.5rem 0.75rem;
   border-radius: var(--radius-control);
   background: var(--surface-sunken);
   color: var(--muted);
+
+  .cancel {
+    flex: none;
+    width: auto;
+  }
+}
+
+.just-added {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding-left: 0.75rem;
+    border-radius: 999px;
+    background: var(--accent-container);
+    color: var(--ink);
+  }
+
+  button {
+    width: auto;
+    min-width: var(--tap);
+  }
+
+  .name {
+    padding: 0 0.25rem;
+    font-weight: 600;
+  }
+
+  input {
+    width: 10rem;
+    min-height: var(--tap);
+  }
 }
 
 .composer {

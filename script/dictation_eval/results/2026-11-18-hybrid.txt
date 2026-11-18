@@ -1,0 +1,8 @@
+segmenter sure but wrong: 0
+segmenter unsure (model called): 22 of 152; by set: {"fixture" => 3, "hard" => 19}
+hybrid with            fixture      hard         generated_en generated_de ALL             p50 ms   p90 ms   max ms
+gpt-4o-mini             92% (11/12)  90% (18/20) 100% (60/60) 100% (60/60)  98% (149/152)     1532     2175     3778
+gpt-5-nano_minimal      92% (11/12)  75% (15/20) 100% (60/60) 100% (60/60)  96% (146/152)     1316     1958     3335
+gpt-5.4-nano_none       92% (11/12)  85% (17/20) 100% (60/60) 100% (60/60)  97% (148/152)     1106     1443     4627
+gpt-6-luna_low          92% (11/12)  90% (18/20) 100% (60/60) 100% (60/60)  98% (149/152)     2144     3834     7770
+gpt-6-luna_none         92% (11/12)  90% (18/20) 100% (60/60) 100% (60/60)  98% (149/152)     1497     2347     3169

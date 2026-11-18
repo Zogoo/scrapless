@@ -101,13 +101,21 @@
     "title": "Einkauf",
     "placeholder": "Etwas hinzufügen",
     "add": "Hinzu",
-    "dictate": "Liste sprechen",
+    "dictate": "Halten für einen Artikel, tippen für eine Liste",
     "listening": "Ich höre…",
     "empty": "Noch nichts auf der Liste.",
     "suggested": "Brauchst du meistens",
     "shared": "Eine Liste für diese Küche. Wer den Link geöffnet hat, sieht dieselben Zeilen.",
     "dismiss": "{{name}} nicht mehr vorschlagen",
-    "clear_done": "Gekauftes entfernen ({{count}})"
+    "clear_done": "Gekauftes entfernen ({{count}})",
+    "starting": "Einen Moment…",
+    "hold_hint": "Halten und sprechen · Tippen für eine Liste",
+    "cancel": "Abbrechen",
+    "added": "Gerade hinzugefügt",
+    "undo_named": "{{name}} zurücknehmen",
+    "speech_lang": "Sprache beim Sprechen",
+    "try_again": "Sprache funktioniert hier anders. Drück das Mikro noch einmal.",
+    "fix_named": "{{name}} korrigieren"
   },
   "recipes": {
     "title": "Rezepte",

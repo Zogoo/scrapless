@@ -27,12 +27,18 @@ export class CaptureService {
     return this.http.post<CaptureReview>(this.url, { source: 'voice', transcript });
   }
 
-  /** The Safari path: no SpeechRecognition, so the audio goes up instead. */
-  spokenAudio(blob: Blob, seconds: number): Observable<CaptureReview> {
+  /** No SpeechRecognition here, so the audio goes up instead, with the language spoken. */
+  spokenAudio(
+    blob: Blob,
+    seconds: number,
+    lang: string,
+    filename: string,
+  ): Observable<CaptureReview> {
     const form = new FormData();
-    form.append('audio', blob, 'note.webm');
+    form.append('audio', blob, filename);
     form.append('source', 'voice');
     form.append('duration_seconds', String(seconds));
+    form.append('lang', lang);
     return this.http.post<CaptureReview>(this.url, form);
   }
 

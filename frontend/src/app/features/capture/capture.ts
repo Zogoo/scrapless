@@ -13,7 +13,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { CaptureService } from '../../core/services/capture.service';
 import { ItemsService } from '../../core/services/items.service';
-import { SpeechService, speechTag } from '../../core/services/speech.service';
+import { SpeechService, audioFilename, speechTag } from '../../core/services/speech.service';
 import { NotifyAsk } from '../../shared/notify-ask/notify-ask';
 import { CaptureReview } from '../../core/models';
 import { AutoShutter, ShutterStatus } from '../../core/vision/auto-shutter';
@@ -250,7 +250,7 @@ export class Capture implements OnDestroy {
 
     if (this.speech.recognitionSupported) {
       // Free path: the device does the transcription.
-      this.speech.listen(speechTag(this.translate.currentLang())).subscribe({
+      this.speech.listen(speechTag(this.speech.speechLang())).subscribe({
         next: (text) => {
           this.transcript.set(text);
           if (text) this.send(this.captures.spoken(text));
@@ -268,13 +268,21 @@ export class Capture implements OnDestroy {
   }
 
   protected async stopVoice(): Promise<void> {
+    // stop(), not abort(): abort throws away what was just said (doc 15 §15.2.1).
     if (this.speech.recognitionSupported) {
-      this.speech.cancel();
+      this.speech.finish();
       return;
     }
 
     const recording = await this.speech.stopRecording();
-    this.send(this.captures.spokenAudio(recording.blob, recording.seconds));
+    this.send(
+      this.captures.spokenAudio(
+        recording.blob,
+        recording.seconds,
+        this.speech.speechLang(),
+        audioFilename(recording.mimeType, 'note'),
+      ),
+    );
   }
 
   // --- manual ---------------------------------------------------------------

@@ -135,6 +135,26 @@ RSpec.describe Ai::Client do
         }.to raise_error(described_class::Unavailable, /transport/)
       end
     end
+
+    # A caller with a person waiting needs to tell "too slow" from "down".
+    [ IO::TimeoutError, Net::OpenTimeout, Net::ReadTimeout ].each do |failure|
+      it "reports #{failure} as TimedOut" do
+        allow(Net::HTTP).to receive(:start).and_raise(failure)
+
+        expect {
+          described_class.new.json_completion(purpose: :text_parse, messages: [], schema: {})
+        }.to raise_error(described_class::TimedOut)
+      end
+    end
+
+    it "waits no longer than the timeout it is given" do
+      stub_response(body: { "choices" => [ { "message" => { "content" => "{}" } } ], "usage" => {} })
+
+      described_class.new.json_completion(purpose: :memo_parse, messages: [], schema: {}, timeout: 2.5)
+
+      expect(Net::HTTP).to have_received(:start)
+        .with(anything, anything, hash_including(open_timeout: 2.5, read_timeout: 2.5, write_timeout: 2.5))
+    end
   end
 
   describe "#transcribe" do
@@ -149,6 +169,25 @@ RSpec.describe Ai::Client do
       expect(text).to eq("milk and broccoli")
       expect(AiCall.last.audio_seconds).to eq(30)
       expect(AiCall.last.cost_usd).to be_within(0.0001).of(0.0015)
+    end
+
+    # The hint and the prompt only help if they actually reach the provider.
+    it "sends the spoken language and the prompt as form fields" do
+      sent = nil
+      response = instance_double(Net::HTTPResponse, code: "200", body: { "text" => "Milch" }.to_json)
+      allow(response).to receive(:is_a?).with(Net::HTTPSuccess).and_return(true)
+      http = double("http")
+      allow(http).to receive(:request) { |request| sent = request.body and response }
+      allow(Net::HTTP).to receive(:start).and_yield(http)
+
+      described_class.new(household: household).transcribe(
+        io: StringIO.new("audio"), filename: "memo.mp4", content_type: "audio/mp4",
+        language: "de", prompt: "Einkaufsliste: Milch, Brötchen."
+      )
+
+      expect(sent).to include(%(name="language"\r\n\r\nde\r\n))
+      expect(sent.force_encoding(Encoding::UTF_8)).to include("Einkaufsliste: Milch, Brötchen.")
+      expect(sent).to include(%(filename="memo.mp4"))
     end
   end
 end

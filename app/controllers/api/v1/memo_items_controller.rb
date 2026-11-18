@@ -3,6 +3,10 @@ module Api
     # The shopping memo. Its own object, not a view of inventory: what you intend
     # to buy and what is rotting have different lifecycles.
     class MemoItemsController < ApplicationController
+      include InputLimits
+
+      GESTURES = %w[hold tap key].freeze
+
       def index
         render json: {
           items: current_household.memo_items.ordered.map { |m| memo_json(m) },
@@ -23,25 +27,30 @@ module Api
       end
 
       # Voice or text, several lines at once. This is the "just say it on the way
-      # out of the door" path, so it must accept a whole sentence.
+      # out of the door" path, so it must accept a whole sentence — or, held one
+      # item at a time, a single word.
       def dictate
         transcript = params[:transcript].presence || transcribe
         return if performed?
-        return render json: { error: I18n.t("memo.nothing_heard") }, status: :unprocessable_content if transcript.blank?
+        return render_error(I18n.t("memo.nothing_heard")) if transcript.blank?
+        return render_error(I18n.t("capture.rejected.too_long")) if transcript.length > MAX_TEXT_CHARS
 
-        names = extract_names(transcript)
-        created = names.filter_map do |name|
+        reading = Memo::ListReader.call(text: transcript, household: current_household, lang: speech_language)
+        created = reading.lines.filter_map do |name|
           next if current_household.memo_items.open_line_for(name)
 
           current_household.memo_items.create!(name: name, source: "voice", added_by_name: actor_name)
         end
+        log_dictation(created.size, reading)
 
         render json: { transcript: transcript, items: created.map { |m| memo_json(m) } }, status: :created
       end
 
       def update
         item = current_household.memo_items.find(params[:id])
+        previous_name = item.name
         item.update!(memo_params)
+        Memo::LearnFromCorrection.call(item: item, previous_name: previous_name) if item.saved_change_to_name?
         item.update!(done_at: item.done? ? Time.current : nil) if item.saved_change_to_done?
         render json: memo_json(item)
       end
@@ -84,26 +93,51 @@ module Api
         MemoItem::SOURCES.include?(value) ? value : "text"
       end
 
+      # Only Firefox on Android and iPhones with Siri off get here: everywhere
+      # else the browser transcribes for free (doc 15 §15.2.4). This path is
+      # paid, so it is capped like capture's.
       def transcribe
         upload = params[:audio]
-        return render json: { error: I18n.t("capture.rejected.no_audio") }, status: :unprocessable_content if upload.blank?
+        return render_error(I18n.t("capture.rejected.no_audio")) if upload.blank?
+        return render_error(I18n.t("capture.rejected.audio_too_large")) if upload.size > MAX_AUDIO_BYTES
+        if transcriptions_this_hour >= MAX_TRANSCRIPTIONS_PER_HOUR
+          return render json: { error: I18n.t("memo.too_many_recordings"), retryable: true }, status: :too_many_requests
+        end
 
-        data = upload.read
-        Ai::Transcriber.call(io: StringIO.new(data), filename: upload.original_filename,
+        Ai::Transcriber.call(io: StringIO.new(upload.read), filename: upload.original_filename,
                              content_type: upload.content_type,
                              duration_seconds: params[:duration_seconds].to_f,
-                             household: current_household)
+                             language: speech_language, household: current_household)
       end
 
-      # A memo line does not need to be a resolved product — "something for
-      # Sunday" is a legitimate entry. So this splits locally and never calls a
-      # model: the memo is the one place where cost per line should be zero.
-      def extract_names(transcript)
-        transcript.split(Text::Splitter::SEPARATORS)
-                  .map { |part| part.strip.squeeze(" ") }
-                  .reject(&:blank?)
-                  .first(25)
-                  .map { |part| part.sub(/\A(buy|get|kauf|hol)\s+/i, "") }
+      def transcriptions_this_hour
+        AiCall.where(household: current_household, purpose: "transcribe", created_at: 1.hour.ago..).count
+      end
+
+      # The language the person spoke, which is not always the app's language:
+      # an English UI in a German supermarket is the common Berlin case.
+      def speech_language
+        Dictation::Vocabulary.supported?(params[:lang]) ? params[:lang].to_s : I18n.locale.to_s
+      end
+
+      # How the mic was used and which path read it, so the hold threshold, the
+      # model timeout and how often a model is needed are decided from numbers
+      # (doc 15 §15.8.5, §15.11) rather than guessed. This line carries no
+      # transcript text.
+      def log_dictation(lines, reading)
+        Rails.logger.info(
+          "memo dictation household=#{current_household.id} gesture=#{gesture_param} " \
+          "press_ms=#{params[:press_ms].to_i} lang=#{speech_language} ui=#{I18n.locale} lines=#{lines} " \
+          "path=#{reading.path} reason=#{reading.reason} model_ms=#{reading.model_ms.to_i} " \
+          "unresolved=#{reading.unresolved.size}"
+        )
+      end
+
+      # Only known values reach the log: a free-form param could forge lines.
+      def gesture_param = GESTURES.include?(params[:gesture].to_s) ? params[:gesture].to_s : "unknown"
+
+      def render_error(message)
+        render json: { error: message }, status: :unprocessable_content
       end
 
       def memo_json(item)

@@ -1,0 +1,76 @@
+# How English is spoken at the memo mic. One file per entry in
+# config.i18n.available_locales; spec/services/dictation/vocabulary_spec.rb fails
+# if a locale has none. Adding a phrase or a language is a change here, not in
+# code. All lists are compared after ProductAlias.normalize_key, so case and
+# punctuation do not matter ("We're" == "we re").
+#
+# These are a starting point, not a complete grammar: each household also
+# learns its own from the corrections it makes (Memo::LearnFromCorrection).
+
+# Sent with paid transcriptions as the prompt. It must be in this language
+# (OpenAI: the prompt "should match the audio language"), and its commas ask
+# for a comma-separated list back.
+transcription_prompt: "Shopping list: milk, bread, eggs, toilet paper."
+
+# Words that separate items, in addition to , ; and a full stop.
+separators: [and, plus, also, then]
+
+# Phrases dropped from the start of each item group.
+leading:
+  - i want to buy
+  - i want to get
+  - i want
+  - i need to buy
+  - i need to get
+  - i need
+  - we need to buy
+  - we need to get
+  - we need
+  - we're out of
+  - we are out of
+  - i'd like
+  - i would like
+  - can you add
+  - could you add
+  - please add
+  - don't forget
+  - add
+  - put
+  - buy
+  - get
+  - grab
+  - pick up
+  - please
+  - some
+  - more
+  - a
+  - an
+  - the
+
+# Phrases dropped from the end of each item group.
+trailing: [please, too, as well, to the list]
+
+# Words that describe the next item rather than being one ("organic milk").
+modifiers: [organic, fresh, frozen, free range, low fat, skimmed, whole, wholemeal, unsalted, salted, sliced, small, large, big, ripe]
+
+# Spoken amounts; digits are always understood.
+numbers:
+  one: 1
+  two: 2
+  three: 3
+  four: 4
+  five: 5
+  six: 6
+  seven: 7
+  eight: 8
+  nine: 9
+  ten: 10
+  eleven: 11
+  twelve: 12
+  fifteen: 15
+  twenty: 20
+  dozen: 12
+  half a dozen: 6
+
+# Words that belong between an amount and the item ("2 bottles of milk").
+units: [x, kg, g, ml, l, pack, packs, packet, packets, bag, bags, bottle, bottles, can, cans, tin, tins, jar, jars, loaf, loaves, box, boxes, carton, cartons, bunch, of]

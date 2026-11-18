@@ -1,5 +1,9 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable } from 'rxjs';
+
+import { environment } from '../../../environments/environment';
+import { SPEECH_TAGS } from '../speech-tags';
+import { LocaleService } from './locale.service';
 
 /** The vendor-prefixed shape Chrome and Safari actually expose. */
 interface SpeechRecognitionLike extends EventTarget {
@@ -12,6 +16,7 @@ interface SpeechRecognitionLike extends EventTarget {
   onresult: ((event: SpeechRecognitionResultEvent) => void) | null;
   onerror: ((event: { error: string }) => void) | null;
   onend: (() => void) | null;
+  onaudiostart: (() => void) | null;
 }
 
 interface SpeechRecognitionResultEvent {
@@ -24,36 +29,75 @@ type SpeechWindow = Window & {
   webkitSpeechRecognition?: new () => SpeechRecognitionLike;
 };
 
-/** Maps our two-letter locale onto the BCP-47 tag the recogniser wants. */
-export function speechTag(lang: string | null | undefined): string {
-  return lang === 'de' ? 'de-DE' : 'en-GB';
+/** One of environment.availableLocales. */
+export type SpeechLang = string;
+
+/** Recognisers put spaces at either end of a piece, inconsistently. */
+const squeeze = (text: string): string => text.replace(/\s+/g, ' ').trim();
+
+export const SPEECH_LANG_KEY = 'scrapless_speech_lang';
+
+/** The recogniser tag for one of the app's languages; never another language's. */
+export function speechTag(lang: string): string {
+  return SPEECH_TAGS[lang] ?? lang;
+}
+
+/** What MediaRecorder actually wrote, named so the server can tell. */
+export function audioFilename(mimeType: string, base: string): string {
+  if (mimeType.includes('mp4')) return `${base}.mp4`;
+  if (mimeType.includes('ogg')) return `${base}.ogg`;
+  return `${base}.webm`;
 }
 
 export interface Recording {
   blob: Blob;
   seconds: number;
+  mimeType: string;
 }
+
+/**
+ * Not failures: nothing was said, or we stopped it ourselves. Both end the
+ * session with whatever was heard so far, which may be nothing.
+ */
+const QUIET_ERRORS = new Set(['no-speech', 'aborted']);
 
 /**
  * Voice input, cheapest path first.
  *
- * Chrome and Android have SpeechRecognition built in: it is instant, it runs on
- * the device, and it costs us nothing. Safari does not, so there we record audio
- * and pay for a transcription. Roughly speaking that means we pay for iOS and
- * not for Android — which is worth knowing before reading the cost report.
+ * Chrome, Android, Safari (with Siri on) and Firefox desktop all have
+ * SpeechRecognition, which costs us nothing. Where it is missing — Firefox on
+ * Android, an iPhone with Siri off — we record audio and pay for a
+ * transcription (doc 15 §15.2.4).
+ *
+ * One session is one utterance (`continuous` stays false): the mic is held for
+ * an item or tapped for a short list, so nothing here keeps listening across
+ * pauses (doc 15 §15.6).
  */
 @Injectable({ providedIn: 'root' })
 export class SpeechService {
-  readonly interim = signal('');
-  readonly listening = signal(false);
+  private readonly locale = inject(LocaleService);
 
-  private recognition: SpeechRecognitionLike | null = null;
+  readonly interim = signal('');
+  /** A session is open: between start() and the end event. */
+  readonly listening = signal(false);
+  /** The device has started capturing audio ("audiostart"), so speaking now is heard. */
+  readonly capturing = signal(false);
+
+  private readonly chosenLang = signal<SpeechLang | null>(this.readLang());
+  /** The language the person speaks, which need not be the app's language. */
+  readonly speechLang = computed<SpeechLang>(() => this.chosenLang() ?? this.locale.current());
+
+  /** The open recognition session; `cancelled` is per session, so a late end event of one cannot leak into the next. */
+  private session: { recognition: SpeechRecognitionLike; cancelled: boolean } | null = null;
+  private recognitionRefused = false;
   private recorder: MediaRecorder | null = null;
   private startedAt = 0;
+  private chunks: Blob[] = [];
+  private stream: MediaStream | null = null;
 
   get recognitionSupported(): boolean {
     const w = window as SpeechWindow;
-    return Boolean(w.SpeechRecognition ?? w.webkitSpeechRecognition);
+    return !this.recognitionRefused && Boolean(w.SpeechRecognition ?? w.webkitSpeechRecognition);
   }
 
   get recordingSupported(): boolean {
@@ -64,18 +108,33 @@ export class SpeechService {
     return this.recognitionSupported || this.recordingSupported;
   }
 
-  /** Emits the final transcript once, then completes. */
+  setSpeechLang(lang: SpeechLang): void {
+    if (!environment.availableLocales.includes(lang)) return;
+    this.chosenLang.set(lang);
+    try {
+      localStorage.setItem(SPEECH_LANG_KEY, lang);
+    } catch {
+      /* private mode: the choice lasts for this visit */
+    }
+  }
+
+  /**
+   * Emits the final transcript once (possibly empty), then completes. A
+   * cancelled session completes without emitting. Errors only for a real
+   * failure, with the recogniser's error code as the message.
+   */
   listen(lang: string): Observable<string> {
     return new Observable<string>((subscriber) => {
       const w = window as SpeechWindow;
       const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
       if (!Ctor) {
-        subscriber.error(new Error('speech recognition unavailable'));
+        subscriber.error(new Error('unavailable'));
         return;
       }
 
       const recognition = new Ctor();
-      this.recognition = recognition;
+      const session = { recognition, cancelled: false };
+      this.session = session;
       recognition.lang = lang;
       recognition.continuous = false;
       recognition.interimResults = true;
@@ -83,40 +142,53 @@ export class SpeechService {
       let finalText = '';
       this.interim.set('');
       this.listening.set(true);
+      this.capturing.set(false);
 
+      recognition.onaudiostart = () => this.capturing.set(true);
+
+      // Rebuilt from the whole list every time rather than appended to, so a
+      // result reported twice cannot be counted twice.
       recognition.onresult = (event) => {
-        let interim = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        let done = '';
+        let pending = '';
+        for (let i = 0; i < event.results.length; i++) {
           const result = event.results[i];
-          const text = result[0].transcript;
-          if (result.isFinal) {
-            finalText += text;
-          } else {
-            interim += text;
-          }
+          if (result.isFinal) done += result[0].transcript;
+          else pending += result[0].transcript;
         }
-        this.interim.set(interim);
+        finalText = squeeze(done);
+        this.interim.set(squeeze(`${done} ${pending}`));
       };
 
       recognition.onerror = (event) => {
-        this.listening.set(false);
+        if (QUIET_ERRORS.has(event.error)) return;
+        // The API exists but may not be used here (reported for iOS home-screen
+        // apps, doc 15 §15.2.4): from now on, record instead.
+        if (event.error === 'service-not-allowed') this.recognitionRefused = true;
+        this.endSession(session);
         subscriber.error(new Error(event.error));
       };
 
       recognition.onend = () => {
-        this.listening.set(false);
-        this.interim.set('');
-        subscriber.next(finalText.trim());
+        this.endSession(session);
+        if (!session.cancelled) subscriber.next(finalText.trim());
         subscriber.complete();
       };
 
       recognition.start();
 
       return () => {
-        this.listening.set(false);
-        recognition.abort();
+        if (this.session === session) {
+          session.cancelled = true;
+          recognition.abort();
+        }
       };
     });
+  }
+
+  /** Stop listening and keep what was heard: the spec's stop(), not abort(). */
+  finish(): void {
+    this.session?.recognition.stop();
   }
 
   async startRecording(): Promise<void> {
@@ -127,7 +199,7 @@ export class SpeechService {
     recorder.ondataavailable = (event) => {
       if (event.data.size > 0) chunks.push(event.data);
     };
-    // Held on the instance so stopRecording can resolve with them.
+    recorder.onstart = () => this.capturing.set(true);
     this.chunks = chunks;
     this.stream = stream;
     this.recorder = recorder;
@@ -147,23 +219,51 @@ export class SpeechService {
       recorder.onstop = () => {
         const seconds = (Date.now() - this.startedAt) / 1000;
         this.stream?.getTracks().forEach((track) => track.stop());
-        this.listening.set(false);
+        this.reset();
         this.recorder = null;
-        resolve({ blob: new Blob(this.chunks, { type: 'audio/webm' }), seconds });
+        // Safari records MP4/AAC, Chrome WebM: label it as what it is.
+        const mimeType = recorder.mimeType || 'audio/webm';
+        resolve({ blob: new Blob(this.chunks, { type: mimeType }), seconds, mimeType });
       };
 
       recorder.stop();
     });
   }
 
+  /** Throw away whatever is being heard: nothing is emitted or uploaded. */
   cancel(): void {
-    this.recognition?.abort();
-    if (this.recorder?.state === 'recording') this.recorder.stop();
+    if (this.session) {
+      this.session.cancelled = true;
+      this.session.recognition.abort();
+      this.session = null;
+    }
+    if (this.recorder?.state === 'recording') {
+      this.recorder.onstop = null;
+      this.recorder.stop();
+    }
+    this.recorder = null;
     this.stream?.getTracks().forEach((track) => track.stop());
+    this.reset();
+  }
+
+  private endSession(session: { recognition: SpeechRecognitionLike }): void {
+    if (this.session !== session) return;
+    this.session = null;
+    this.reset();
+  }
+
+  private reset(): void {
     this.listening.set(false);
+    this.capturing.set(false);
     this.interim.set('');
   }
 
-  private chunks: Blob[] = [];
-  private stream: MediaStream | null = null;
+  private readLang(): SpeechLang | null {
+    try {
+      const saved = localStorage.getItem(SPEECH_LANG_KEY);
+      return saved && environment.availableLocales.includes(saved) ? saved : null;
+    } catch {
+      return null;
+    }
+  }
 }

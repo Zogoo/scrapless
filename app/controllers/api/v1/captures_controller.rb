@@ -2,20 +2,11 @@ module Api
   module V1
     # The one screen that has to work. Everything else is scaffolding.
     class CapturesController < ApplicationController
-      MAX_IMAGE_BYTES = 8.megabytes
-      MAX_AUDIO_BYTES = 12.megabytes
-      # A typed or spoken shop is a few dozen words. Past this it is not a
-      # shopping list, and in live mode every character goes to a paid model.
-      MAX_TEXT_CHARS = 1_000
+      include InputLimits
 
-      # Every capture can cost a model call, and there is no account wall in
-      # front of this endpoint — a fridge is free to create. So the blast radius
-      # of someone looping an upload has to be bounded by something.
-      #
-      # Counted out of the captures table rather than a cache counter, because a
-      # cache flush must not reset a spending limit. 40/hour is roughly twenty
-      # times the heaviest plausible real week, compressed into one hour.
-      MAX_CAPTURES_PER_HOUR = 40
+      # Every capture can cost a model call. Counted out of the captures table
+      # rather than a cache counter, because a cache flush must not reset a
+      # spending limit (limits: InputLimits).
 
       before_action :enforce_capture_budget, only: :create
 
@@ -99,6 +90,7 @@ module Api
         Ai::Transcriber.call(io: StringIO.new(data), filename: upload.original_filename,
                              content_type: upload.content_type,
                              duration_seconds: params[:duration_seconds].to_f,
+                             language: params[:lang].presence || I18n.locale.to_s,
                              household: current_household)
       end
 

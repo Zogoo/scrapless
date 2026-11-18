@@ -5,6 +5,17 @@ import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { MemoItem, MemoPage, Suggestion } from '../models';
 
+/** How the mic was used; logged server-side so the gestures are measured. */
+export interface DictationGesture {
+  gesture: 'hold' | 'tap' | 'key';
+  press_ms: number;
+}
+
+export interface Dictation {
+  transcript: string;
+  items: MemoItem[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class MemoService {
   private readonly http = inject(HttpClient);
@@ -26,18 +37,34 @@ export class MemoService {
     return this.http.post<MemoItem>(this.url, { name, source });
   }
 
-  /** A whole spoken sentence, split into lines server-side and free of charge. */
-  dictate(transcript: string): Observable<{ transcript: string; items: MemoItem[] }> {
-    return this.http.post<{ transcript: string; items: MemoItem[] }>(`${this.url}/dictate`, {
-      transcript,
-    });
+  /**
+   * A spoken sentence or a single held word, split into lines server-side and
+   * free of charge. `lang` is the language spoken, which can differ from the
+   * app's.
+   */
+  dictate(transcript: string, lang: string, gesture: DictationGesture): Observable<Dictation> {
+    return this.http.post<Dictation>(`${this.url}/dictate`, { transcript, lang, ...gesture });
   }
 
-  dictateAudio(blob: Blob, seconds: number): Observable<{ transcript: string; items: MemoItem[] }> {
+  /** The paid path, for browsers without a recogniser. */
+  dictateAudio(
+    blob: Blob,
+    seconds: number,
+    lang: string,
+    filename: string,
+    gesture: DictationGesture,
+  ): Observable<Dictation> {
     const form = new FormData();
-    form.append('audio', blob, 'memo.webm');
+    form.append('audio', blob, filename);
     form.append('duration_seconds', String(seconds));
-    return this.http.post<{ transcript: string; items: MemoItem[] }>(`${this.url}/dictate`, form);
+    form.append('lang', lang);
+    form.append('gesture', gesture.gesture);
+    form.append('press_ms', String(gesture.press_ms));
+    return this.http.post<Dictation>(`${this.url}/dictate`, form);
+  }
+
+  rename(id: number, name: string): Observable<MemoItem> {
+    return this.http.patch<MemoItem>(`${this.url}/${id}`, { memo_item: { name } });
   }
 
   setDone(id: number, done: boolean): Observable<MemoItem> {

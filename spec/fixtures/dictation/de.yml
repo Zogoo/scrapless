@@ -1,0 +1,10 @@
+- said: ich brauche Brot Milch und Eier
+  lines: [Brot, Milch, Eier]
+- said: ich brauche brot milch und eier
+  lines: [brot, milch, eier]
+- said: wir brauchen noch Butter Käse und zwei Gurken
+  lines: [Butter, Käse, 2 Gurken]
+- said: Ich möchte Brot, Milch und Eier kaufen
+  lines: [Brot, Milch, Eier]
+- said: ein Dutzend Eier und Bio Milch bitte
+  lines: [12 Eier, Bio Milch]

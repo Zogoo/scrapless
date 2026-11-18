@@ -18,6 +18,7 @@ en:
       no_text: "Type what you got first."
       too_large: "That file is too big. Try a smaller photo."
       too_long: "That's a lot at once. Try a shorter list."
+      audio_too_large: "That recording is too long. Try a shorter one."
     unreadable: "That one was hard to read. Want to try again, or just tell us the fresh stuff?"
     partial_parse: "We added what we recognised. Couldn't make sense of: %{list}"
     ai_unavailable: "Photo reading is off right now. You can still type or say what you got — that always works."
@@ -51,6 +52,7 @@ en:
     probably_gone: "probably gone by now"
   memo:
     nothing_heard: "We didn't catch anything. Try again?"
+    too_many_recordings: "That is a lot of recordings in one go. Give it an hour, or type the list."
     reason:
       due: "usually every %{cadence} days, last bought %{elapsed} days ago"
       bought:

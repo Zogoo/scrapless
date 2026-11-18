@@ -1,0 +1,72 @@
+# Wie Deutsch am Memo-Mikrofon gesprochen wird. See config/dictation/en.yml for
+# what each key means; every locale has the same keys.
+
+transcription_prompt: "Einkaufsliste: Milch, Brot, Eier, Klopapier."
+
+separators: [und, plus, sowie, dann, außerdem]
+
+leading:
+  - ich brauche noch
+  - ich brauche
+  - ich brauch
+  - ich bräuchte
+  - wir brauchen noch
+  - wir brauchen
+  - wir bräuchten
+  - ich möchte
+  - ich will
+  - ich hätte gern
+  - ich hätte gerne
+  - wir haben kein
+  - wir haben keine
+  - wir haben keinen
+  - uns fehlt
+  - uns fehlen
+  - vergiss nicht
+  - nicht vergessen
+  - kannst du
+  - füge
+  - füg
+  - kauf
+  - kaufe
+  - hol
+  - hole
+  - besorg
+  - besorge
+  - bitte
+  - noch
+  - auch
+  - etwas
+  - ein bisschen
+  - ein paar
+  - ein
+  - eine
+  - einen
+  - der
+  - die
+  - das
+  - den
+
+trailing: [kaufen, holen, besorgen, mitbringen, bitte, hinzufügen, hinzu, auch, noch, auf die liste, nicht vergessen]
+
+modifiers: [bio, frische, frischen, frisch, vollkorn, fettarme, fettarm, laktosefreie, laktosefrei, vegane, vegan, tiefgekühlte, tk, gesalzene, ungesalzene, kleine, große, reife]
+
+numbers:
+  zwei: 2
+  drei: 3
+  vier: 4
+  fünf: 5
+  sechs: 6
+  sieben: 7
+  acht: 8
+  neun: 9
+  zehn: 10
+  elf: 11
+  zwölf: 12
+  fünfzehn: 15
+  zwanzig: 20
+  dutzend: 12
+  ein dutzend: 12
+  ein halbes dutzend: 6
+
+units: [x, kg, g, ml, l, stück, packung, packungen, flasche, flaschen, dose, dosen, beutel, tüte, tüten, glas, gläser, bund, becher, netz]
