@@ -36,7 +36,13 @@
     @if (drawn.bars.length > 0) {
       <span class="bands" aria-hidden="true" [style.width.%]="drawn.fill">
         @for (bar of drawn.bars; track bar.id) {
-          <span class="band" [attr.data-phase]="bar.phase" [style.flex-grow]="bar.amount"></span>
+          <!-- A flex-grow below 1 fills only that fraction of the line. A ¾ pack
+               would stop at ¾ of ¾ and leave a gap in front of the radish. -->
+          <span
+            class="band"
+            [attr.data-phase]="bar.phase"
+            [style.flex-grow]="bar.amount * 1000"
+          ></span>
         }
       </span>
     }

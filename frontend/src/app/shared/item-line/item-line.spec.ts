@@ -300,6 +300,17 @@ describe('Item line', () => {
     expect((root.querySelector('.level') as HTMLElement).style.backgroundImage).toBe('');
   });
 
+  it('fills a partial pack out to the thumb', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput('line', toLines([pack(1, 0.75)])[0]);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.bands')?.getAttribute('style')).toContain('width: 75%');
+    // 0.75 would leave the bar at 56% of the track. The share stays ¾, scaled up.
+    expect((root.querySelector('.band') as HTMLElement).style.flexGrow).toBe('750');
+  });
+
   it('draws a closed radish while the pack is unopened', () => {
     const fixture = TestBed.createComponent(ItemLine);
     fixture.componentRef.setInput('line', toLines([pack(1)])[0]);

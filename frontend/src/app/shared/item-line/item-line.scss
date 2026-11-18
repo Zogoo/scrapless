@@ -102,7 +102,7 @@
   transform: translateY(-50%);
   pointer-events: none;
 
-  /* The bite's inner edge is 44% across the drawing. Sit that edge on the bar. */
+  /* 21px of this 48px drawing is empty before the deepest point of the bite. */
   &.bitten {
     left: calc(var(--p) * 1% - var(--radish) * 0.44);
   }
