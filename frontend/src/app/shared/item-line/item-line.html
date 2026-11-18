@@ -16,42 +16,44 @@
      The label is the pack amount. Newest bar at the left, oldest against the
      thumb. 0 uses the line. Empty track stays sunken. -->
 <div class="slider" [style.--p]="percent()">
-  <input
-    type="range"
-    class="level"
-    min="0"
-    max="100"
-    step="any"
-    [value]="percent()"
-    [attr.aria-label]="'kitchen.how_much' | translate: { name: line().first.display_name }"
-    [attr.aria-valuetext]="'kitchen.packs' | translate: { amount: packsLabel() }"
-    (pointerdown)="beginGesture()"
-    (keydown)="nudge($event)"
-    (keyup)="releaseNudge($event)"
-    (input)="slide($event)"
-    (change)="commitLevel($event)"
-  />
-  @let drawn = bars();
-  @if (drawn.bars.length > 0) {
-    <span class="bands" aria-hidden="true" [style.width.%]="drawn.fill">
-      @for (bar of drawn.bars; track bar.id) {
-        <span class="band" [attr.data-phase]="bar.phase" [style.flex-grow]="bar.amount"></span>
+  <div class="track">
+    <input
+      type="range"
+      class="level"
+      min="0"
+      max="100"
+      step="any"
+      [value]="percent()"
+      [attr.aria-label]="'kitchen.how_much' | translate: { name: line().first.display_name }"
+      [attr.aria-valuetext]="'kitchen.packs' | translate: { amount: packsLabel() }"
+      (pointerdown)="beginGesture()"
+      (keydown)="nudge($event)"
+      (keyup)="releaseNudge($event)"
+      (input)="slide($event)"
+      (change)="commitLevel($event)"
+    />
+    @let drawn = bars();
+    @if (drawn.bars.length > 0) {
+      <span class="bands" aria-hidden="true" [style.width.%]="drawn.fill">
+        @for (bar of drawn.bars; track bar.id) {
+          <span class="band" [attr.data-phase]="bar.phase" [style.flex-grow]="bar.amount"></span>
+        }
+      </span>
+    }
+    <!-- Unopened: the whole radish. Opened: the bitten one. 0% leaves the thumb empty. -->
+    <span
+      class="bite"
+      [class.full]="percent() === 100"
+      [class.open]="bites() === 1"
+      role="img"
+      [attr.data-bites]="bites()"
+      [attr.aria-label]="(opened() ? 'kitchen.lock_open' : 'kitchen.lock_closed') | translate"
+    >
+      @if (radishSrc(); as src) {
+        <img [src]="src" alt="" />
       }
     </span>
-  }
-  <!-- Unopened: the whole radish. Opened: the bitten one. 0% leaves the thumb empty. -->
-  <span
-    class="bite"
-    [class.full]="percent() === 100"
-    [class.open]="bites() === 1"
-    role="img"
-    [attr.data-bites]="bites()"
-    [attr.aria-label]="(opened() ? 'kitchen.lock_open' : 'kitchen.lock_closed') | translate"
-  >
-    @if (radishSrc(); as src) {
-      <img [src]="src" alt="" />
-    }
-  </span>
+  </div>
 </div>
 @if (accidental()) {
   <p class="accidental" role="status">{{ 'kitchen.accidental_open' | translate }}</p>

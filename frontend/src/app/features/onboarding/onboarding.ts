@@ -30,8 +30,8 @@ import { FridgeService } from '../../core/services/fridge.service';
             <img
               src="/branding/rettich/logo/rettich-logo-light.svg"
               [attr.alt]="'brand.name' | translate"
-              width="280"
-              height="98"
+              width="352"
+              height="123"
             />
           </picture>
         </h1>
