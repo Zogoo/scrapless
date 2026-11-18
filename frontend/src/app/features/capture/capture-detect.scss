@@ -1,0 +1,80 @@
+/*
+ * Live outlines (?detect=1) and the labelled photo in the review.
+ * Kept apart so the experiment is one file to delete if it does not ship.
+ */
+
+.outlines {
+  position: absolute;
+  inset: 0 0 auto;
+  aspect-ratio: 3 / 4;
+  pointer-events: none;
+
+  span {
+    position: absolute;
+    box-sizing: border-box;
+    border: 2px dashed rgb(255 255 255 / 90%);
+    border-radius: 12px;
+    transition:
+      left 0.2s linear,
+      top 0.2s linear,
+      width 0.2s linear,
+      height 0.2s linear;
+  }
+}
+
+.detect-status {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.labelled-photo {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+
+  img {
+    display: block;
+    width: 100%;
+    filter: brightness(0.85);
+  }
+
+  .box {
+    position: absolute;
+    box-sizing: border-box;
+    border: 2px solid #fff;
+    border-radius: 10px;
+
+    &.uncertain {
+      border: 3px solid var(--at-risk);
+    }
+  }
+
+  .tag {
+    position: absolute;
+    left: -2px;
+    bottom: 100%;
+    margin-bottom: 4px;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 30%);
+
+    &.inside {
+      bottom: auto;
+      top: 4px;
+      left: 4px;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .outlines span {
+    transition: none;
+  }
+}

@@ -97,6 +97,12 @@
       "salad": "Salad",
       "pasta": "Pasta",
       "coffee": "Coffee"
+    },
+    "detect": {
+      "loading": "Outlines: loading…",
+      "on": "Outlines on · {{ms}} ms",
+      "too_slow": "Outlines off — too slow on this phone ({{ms}} ms)",
+      "failed": "Outlines could not load"
     }
   },
   "memo": {

@@ -18,6 +18,13 @@ import { NotifyAsk } from '../../shared/notify-ask/notify-ask';
 import { CaptureReview } from '../../core/models';
 import { AutoShutter, ShutterStatus } from '../../core/vision/auto-shutter';
 import { analyseFrame, toLuma } from '../../core/vision/frame-analysis';
+import {
+  NormBox,
+  ObjectOutliner,
+  OutlinerState,
+  coverBox,
+  detectionEnabled,
+} from '../../core/vision/object-outlines';
 
 type Mode = 'choose' | 'camera' | 'reading' | 'voice' | 'manual' | 'review';
 
@@ -65,7 +72,7 @@ export const TAP_GRID: readonly { emoji: string; key: string; word: string }[] =
   imports: [FormsModule, TranslatePipe, NotifyAsk],
   templateUrl: './capture.html',
   changeDetection: ChangeDetectionStrategy.Eager,
-  styleUrl: './capture.scss',
+  styleUrls: ['./capture.scss', './capture-detect.scss'],
 })
 export class Capture implements OnDestroy {
   private readonly captures = inject(CaptureService);
@@ -91,6 +98,12 @@ export class Capture implements OnDestroy {
   protected readonly shot = signal<string | null>(null);
   protected readonly slow = signal(false);
   private slowTimer: number | null = null;
+  /** Live outlines while aiming — the `?detect=1` experiment. Names come after the shot. */
+  protected readonly outlines = signal<NormBox[]>([]);
+  protected readonly outlinerState = signal<OutlinerState>('off');
+  protected readonly detectMs = signal(0);
+  private outliner: ObjectOutliner | null = null;
+  private tick = 0;
   protected readonly tapGrid = TAP_GRID;
   /** Hides the notification question as soon as it is answered either way. */
 
@@ -104,6 +117,8 @@ export class Capture implements OnDestroy {
     this.stopCamera();
     this.clearShot();
     this.speech.cancel();
+    this.outliner?.close();
+    this.outliner = null;
   }
 
   // --- camera ---------------------------------------------------------------
@@ -133,6 +148,45 @@ export class Capture implements OnDestroy {
     // 8fps is enough to notice a steady hand and cheap enough not to warm the
     // phone up while the user lines up a receipt.
     this.timer = window.setInterval(() => this.inspectFrame(), 125);
+    this.startOutliner();
+  }
+
+  /**
+   * Never makes the camera wait: the video is already live, and outlines fade
+   * in whenever the model is ready. If it never is, nothing is missing.
+   */
+  private startOutliner(): void {
+    if (!detectionEnabled() || this.outliner || this.outlinerState() === 'loading') {
+      if (this.outliner && !this.outliner.tooSlow()) this.outlinerState.set('on');
+      return;
+    }
+
+    this.outlinerState.set('loading');
+    ObjectOutliner.create()
+      .then((outliner) => {
+        this.outliner = outliner;
+        this.outlinerState.set('on');
+      })
+      .catch(() => this.outlinerState.set('failed'));
+  }
+
+  /** Half the frame rate of the shutter check: 4 outlines a second is plenty. */
+  private updateOutlines(element: HTMLVideoElement): void {
+    if (!this.outliner || this.outlinerState() !== 'on' || this.tick++ % 2) return;
+
+    const boxes = this.outliner.detect(element);
+    this.detectMs.set(Math.round(this.outliner.averageMs()));
+    if (!boxes) {
+      this.outlinerState.set('too_slow');
+      this.outlines.set([]);
+      return;
+    }
+
+    const video = { w: element.videoWidth, h: element.videoHeight };
+    const shown = { w: element.clientWidth, h: element.clientHeight };
+    this.outlines.set(
+      boxes.map((box) => coverBox(box, video, shown)).filter((b): b is NormBox => !!b),
+    );
   }
 
   /**
@@ -162,6 +216,7 @@ export class Capture implements OnDestroy {
     const state = this.auto.feed(metrics);
     this.shutter.set(state.status);
     this.progress.set(state.progress);
+    this.updateOutlines(element);
 
     if (state.capture && this.autoShutterOn()) {
       void this.shoot();
@@ -235,6 +290,7 @@ export class Capture implements OnDestroy {
   }
 
   protected retakePhoto(): void {
+    this.clearShot();
     this.review.set(null);
     void this.openCamera();
   }
@@ -253,10 +309,11 @@ export class Capture implements OnDestroy {
     this.send(this.captures.photo(blob, 'receipt'));
   }
 
-  private clearShot(): void {
+  private clearShot(keepPhoto = false): void {
     if (this.slowTimer !== null) clearTimeout(this.slowTimer);
     this.slowTimer = null;
     this.slow.set(false);
+    if (keepPhoto) return;
     const url = this.shot();
     if (url) URL.revokeObjectURL(url);
     this.shot.set(null);
@@ -271,6 +328,7 @@ export class Capture implements OnDestroy {
 
   private stopCamera(): void {
     this.stopFrameLoop();
+    this.outlines.set([]);
     this.stream?.getTracks().forEach((track) => track.stop());
     this.stream = null;
   }
@@ -350,7 +408,9 @@ export class Capture implements OnDestroy {
 
     request.subscribe({
       next: (result) => {
-        this.clearShot();
+        // A food photo comes back with a box per item: keep the photo so the
+        // review can show the names where the food is.
+        this.clearShot(result.items.some((item) => item.box));
         this.review.set(result);
         this.mode.set('review');
         this.busy.set(false);
@@ -393,11 +453,17 @@ export class Capture implements OnDestroy {
     });
   }
 
+  protected labelled(result: CaptureReview): boolean {
+    return !!this.shot() && result.items.some((item) => item.box);
+  }
+
   protected done(): void {
+    this.clearShot();
     void this.router.navigate(['/today']);
   }
 
   protected back(): void {
+    this.clearShot();
     this.stopCamera();
     this.speech.cancel();
     this.error.set('');
