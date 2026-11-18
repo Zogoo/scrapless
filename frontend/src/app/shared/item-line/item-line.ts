@@ -308,9 +308,13 @@ export class ItemLine {
 
     this.items.level(ids, level).subscribe({
       next: () => {
-        // 0% has already marked every pack on the line used. The toast can
-        // put them back, the same way Weggeworfen can.
-        if (level === 0) this.undo.showUsedUp(ids);
+        // 0% has already marked every pack on the line used. Take the card
+        // off the shared list now — a reload that still mentions an empty
+        // pack must not draw it again. The toast puts them back.
+        if (level === 0) {
+          this.undo.showUsedUp(ids);
+          this.items.removeFromList(ids);
+        }
         this.items.load().subscribe({
           next: () => {
             this.preview.set(null);

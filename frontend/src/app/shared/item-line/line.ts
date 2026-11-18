@@ -40,6 +40,8 @@ export function lineKey(item: ScoredItem): string {
 export function toLines(items: ScoredItem[]): KitchenLine[] {
   const byKey = new Map<string, ScoredItem[]>();
   for (const item of items) {
+    // Nothing left is a used pack. It is not an empty card.
+    if (item.amount_left <= 0) continue;
     const key = lineKey(item);
     byKey.set(key, [...(byKey.get(key) ?? []), item]);
   }

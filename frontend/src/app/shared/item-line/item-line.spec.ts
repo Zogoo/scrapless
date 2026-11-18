@@ -7,9 +7,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { environment } from '../../../environments/environment';
 import { ScoredItem, Storage } from '../../core/models';
+import { ItemsService } from '../../core/services/items.service';
 import { UndoService } from '../../core/services/undo.service';
 import { ItemLine } from './item-line';
-import { KitchenLine, toLines } from './line';
+import { KitchenLine, lineFor, toLines } from './line';
 
 function pack(
   id: number,
@@ -147,7 +148,17 @@ describe('Item line', () => {
   });
 
   it('uses the whole line when the slider reaches 0%', () => {
-    const screen = mount(toLines([pack(1), pack(2, 0.5)])[0]);
+    const packs = [pack(1), pack(2, 0.5)];
+    const items = TestBed.inject(ItemsService);
+    items.today.set({
+      use_first: packs,
+      fine_for_now: [],
+      probably_gone: [],
+      sweep_count: 0,
+      as_of: '2026-11-18',
+      has_captured: true,
+    });
+    const screen = mount(toLines(packs)[0]);
 
     screen.commitLevel(slider(0));
 
@@ -160,9 +171,20 @@ describe('Item line', () => {
     const req = http.expectOne(`${environment.apiUrl}/items/level`);
     expect(req.request.body).toEqual({ ids: [1, 2], level: 0 });
     req.flush({ items: [] });
-    http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
-
+    // The card leaves with the toast, before the reload, on the list both screens read.
+    expect(items.today()?.use_first).toEqual([]);
     expect(TestBed.inject(UndoService).notice()?.itemIds).toEqual([1, 2]);
+    expect(TestBed.inject(UndoService).notice()?.message).toBe('undo.used_up');
+
+    http.expectOne(`${environment.apiUrl}/items`).flush({
+      use_first: [{ ...packs[0], amount_left: 0 }],
+      fine_for_now: [],
+      probably_gone: [],
+      sweep_count: 0,
+      as_of: '2026-11-18',
+      has_captured: true,
+    });
+    expect(items.today()?.use_first).toEqual([]);
   });
 
   it('opens the soonest pack on the first move, and not again', () => {
@@ -300,6 +322,17 @@ describe('Item line', () => {
     expect((root.querySelector('.level') as HTMLElement).style.backgroundImage).toBe('');
   });
 
+  it('fills a partial pack out to the thumb', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput('line', toLines([pack(1, 0.75)])[0]);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.bands')?.getAttribute('style')).toContain('width: 75%');
+    // 0.75 would leave the bar at 56% of the track. The share stays ¾, scaled up.
+    expect((root.querySelector('.band') as HTMLElement).style.flexGrow).toBe('750');
+  });
+
   it('draws a closed radish while the pack is unopened', () => {
     const fixture = TestBed.createComponent(ItemLine);
     fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
@@ -347,7 +380,7 @@ describe('Item line', () => {
     ) => {
       fixture.componentRef.setInput(
         'line',
-        toLines([pack(1, amount, 'milk', '2026-11-20', openedOn, phase)])[0],
+        lineFor(pack(1, amount, 'milk', '2026-11-20', openedOn, phase)),
       );
       fixture.detectChanges();
       return fixture.nativeElement as HTMLElement;
