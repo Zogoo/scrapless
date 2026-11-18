@@ -28,6 +28,14 @@ RSpec.describe "Api::V1::Captures", type: :request do
       expect(body["suppressed"]).to include("PFAND 0,25")
     end
 
+    it "places each item on a photo of food, and none on a receipt" do
+      post "/api/v1/captures", params: { source: "shelf_photo", image: receipt_upload }, headers: headers
+      expect(response.parsed_body["items"].map { |i| i["box"] }).to all(include("x", "y", "w", "h"))
+
+      post "/api/v1/captures", params: { source: "receipt", image: receipt_upload }, headers: headers
+      expect(response.parsed_body["items"].map { |i| i["box"] }).to all(be_nil)
+    end
+
     it "keeps the receipt image so a bad parse can be audited" do
       post "/api/v1/captures", params: { source: "receipt", image: receipt_upload }, headers: headers
 

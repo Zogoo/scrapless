@@ -31,7 +31,7 @@ module Captures
         error_message: items.any? ? nil : "no food lines found"
       )
 
-      { items: items, suppressed: suppressed.map { |l| l["raw_text"].presence || l["name"] }.compact,
+      { items: items, boxes: built.map { |_, _, line| box(line["box"]) }, suppressed: suppressed.map { |l| l["raw_text"].presence || l["name"] }.compact,
         notes: @payload["notes"].presence, kind: @payload["kind"].presence || "receipt" }
     end
 
@@ -123,6 +123,18 @@ module Captures
       return 0.0 if lines.empty?
 
       (items.size / lines.size.to_f).round(2)
+    end
+
+    # Where a food photo showed each item, for the labels drawn on it in the
+    # review. Not stored: it describes one photo, not the food. Anything that is
+    # not a sane box inside the image is dropped rather than drawn wrong.
+    def box(value)
+      return nil unless value.is_a?(Hash)
+
+      x, y, w, h = %w[x y w h].map { |k| numeric(value[k]) }
+      return nil unless [ x, y, w, h ].all? { |n| n&.between?(0.0, 1.0) } && w.positive? && h.positive?
+
+      { x: x, y: y, w: [ w, 1.0 - x ].min, h: [ h, 1.0 - y ].min }
     end
 
     def numeric(value)

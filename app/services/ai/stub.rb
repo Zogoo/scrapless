@@ -34,9 +34,9 @@ module Ai
         "merchant" => nil,
         "purchased_on" => Date.current.iso8601,
         "lines" => [
-          line("green broccoli crown", "Broccoli", 1, "piece", nil, nil),
-          line("carton of milk", "Milk", 1, "l", nil, nil),
-          line("bag of carrots", "Carrots", 500, "g", nil, nil)
+          line("green broccoli crown", "Broccoli", 1, "piece", nil, nil, box: [ 0.38, 0.35, 0.26, 0.3 ]),
+          line("carton of milk", "Milk", 1, "l", nil, nil, box: [ 0.1, 0.25, 0.2, 0.45 ]),
+          line("bag of carrots", "Carrots", 500, "g", nil, nil, box: [ 0.66, 0.5, 0.28, 0.22 ])
         ],
         "totals" => { "sum" => nil },
         "notes" => "stubbed response - no OPENAI_API_KEY configured"
@@ -84,11 +84,12 @@ module Ai
       { "item_id" => entry[:id], "name" => entry[:name], "amount" => nil, "optional" => false }
     end
 
-    def line(raw, name, quantity, unit, price, vat, row: "food")
+    def line(raw, name, quantity, unit, price, vat, row: "food", box: nil)
       category = Categories.guess("#{raw} #{name}")
       { "raw_text" => raw, "name" => name, "product" => name.downcase, "quantity" => quantity, "unit" => unit,
         "price" => price, "vat_class" => vat, "row" => row,
-        "category" => category, "storage" => Categories.storage_for(category) }
+        "category" => category, "storage" => Categories.storage_for(category),
+        "box" => box && %w[x y w h].zip(box).to_h }
     end
 
     def extract_quantity(text)

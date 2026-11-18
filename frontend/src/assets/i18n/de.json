@@ -97,6 +97,12 @@
       "salad": "Salat",
       "pasta": "Nudeln",
       "coffee": "Kaffee"
+    },
+    "detect": {
+      "loading": "Umrisse: werden geladen…",
+      "on": "Umrisse an · {{ms}} ms",
+      "too_slow": "Umrisse aus — zu langsam auf diesem Handy ({{ms}} ms)",
+      "failed": "Umrisse konnten nicht geladen werden"
     }
   },
   "memo": {
