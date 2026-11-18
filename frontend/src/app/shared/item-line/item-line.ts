@@ -59,6 +59,7 @@ export class ItemLine {
    */
   protected readonly accidental = signal(false);
   private readonly moveSheet = viewChild<ElementRef<HTMLDialogElement>>('moveSheet');
+  private readonly levelInput = viewChild<ElementRef<HTMLInputElement>>('level');
   private readonly preview = signal<{ key: string; percent: number } | null>(null);
   /**
    * One drag. `dates` is the window before the first move. Releasing at the
@@ -66,6 +67,8 @@ export class ItemLine {
    * saved. A pack that was open before this drag only changes its amount.
    */
   private gesture: Gesture | null = null;
+  /** A drag that began on the radish: where the finger went down, and the percent then. */
+  private radishDrag: { x: number; percent: number } | null = null;
   private openingId: number | null = null;
   private openInFlight = false;
   private afterOpen: (() => void) | null = null;
@@ -245,6 +248,56 @@ export class ItemLine {
   protected releaseNudge(event: KeyboardEvent): void {
     if (nudgeDirection(event.key) === 0) return;
     this.commitLevel(event);
+  }
+
+  /** Pressing the radish drags the range, the same path as pressing the bar. */
+  protected grabRadish(event: PointerEvent): void {
+    if (event.button !== 0) return;
+    const bite = event.currentTarget;
+    if (!(bite instanceof HTMLElement)) return;
+
+    event.preventDefault();
+    try {
+      bite.setPointerCapture(event.pointerId);
+    } catch {
+      // The test runner dispatches the event without an active pointer.
+    }
+    this.radishDrag = { x: event.clientX, percent: this.percent() };
+    this.beginGesture();
+  }
+
+  protected dragRadish(event: PointerEvent): void {
+    const drag = this.radishDrag;
+    const input = this.levelInput()?.nativeElement;
+    if (!drag || !input) return;
+
+    const span = this.trackSpan(input);
+    if (span <= 0) return;
+    const percent = drag.percent + ((event.clientX - drag.x) / span) * 100;
+    input.value = String(Math.min(100, Math.max(0, percent)));
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  protected releaseRadish(event: PointerEvent): void {
+    if (!this.radishDrag) return;
+    const bite = event.currentTarget;
+    if (bite instanceof HTMLElement && bite.hasPointerCapture?.(event.pointerId)) {
+      bite.releasePointerCapture(event.pointerId);
+    }
+    this.dragRadish(event);
+    this.radishDrag = null;
+    this.levelInput()?.nativeElement.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  /**
+   * The native thumb cannot reach the padding edge, so a drag across the
+   * usable track — width minus that thumb — is the whole 0–100.
+   */
+  private trackSpan(input: HTMLInputElement): number {
+    const width = input.getBoundingClientRect().width;
+    const thumb = Number.parseFloat(getComputedStyle(input).getPropertyValue('--thumb'));
+    const span = width - (Number.isFinite(thumb) ? thumb : 26);
+    return span > 0 ? span : width;
   }
 
   protected slide(event: Event): void {

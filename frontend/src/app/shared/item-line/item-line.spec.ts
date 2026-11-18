@@ -94,6 +94,53 @@ describe('Item line', () => {
     return fixture.componentInstance as unknown as ItemLineScreen;
   }
 
+  it('drags the slider from a pointer on the radish', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput('line', toLines([pack(1), pack(2)])[0]);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const input = root.querySelector('.level') as HTMLInputElement;
+    const bite = root.querySelector('.bite') as HTMLElement;
+    input.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        width: 226,
+        top: 0,
+        height: 48,
+        right: 226,
+        bottom: 48,
+        x: 0,
+        y: 0,
+        toJSON() {
+          return {};
+        },
+      }) as DOMRect;
+
+    // The usable track is the width minus the 26px thumb. 100px left is half.
+    const point = (type: string, x: number) =>
+      new PointerEvent(type, {
+        clientX: x,
+        button: 0,
+        bubbles: true,
+        cancelable: true,
+        pointerId: 1,
+      });
+    bite.dispatchEvent(point('pointerdown', 200));
+    bite.dispatchEvent(point('pointermove', 100));
+    bite.dispatchEvent(point('pointerup', 100));
+
+    const opened = http.expectOne(`${environment.apiUrl}/items/1/resolve`);
+    expect(opened.request.body).toEqual(sliderOpen(100));
+    opened.flush({});
+    const revert = http.expectOne(`${environment.apiUrl}/items/1/revert_open`);
+    expect(revert.request.body).toEqual({ percent: 50 });
+    revert.flush({});
+    const req = http.expectOne(`${environment.apiUrl}/items/level`);
+    expect(req.request.body).toEqual({ ids: [1, 2], level: 1 });
+    req.flush({ items: [] });
+    http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
+  });
+
   it('stops only on quarters of the line', () => {
     const screen = mount(toLines([pack(1), pack(2)])[0]);
 

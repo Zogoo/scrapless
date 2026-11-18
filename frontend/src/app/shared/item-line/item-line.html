@@ -18,6 +18,7 @@
 <div class="slider" [style.--p]="percent()">
   <div class="track">
     <input
+      #level
       type="range"
       class="level"
       min="0"
@@ -57,11 +58,15 @@
       role="img"
       [attr.data-bites]="bites()"
       [attr.aria-label]="(opened() ? 'kitchen.lock_open' : 'kitchen.lock_closed') | translate"
+      (pointerdown)="grabRadish($event)"
+      (pointermove)="dragRadish($event)"
+      (pointerup)="releaseRadish($event)"
+      (pointercancel)="releaseRadish($event)"
     >
       @if (radishSrc(); as src) {
         <picture>
           <source [attr.srcset]="src.dark" media="(prefers-color-scheme: dark)" />
-          <img [src]="src.light" alt="" />
+          <img [src]="src.light" alt="" draggable="false" />
         </picture>
       }
     </span>
