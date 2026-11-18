@@ -46,7 +46,7 @@
 .slider {
   --thumb: 26px;
   --bar-gap: 3px;
-  --radish: 72px;
+  --radish: 48px;
   display: flex;
   align-items: center;
   /* Room for the root, which hangs past the end of the bar. */
@@ -101,6 +101,11 @@
   box-sizing: border-box;
   transform: translateY(-50%);
   pointer-events: none;
+
+  /* The bite is cut in from that edge. Pull the face left until the bite meets the bar. */
+  &.bitten {
+    left: calc(var(--p) * 1% - var(--radish) * 0.394);
+  }
 
   img {
     display: block;
