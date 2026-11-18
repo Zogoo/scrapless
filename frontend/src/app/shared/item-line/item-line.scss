@@ -42,11 +42,21 @@
   white-space: nowrap;
 }
 
-/* The thumb is Pac-Man. Unopened, the mouth is a line. Opened, it faces the track. */
+/* The thumb is the radish. The drawing is 200×266, and the body starts 27% in. */
 .slider {
-  position: relative;
   --thumb: 26px;
   --bar-gap: 3px;
+  --radish: 72px;
+  display: flex;
+  align-items: center;
+  /* Room for the root, which hangs past the end of the bar. */
+  height: calc(var(--radish) * 266 / 200);
+  padding-right: calc(var(--radish) * 0.46);
+}
+
+.track {
+  position: relative;
+  width: 100%;
 }
 
 /* One rounded bar per pack, inside the filled part. The gap is the sunken track. */
@@ -84,22 +94,13 @@
   position: absolute;
   z-index: 1;
   top: 50%;
-  left: calc((100% - var(--thumb)) * var(--p, 0) / 100);
-  width: var(--thumb);
-  height: calc(var(--thumb) * 266 / 200);
+  /* The body's left edge, not the viewBox, meets the end of the bar. */
+  left: calc(var(--p) * 1% - var(--radish) * 0.27);
+  width: var(--radish);
+  height: calc(var(--radish) * 266 / 200);
   box-sizing: border-box;
   transform: translateY(-50%);
   pointer-events: none;
-
-  /* At the right end, cover the same gap the round thumb used to leave. */
-  &.full {
-    left: calc(100% - var(--thumb) + var(--thumb) / 12);
-  }
-
-  /* Sit the face on the end of the bar, the same place the thumb has always met it. */
-  &.open {
-    left: calc(var(--p) * 1% - var(--thumb) / 2);
-  }
 
   img {
     display: block;

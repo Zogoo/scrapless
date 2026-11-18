@@ -45,8 +45,8 @@ main.with-tabs {
   .mark {
     flex: none;
     display: block;
-    width: 36px;
-    height: 36px;
+    width: 48px;
+    height: 48px;
     object-fit: contain;
   }
 
@@ -164,6 +164,11 @@ main.with-tabs {
       width: 24px;
       height: 24px;
       object-fit: contain;
+    }
+
+    img.radish {
+      width: 2rem;
+      height: 2rem;
     }
   }
 }
