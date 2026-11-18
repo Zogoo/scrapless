@@ -21,6 +21,10 @@ module Ai
     # not_food") the model never applied it — 3 of 3 runs put the steak and the
     # wine in the fridge — because it is a judgement about the document, not
     # about any one line. Captures::Ingest keeps nothing from a bill.
+    #
+    # The classification is fragile: any instruction that names "receipt" has
+    # to name "bill" too. "On a receipt, box is null" alone turned the test
+    # bill back into a receipt in 2 of 2 runs; "a receipt or a bill", 3 of 3 bill.
     KINDS = %w[receipt bill food unclear].freeze
 
     SCHEMA = {
@@ -111,7 +115,7 @@ module Ai
       put a short description in raw_text and leave price null. Do not guess at
       items hidden behind other items. Give each entry a box: where it is in
       the photo, as fractions of the image (x, y = top-left corner, w, h =
-      size, all 0-1), tight around the product. On a receipt, box is null.
+      size, all 0-1), tight around the product. On a receipt or a bill, box is null.
 
       name is what a shopper calls the food, written in %<language>s whatever
       language the receipt or packet is in: abbreviations spelled out, a capital

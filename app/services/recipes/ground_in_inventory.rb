@@ -47,9 +47,14 @@ module Recipes
       optional = raw["optional"] == true
       item = by_id(raw["item_id"]) || by_exact_name(name) || by_alias(name) || by_name(name)
 
+      # Food from this kitchen is what the recipe is for: only a staple (salt,
+      # oil) may stay optional. Asked in the prompt, the model still marked
+      # tomatoes and courgettes optional — which drops them from the steps and
+      # from the use-first count the recipes are ranked by.
       if item
         @used_ids << item.id
-        return { item_id: item.id, name: bare_name(item), amount: amount(raw), optional: optional,
+        return { item_id: item.id, name: bare_name(item), amount: amount(raw),
+                 optional: optional && staple?(name),
                  use_first: @use_first_ids.include?(item.id) }
       end
 

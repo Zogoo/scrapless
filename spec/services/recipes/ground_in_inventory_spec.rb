@@ -107,4 +107,18 @@ RSpec.describe Recipes::GroundInInventory do
     expect(recipe[:ingredients].map { |i| i[:use_first] }).to eq([ true, false ])
     expect(recipe[:use_first_count]).to eq(1)
   end
+
+  it "never lets food from the kitchen be optional, except a staple" do
+    tomatoes = create(:item, display_name: "Cherry tomatoes", canonical_name: "cherry tomatoes")
+    salt = create(:item, display_name: "Salz", canonical_name: "salz")
+    recipe = described_class.call(
+      recipe: { "title" => "Tomato salad", "minutes" => 10, "steps" => [ "Halve the cherry tomatoes." ],
+                "ingredients" => [ ingredient("Cherry tomatoes", item_id: tomatoes.id, optional: true),
+                                   ingredient("Salz", item_id: salt.id, optional: true) ] },
+      items: [ tomatoes, salt ]
+    )
+
+    expect(recipe[:ingredients].map { |i| [ i[:name], i[:optional] ] })
+      .to eq([ [ "Cherry tomatoes", false ], [ "Salz", true ] ])
+  end
 end
