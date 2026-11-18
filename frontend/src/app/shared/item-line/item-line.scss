@@ -42,16 +42,16 @@
   white-space: nowrap;
 }
 
-/* The thumb is the radish, 48px wide. The viewBox grew upward for the leaves
-   (200×300), so the height follows that instead of the old 200×266 crop. */
+/* The thumb is the radish, 48px wide. The viewBox is 200×300, so the height
+   follows that. It stands on the bar: the track stays at the bottom and the
+   leaves use the room above. */
 .slider {
   --thumb: 26px;
   --bar-gap: 3px;
   --radish: 48px;
   display: flex;
-  align-items: center;
-  /* Room for the root, which hangs past the end of the bar. */
-  height: calc(var(--radish) * 300 / 200);
+  align-items: flex-end;
+  height: calc(var(--tap) + var(--radish) * 0.75);
   padding-right: calc(var(--radish) * 0.46);
 }
 
@@ -95,18 +95,20 @@
   position: absolute;
   z-index: 1;
   top: 50%;
-  /* Light files pad 8px around the art. The shoulder, not that padding, meets the bar. */
-  --inset: 0.29;
+  /* Light files pad the art. The bar ends under the root, and the root sits on it. */
+  --inset: 0.55;
+  --stand: calc(var(--radish) * 0.571);
   left: calc(var(--p) * 1% - var(--radish) * var(--inset));
   width: var(--radish);
   height: calc(var(--radish) * 300 / 200);
   box-sizing: border-box;
-  transform: translateY(-50%);
+  transform: translateY(calc(-50% - var(--stand)));
   pointer-events: none;
 
-  /* The opened face ends at the foot, about a quarter of the way in. */
+  /* Opened: both feet are on the bar, and the bar ends at the back foot. */
   &.bitten {
-    --inset: 0.24;
+    --inset: 0.64;
+    --stand: calc(var(--radish) * 0.465);
   }
 
   picture,
@@ -124,11 +126,13 @@
 
 @media (prefers-color-scheme: dark) {
   .bite {
-    /* Dark files are the 200-wide viewBox: the shoulder is 27% in, the foot 23%. */
-    --inset: 0.27;
+    /* Dark files have no padding, so the root and the feet sit differently. */
+    --inset: 0.55;
+    --stand: calc(var(--radish) * 0.644);
 
     &.bitten {
-      --inset: 0.23;
+      --inset: 0.65;
+      --stand: calc(var(--radish) * 0.527);
     }
   }
 }
