@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { Item, Outcome, Storage, Today } from '../models';
+import { Item, Outcome, ScoredItem, Storage, Today } from '../models';
 import { NotificationsService } from './notifications.service';
 
 @Injectable({ providedIn: 'root' })
@@ -22,7 +22,19 @@ export class ItemsService {
   readonly today = signal<Today | null>(null);
 
   load(): Observable<Today> {
-    return this.http.get<Today>(this.url).pipe(tap((today) => this.today.set(today)));
+    return this.http.get<Today>(this.url).pipe(tap((today) => this.today.set(this.stocked(today))));
+  }
+
+  /**
+   * The slider released at 0% has used these packs. Home and the Kitchen both
+   * render this list, so the card leaves both at once. A pack with nothing
+   * left is not a card either: the reload must not put an empty one back.
+   */
+  removeFromList(ids: number[]): void {
+    const today = this.today();
+    if (!today) return;
+
+    this.today.set(this.stocked(today, new Set(ids)));
   }
 
   /** Every outcome is one POST with no form. */
@@ -79,5 +91,17 @@ export class ItemsService {
 
   remove(id: number): Observable<void> {
     return this.http.delete<void>(`${this.url}/${id}`).pipe(this.recount());
+  }
+
+  private stocked(today: Today, gone?: Set<number>): Today {
+    const keep = (items: ScoredItem[] | undefined) =>
+      (items ?? []).filter((item) => item.amount_left > 0 && !gone?.has(item.id));
+
+    return {
+      ...today,
+      use_first: keep(today.use_first),
+      fine_for_now: keep(today.fine_for_now),
+      probably_gone: keep(today.probably_gone),
+    };
   }
 }

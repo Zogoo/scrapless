@@ -87,6 +87,14 @@ describe('toLines', () => {
   it('keeps frozen milk apart from fridge milk', () => {
     expect(toLines([fresh, pack({ id: 4, storage: 'freezer' })])).toHaveLength(2);
   });
+
+  it('drops a pack with nothing left instead of an empty card', () => {
+    const gone = pack({ id: 1, amount_left: 0 });
+    const left = pack({ id: 2, amount_left: 1 });
+
+    expect(toLines([gone, left]).map((line) => line.packs.map((item) => item.id))).toEqual([[2]]);
+    expect(toLines([gone])).toEqual([]);
+  });
 });
 
 describe('segments', () => {
