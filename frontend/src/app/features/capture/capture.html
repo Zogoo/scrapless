@@ -58,6 +58,26 @@
       <div class="viewfinder">
         <video #video playsinline muted autoplay></video>
 
+        @if (outlines().length) {
+          <!-- Outlines only: names arrive after the shot, from the one model call. -->
+          <div class="outlines" aria-hidden="true">
+            @for (box of outlines(); track $index) {
+              <span
+                [style.left.%]="box.x * 100"
+                [style.top.%]="box.y * 100"
+                [style.width.%]="box.w * 100"
+                [style.height.%]="box.h * 100"
+              ></span>
+            }
+          </div>
+        }
+
+        @if (outlinerState() !== 'off') {
+          <p class="detect-status">
+            {{ 'capture.detect.' + outlinerState() | translate: { ms: detectMs() } }}
+          </p>
+        }
+
         <div class="reticle" [attr.data-status]="shutter()">
           <div class="progress" [style.width.%]="progress() * 100"></div>
         </div>
@@ -212,6 +232,27 @@
           }
         } @else {
           <p class="lede">{{ 'capture.review_lede' | translate }}</p>
+
+          @if (labelled(result)) {
+            <!-- What the model saw, where it saw it. -->
+            <div class="labelled-photo">
+              <img [src]="shot()" alt="" />
+              @for (item of result.items; track item.id) {
+                @if (item.box; as box) {
+                  <span
+                    class="box"
+                    [class.uncertain]="item.needs_review"
+                    [style.left.%]="box.x * 100"
+                    [style.top.%]="box.y * 100"
+                    [style.width.%]="box.w * 100"
+                    [style.height.%]="box.h * 100"
+                  >
+                    <span class="tag" [class.inside]="box.y < 0.08">{{ item.display_name }}</span>
+                  </span>
+                }
+              }
+            </div>
+          }
 
           <ul class="review-list">
             <!-- Uncertainty floats to the top; everything else is pre-accepted. -->

@@ -148,7 +148,7 @@ module Api
             line_count: capture.line_count, transcript: capture.transcript,
             notes: result[:notes]
           },
-          items: result[:items].map do |item|
+          items: result[:items].each_with_index.map do |item, index|
             {
               id: item.id, display_name: item.display_name, category: item.category,
               raw_text: item.raw_text, quantity: item.quantity&.to_f, unit: item.unit,
@@ -156,6 +156,7 @@ module Api
               days_left: item.days_left, confidence: item.confidence,
               needs_review: item.confidence < 0.5,
               in_kitchen: in_kitchen(item),
+              box: result[:boxes]&.at(index),
               added_by_name: item.added_by_name
             }
           end,

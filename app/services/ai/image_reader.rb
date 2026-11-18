@@ -36,7 +36,7 @@ module Ai
           items: {
             type: "object",
             additionalProperties: false,
-            required: %w[raw_text name product quantity unit price vat_class row category storage],
+            required: %w[raw_text name product quantity unit price vat_class row category storage box],
             properties: {
               raw_text: { type: "string", description: "verbatim, exactly as printed" },
               name: { type: "string", description: "what a shopper calls it, in the language the instructions name" },
@@ -47,7 +47,24 @@ module Ai
               vat_class: { type: %w[string null], enum: [ "A", "B", nil ] },
               row: { type: "string", enum: ROWS },
               category: { type: "string", enum: Categories::NAMES },
-              storage: { type: "string", enum: Item::STORAGES }
+              storage: { type: "string", enum: Item::STORAGES },
+              box: {
+                anyOf: [
+                  {
+                    type: "object",
+                    additionalProperties: false,
+                    required: %w[x y w h],
+                    description: "where the product is in the photo, as fractions of its width and height",
+                    properties: {
+                      x: { type: "number", description: "left edge, 0-1" },
+                      y: { type: "number", description: "top edge, 0-1" },
+                      w: { type: "number", description: "width, 0-1" },
+                      h: { type: "number", description: "height, 0-1" }
+                    }
+                  },
+                  { type: "null" }
+                ]
+              }
             }
           }
         },
@@ -92,7 +109,9 @@ module Ai
       weight printed on a row of its own.
       For a photo of food: one entry per distinct product you can actually see;
       put a short description in raw_text and leave price null. Do not guess at
-      items hidden behind other items.
+      items hidden behind other items. Give each entry a box: where it is in
+      the photo, as fractions of the image (x, y = top-left corner, w, h =
+      size, all 0-1), tight around the product. On a receipt, box is null.
 
       name is what a shopper calls the food, written in %<language>s whatever
       language the receipt or packet is in: abbreviations spelled out, a capital

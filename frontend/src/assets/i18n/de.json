@@ -98,7 +98,13 @@
       "pasta": "Nudeln",
       "coffee": "Kaffee"
     },
-    "mic_blocked": "Das Mikrofon ist für diese Seite gesperrt. Erlaube es in den Browser-Einstellungen oder tippe es ein."
+    "mic_blocked": "Das Mikrofon ist für diese Seite gesperrt. Erlaube es in den Browser-Einstellungen oder tippe es ein.",
+    "detect": {
+      "loading": "Umrisse: werden geladen…",
+      "on": "Umrisse an · {{ms}} ms",
+      "too_slow": "Umrisse aus — zu langsam auf diesem Handy ({{ms}} ms)",
+      "failed": "Umrisse konnten nicht geladen werden"
+    }
   },
   "memo": {
     "title": "Einkauf",

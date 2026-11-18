@@ -29,6 +29,18 @@ RSpec.describe Captures::Ingest do
     expect(capture.merchant).to eq("REWE")
   end
 
+  # A food photo's labels are drawn where the model saw each item; a box that
+  # is not inside the photo would draw a label in the wrong place, so it goes.
+  it "returns a box per item for a food photo, and drops one that is not inside it" do
+    result = described_class.call(capture: capture, payload: payload([
+      { "raw_text" => "broccoli", "name" => "Brokkoli", "box" => { "x" => 0.4, "y" => 0.3, "w" => 0.8, "h" => 0.2 } },
+      { "raw_text" => "milk carton", "name" => "Milch", "box" => { "x" => 1.4, "y" => 0, "w" => 0.2, "h" => 0.2 } },
+      { "raw_text" => "H-MILCH", "name" => "Milch", "box" => nil }
+    ]))
+
+    expect(result[:boxes]).to eq([ { x: 0.4, y: 0.3, w: 0.6, h: 0.2 }, nil, nil ])
+  end
+
   # Proving we filtered the deposit line is what makes the parser trustworthy,
   # so suppressed lines are returned to the review screen, not silently dropped.
   it "suppresses non-food lines and reports what it suppressed" do
