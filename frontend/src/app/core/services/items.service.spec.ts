@@ -54,4 +54,15 @@ describe('ItemsService', () => {
 
     expect(service.today()?.use_first.map((item) => item.id)).toEqual([2]);
   });
+
+  it('ignores a reload that started before the packs were used up', () => {
+    service.today.set(today([pack(1), pack(2, 0.5)]));
+    service.load().subscribe();
+    const stale = http.expectOne(`${environment.apiUrl}/items`);
+
+    service.removeFromList([1, 2]);
+    stale.flush(today([pack(1), pack(2, 0.5)]));
+
+    expect(service.today()?.use_first).toEqual([]);
+  });
 });
