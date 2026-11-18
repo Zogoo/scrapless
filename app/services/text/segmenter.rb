@@ -19,7 +19,11 @@ module Text
   # No word list lives here; it is all config/dictation plus what the kitchen
   # has taught it.
   class Segmenter < ApplicationService
-    Result = Struct.new(:parts, :unresolved, keyword_init: true)
+    # `sure` is true when every line is a known item, optionally preceded by an
+    # amount, unit or modifier: nothing was left over that the lexicon could not
+    # place. It is what Memo::ListReader uses to decide whether a model is
+    # worth calling (doc 15 §15.11).
+    Result = Struct.new(:parts, :unresolved, :sure, keyword_init: true)
     Token = Struct.new(:surface, :key, :role, keyword_init: true)
 
     # Language-neutral marks. A full stop splits, a decimal point does not.
@@ -35,6 +39,7 @@ module Text
     def call
       parts = []
       unresolved = []
+      @leftover = false
 
       groups.each do |tokens|
         tokens = trim(tokens)
@@ -47,7 +52,8 @@ module Text
         parts.concat(pieces)
       end
 
-      Result.new(parts: parts.first(MAX_PARTS), unresolved: unresolved)
+      Result.new(parts: parts.first(MAX_PARTS), unresolved: unresolved,
+                 sure: !@leftover && parts.size <= MAX_PARTS)
     end
 
     private
@@ -147,7 +153,10 @@ module Text
     # Nothing else is dropped: every word said ends up in a line or was filler.
     def flush(pieces, run)
       run = trim(run)
-      pieces << join(run) if run.any?
+      return if run.empty?
+
+      @leftover = true
+      pieces << join(run)
     end
 
     def longest_match(tokens, index, set, longest)

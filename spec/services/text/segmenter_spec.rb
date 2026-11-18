@@ -64,13 +64,17 @@ RSpec.describe Text::Segmenter do
           said = chosen.map.with_index { |item, i| i.zero? ? item : glue.sample(random: random) + item }.join
           said = "#{language.leading.sample(random: random)} #{said} #{language.trailing.sample(random: random)}"
 
-          got = parts(said).map { |part| key(part) }
-          failures << [ said, got ] unless got == chosen
+          result = described_class.call(text: said)
+          got = result.parts.map { |part| key(part) }
+          # Every word is known here, so the segmenter must also say it is sure:
+          # an unsure answer would cost a model call for nothing.
+          failures << [ said, got, result.sure ] unless got == chosen && result.sure
         end
 
         expect(tried).to be > 150
         expect(items.size).to be > 40
-        expect(failures).to be_empty, failures.first(5).map { |said, got| "#{said.inspect} -> #{got}" }.join("\n")
+        expect(failures).to be_empty,
+                            failures.first(5).map { |said, got, sure| "#{said.inspect} -> #{got} sure=#{sure}" }.join("\n")
       end
     end
   end
@@ -88,6 +92,46 @@ RSpec.describe Text::Segmenter do
       lost = key(said).split - kept
 
       expect(lost.reject { |word| droppable.include?(word) }).to be_empty, "#{said.inspect} lost #{lost}"
+    end
+  end
+
+  describe "sure" do
+    it "is sure when every line is a known item, with or without an amount" do
+      expect(described_class.call(text: "ich brauche Brot Milch und zwei Zwiebeln").sure).to be(true)
+    end
+
+    it "is not sure when any word is left that it could not place" do
+      expect(described_class.call(text: "peanut butter").sure).to be(false)
+      expect(described_class.call(text: "Milch nee warte Hafermilch").sure).to be(false)
+      expect(described_class.call(text: "Milch für den Kuchen").sure).to be(false)
+    end
+
+    it "is not sure about an amount with no item after it" do
+      expect(described_class.call(text: "Milch und zwei").sure).to be(false)
+    end
+
+    # Whatever is said, sure means every line is a lexicon item, so a model
+    # is never skipped for a line the lexicon does not know.
+    it "never claims to be sure about a line the lexicon does not know" do
+      lexicon = Text::Lexicon.for(nil)
+      attachable = ->(word) { word.match?(/\A\d/) || lexicon.units.include?(word) || lexicon.modifiers.include?(word) }
+      random = Random.new(RSpec.configuration.seed)
+      vocabulary = ProductAlias.shared.pluck(:raw_text) + %w[quark yuzu tortillas für den kuchen zwei kilo bio]
+
+      300.times do
+        said = Array.new(random.rand(1..6)) { vocabulary.sample(random: random) }.join(" ")
+        result = described_class.call(text: said)
+        next unless result.sure
+
+        result.parts.each do |line|
+          words = key(line).split
+          # Some leading words are amounts, units or modifiers; the rest is an item.
+          known = (0...words.size).any? do |k|
+            words.first(k).all?(&attachable) && lexicon.items.include?(words.drop(k).join(" "))
+          end
+          expect(known).to be(true), "#{said.inspect}: #{line.inspect} counted as sure"
+        end
+      end
     end
   end
 

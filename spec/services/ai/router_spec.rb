@@ -89,6 +89,25 @@ RSpec.describe Ai::Router do
         .to raise_error(Ai::Client::Error, /empty completion/)
     end
 
+    # One deadline for the whole chain: a person at the mic must not wait once
+    # per provider.
+    it "shares one deadline across the chain and does not start a provider after it" do
+      calls = []
+      allow(Net::HTTP).to receive(:start) do |host, _port, options|
+        calls << [ host, options[:read_timeout] ]
+        raise Net::ReadTimeout
+      end
+      # Each attempt takes the full 3 s before it times out.
+      allow(Process).to receive(:clock_gettime).and_wrap_original do |original, id, *rest|
+        id == Process::CLOCK_MONOTONIC && rest.empty? ? 100.0 + (3.0 * calls.size) : original.call(id, *rest)
+      end
+
+      expect {
+        described_class.new.json_completion(purpose: :memo_parse, messages: [], schema: {}, timeout: 3)
+      }.to raise_error(described_class::DeadlinePassed)
+      expect(calls).to eq([ [ "api.openai.com", 3.0 ] ])
+    end
+
     it "gives up with the last error when every provider refuses" do
       stub_transport(openai: -> { refused("429", "quota") }, gemini: -> { refused("429", "quota") })
 

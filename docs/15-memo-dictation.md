@@ -45,6 +45,10 @@ it cannot turn a natural sentence like "I want to buy bread, milk, eggs" into th
 > only when the segmenter does not know every word, it got 149 of 152 cases right. It adds
 > 1–2 s after release and needs a timeout with the segmenter as fallback. Also found:
 > `gpt-5-nano` and `gpt-5-mini`, the app's OpenAI defaults, **shut down on 11 Dec 2026**.
+>
+> **Built for evaluation (§15.11.1):** `Memo::ListReader`, which uses the segmenter first and
+> `gpt-6-luna` only when the segmenter is unsure. It has a 4 s deadline and falls back to the
+> segmenter's lines. Run `script/dictation_eval/run.sh live` to measure it end to end.
 
 ---
 
@@ -783,6 +787,60 @@ accounted for by the lexicon**, i.e. an optional amount, unit or modifier, then 
 `gpt-6-luna` is "Our most efficient model for focused, high-volume tasks". It supports
 Chat Completions, structured outputs and reasoning effort `none` ✅
 ([model page](https://developers.openai.com/api/docs/models/gpt-6-luna)).
+
+### 15.11.1 What was built: `Memo::ListReader` (2026-11-18)
+
+Built so the hybrid can be evaluated. Nobody is asked to fix, confirm or correct anything at any
+step.
+
+**Who does what, and when.** Every step runs on our server (the Rails API), on each
+`POST /memo/dictate`. That covers the browser's transcript and the recorded-audio path, after
+transcription.
+
+| Step | Who | When | What happens |
+|---|---|---|---|
+| 1 | Server: `Text::Segmenter` | Every dictation | Splits with the kitchen's lexicon. Free. Reports `sure`: every line is a known item, optionally after an amount, unit or modifier. |
+| 2a | Server | `sure` | Its lines are saved. No model call. Logged as `path=segmenter reason=sure`. |
+| 2b | Server | Not sure, AI off (stub mode or no key) | The segmenter's lines are saved as said. `reason=ai_off`. |
+| 3 | Server: `Ai::Router`, `memo_parse` on `gpt-6-luna` with effort `none` | Not sure and AI live | The sentence is sent with `Memo::ListPrompt`, the measured prompt byte for byte, with one deadline for the whole provider chain. |
+| 4a | Server | The model answered, and every name is made of words that were said | The model's lines are saved, as "2 Kilo Kartoffeln". `path=model`. |
+| 4b | Server | The model was too slow, down, over the daily budget, returned something unusable, or named a word nobody said | The segmenter's lines are saved as said. `path=fallback`, `reason=timeout`, `unavailable`, `budget`, `invalid` or `ungrounded`. Nothing said is lost. |
+
+**What is decided by data, and what is a heuristic**
+- **The gate is not a threshold.** It is the segmenter's own record of whether any word was
+  left over.
+  - Its spec asserts that `sure` never covers a line the lexicon does not know, over 300
+    random sentences.
+  - Every generated dictionary list must come back `sure`, so no model call is wasted on them.
+- **The grounding check is an invariant: the model may only choose among the words said.**
+  - In the measured run it would have rejected only two answers, both respellings of receipt
+    transliterations ("broetchen" → "Brötchen") that a recogniser does not produce.
+  - It would also reject a respelled spoken word. `reason=ungrounded` counts how often.
+- **`TIMEOUT` = 4 s is a heuristic.** `AI_MEMO_PARSE_TIMEOUT_SECONDS` overrides it.
+  - It rests on one run from a laptop: all 152 `gpt-6-luna` answers came within 3.2 s.
+  - It fails whenever production is slower. Every dictation logs `model_ms`, so it is tuned
+    from Fly, not from this run.
+
+**How to evaluate it.** `script/dictation_eval/run.sh live` sends all 152 cases through the
+real `Memo::ListReader`, with OpenAI only. It prints the rows right per set, the path
+counts, the model wait and the cost from the `AiCall` ledger. With AI off it reproduces the
+gate: 130 of 152 `sure`, as in the simulation above.
+
+**Known limits, not handled**
+- **The model can come back short.** Across 152 cases `gpt-6-luna` returned 15 items fewer
+  than expected, mostly merged neighbours and removed duplicates, plus a few real drops
+  ("wir haben keinen spaetzle dann salmon" gave only salmon). No check can tell a dropped
+  item from a self-correction, which is meant to drop words. Production logs `lines` per
+  dictation, but not what was expected, so this is measured only by the eval.
+- **The fallback providers are unmeasured.** If Gemini or Groq keys are set, they take over
+  within the same deadline when OpenAI fails. Their quality on this task was never measured.
+- **Request logs contain what people say.** Rails' default request log, at the `info` level
+  in production, prints every request's parameters. That includes `transcript` and every
+  typed memo line, because `config.filter_parameters` does not filter them. The new dictation
+  log line itself carries no text. Filtering them is a privacy decision of its own.
+- **The correction learning is still in the code.** The rename chip and
+  `Memo::LearnFromCorrection` (§15.9) depend on users fixing lines, which the product does
+  not want. They have not been removed yet.
 
 ### Sources
 

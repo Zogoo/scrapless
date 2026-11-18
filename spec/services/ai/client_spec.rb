@@ -135,6 +135,26 @@ RSpec.describe Ai::Client do
         }.to raise_error(described_class::Unavailable, /transport/)
       end
     end
+
+    # A caller with a person waiting needs to tell "too slow" from "down".
+    [ IO::TimeoutError, Net::OpenTimeout, Net::ReadTimeout ].each do |failure|
+      it "reports #{failure} as TimedOut" do
+        allow(Net::HTTP).to receive(:start).and_raise(failure)
+
+        expect {
+          described_class.new.json_completion(purpose: :text_parse, messages: [], schema: {})
+        }.to raise_error(described_class::TimedOut)
+      end
+    end
+
+    it "waits no longer than the timeout it is given" do
+      stub_response(body: { "choices" => [ { "message" => { "content" => "{}" } } ], "usage" => {} })
+
+      described_class.new.json_completion(purpose: :memo_parse, messages: [], schema: {}, timeout: 2.5)
+
+      expect(Net::HTTP).to have_received(:start)
+        .with(anything, anything, hash_including(open_timeout: 2.5, read_timeout: 2.5, write_timeout: 2.5))
+    end
   end
 
   describe "#transcribe" do

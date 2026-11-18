@@ -17,6 +17,9 @@ module Ai
     # something different and point at the paths that still work.
     class Unavailable < Error; end
     class MissingKey < Unavailable; end
+    # No answer in time. Still Unavailable, so the router tries the next
+    # provider; its own class so a caller with a person waiting can say so.
+    class TimedOut < Unavailable; end
 
     TIMEOUT = 60
 
@@ -29,7 +32,9 @@ module Ai
     attr_reader :provider
 
     # Returns the parsed JSON object the model produced.
-    def json_completion(purpose:, messages:, schema:, max_output_tokens: 2000)
+    # `timeout` is in seconds and bounds connecting, sending and waiting for
+    # the answer; the default suits a photo, not a person waiting at the mic.
+    def json_completion(purpose:, messages:, schema:, max_output_tokens: 2000, timeout: TIMEOUT)
       model = Config.model_for(purpose, provider: @provider)
       body = {
         model: model.name,
@@ -40,10 +45,11 @@ module Ai
       # Reasoning models spend this budget on thinking before they write, so the
       # headroom is not generosity — it is the difference between an answer and
       # an empty string.
-      body[model.token_param.to_sym] = model.reasoning.present? ? max_output_tokens * 3 : max_output_tokens
+      thinks = model.reasoning.present? && model.reasoning != "none"
+      body[model.token_param.to_sym] = thinks ? max_output_tokens * 3 : max_output_tokens
 
       started = monotonic_ms
-      response = post_json("#{Config.base_url(provider: @provider)}/chat/completions", body)
+      response = post_json("#{Config.base_url(provider: @provider)}/chat/completions", body, timeout: timeout)
       billed = billing(model, response, started)
       result = parse_content(response)
 
@@ -148,11 +154,11 @@ module Ai
       augmented
     end
 
-    def post_json(url, body)
+    def post_json(url, body, timeout: TIMEOUT)
       request = Net::HTTP::Post.new(URI(url))
       request["Content-Type"] = "application/json"
       request.body = body.to_json
-      perform(request)
+      perform(request, timeout: timeout)
     end
 
     def post_multipart(url, model:, io:, filename:, content_type:, fields: {})
@@ -174,7 +180,7 @@ module Ai
       perform(request)
     end
 
-    def perform(request)
+    def perform(request, timeout: TIMEOUT)
       key = Config.api_key(provider: @provider)
       raise MissingKey, "#{@provider.key_env} is not set" if key.blank?
 
@@ -182,7 +188,8 @@ module Ai
       uri = request.uri
 
       response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https",
-                                 open_timeout: TIMEOUT, read_timeout: TIMEOUT) do |http|
+                                 open_timeout: timeout, read_timeout: timeout,
+                                 write_timeout: timeout) do |http|
         http.request(request)
       end
 
@@ -197,7 +204,9 @@ module Ai
     # Every way the wire can fail, by family rather than by the four classes
     # first seen: a connect timeout on Ruby 3.4 is IO::TimeoutError, and a reset
     # is Errno::ECONNRESET. Missing one escaped as a 500 and skipped the fallback.
-    rescue Timeout::Error, IOError, SocketError, SystemCallError, OpenSSL::SSL::SSLError => e
+    rescue Timeout::Error, IO::TimeoutError => e
+      raise TimedOut, "transport: #{e.class}"
+    rescue IOError, SocketError, SystemCallError, OpenSSL::SSL::SSLError => e
       raise Unavailable, "transport: #{e.class}"
     end
 

@@ -15,31 +15,10 @@ PRICES = {
   "gpt-5-nano" => [ 0.05, 0.40 ], "gpt-4o-mini" => [ 0.15, 0.60 ], "gpt-5-mini" => [ 0.25, 2.00 ]
 }.freeze
 
-SCHEMA = {
-  type: "object", additionalProperties: false, required: %w[items],
-  properties: { items: { type: "array", items: {
-    type: "object", additionalProperties: false, required: %w[name quantity unit food],
-    properties: { name: { type: "string" }, quantity: { type: %w[number null] },
-                  unit: { type: %w[string null] }, food: { type: "boolean" } }
-  } } }
-}.freeze
-
-# Language-agnostic on purpose: no word lists, so a new language needs nothing here.
-SYSTEM = <<~PROMPT.freeze
-  You turn one spoken shopping-list utterance into list lines. It comes from speech
-  recognition: usually no punctuation, it may mix languages, and it may contain
-  filler, hesitations and self-corrections.
-
-  - One entry per thing to buy, in the order spoken.
-  - name: the item in the words and language the speaker used. Do not translate,
-    do not change singular/plural, do not add words. Leave out the quantity and unit.
-  - quantity: the number spoken for that item, as digits ("a dozen" = 12, "half" = 0.5), else null.
-  - unit: the measure or package word spoken for that item (kg, litres, bag, Packung), else null.
-  - Leave out everything that is not an item: requests, filler, where, when and why.
-  - If the speaker corrects themself, keep only the corrected item.
-  - food: true for food and drink, false for anything else.
-  - If nothing is to be bought, return an empty list.
-PROMPT
+# The production prompt and schema, so the eval measures what Memo::ListReader sends.
+require_relative "../../app/services/memo/list_prompt"
+SCHEMA = Memo::ListPrompt::SCHEMA
+SYSTEM = Memo::ListPrompt::SYSTEM
 
 def norm(s) = s.to_s.downcase.gsub(/[^\p{L}\p{N}]+/, " ").strip
 

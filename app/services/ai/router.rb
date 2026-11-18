@@ -19,14 +19,20 @@ module Ai
     # paths, which cost nothing and keep working.
     class BudgetExceeded < Client::Unavailable; end
 
+    # The caller's deadline ran out before every provider was tried.
+    class DeadlinePassed < Client::TimedOut; end
+
     def initialize(household: nil)
       @household = household
     end
 
-    def json_completion(purpose:, messages:, schema:, max_output_tokens: 2000)
-      attempt(:json_completion) do |client|
+    # `timeout` (seconds) is one deadline for the whole chain, not one per
+    # provider: a person waiting at the mic must not wait once per fallback.
+    def json_completion(purpose:, messages:, schema:, max_output_tokens: 2000, timeout: nil)
+      deadline = timeout && (monotonic + timeout)
+      attempt(:json_completion, deadline: deadline) do |client, remaining|
         client.json_completion(purpose: purpose, messages: messages, schema: schema,
-                               max_output_tokens: max_output_tokens)
+                               max_output_tokens: max_output_tokens, timeout: remaining || Client::TIMEOUT)
       end
     end
 
@@ -42,7 +48,7 @@ module Ai
 
     private
 
-    def attempt(job, require_transcription: false)
+    def attempt(job, require_transcription: false, deadline: nil)
       if Budget.exceeded?
         raise BudgetExceeded, "daily AI budget of $#{Budget.daily_limit_usd} reached"
       end
@@ -54,8 +60,14 @@ module Ai
       last_error = nil
 
       candidates.each_with_index do |provider, index|
+        remaining = deadline && (deadline - monotonic)
+        if remaining && remaining <= 0
+          last_error = DeadlinePassed.new("deadline passed before #{provider.name} was tried")
+          break
+        end
+
         client = Client.new(household: @household, provider: provider, attempt: index)
-        return yield(client)
+        return yield(client, remaining)
       rescue Client::Unavailable => e
         last_error = e
         Rails.logger.warn("ai: #{provider.name} unavailable for #{job} (#{e.message.truncate(120)})")
@@ -64,5 +76,7 @@ module Ai
 
       raise last_error || NoProviderAvailable.new("no provider could #{job}")
     end
+
+    def monotonic = Process.clock_gettime(Process::CLOCK_MONOTONIC)
   end
 end

@@ -106,6 +106,32 @@ RSpec.describe "Api::V1::MemoItems", type: :request do
     expect(Rails.logger).to have_received(:info).with(/gesture=hold press_ms=820 lang=de/)
   end
 
+  # Which path read each dictation, and how long a model took, is how the
+  # model timeout and the cost are tuned (doc 15 §15.11).
+  it "records which path read the sentence, without what was said" do
+    allow(Rails.logger).to receive(:info).and_call_original
+
+    post "/api/v1/memo/dictate", params: { transcript: "peanut butter", lang: "en" }, headers: headers, as: :json
+
+    expect(Rails.logger).to have_received(:info).with(/path=segmenter reason=ai_off model_ms=0/)
+    expect(Rails.logger).not_to have_received(:info).with(/memo dictation .*peanut/)
+  end
+
+  # Self-corrections and filler the lexicon does not know: the case a model is for.
+  it "adds the model's lines when the segmenter is unsure and AI is live" do
+    allow(Ai::Config).to receive(:live?).and_return(true)
+    router = instance_double(Ai::Router, json_completion: { "items" => [
+      { "name" => "Hafermilch", "quantity" => nil, "unit" => nil, "food" => true },
+      { "name" => "Brot", "quantity" => nil, "unit" => nil, "food" => true }
+    ] })
+    allow(Ai::Router).to receive(:new).and_return(router)
+
+    post "/api/v1/memo/dictate", params: { transcript: "Milch nee warte Hafermilch und Brot", lang: "de" },
+                                 headers: headers, as: :json
+
+    expect(response.parsed_body["items"].map { |i| i["name"] }).to eq(%w[Hafermilch Brot])
+  end
+
   it "keeps an unknown gesture value out of the log" do
     allow(Rails.logger).to receive(:info).and_call_original
 

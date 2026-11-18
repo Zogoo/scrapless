@@ -35,12 +35,13 @@ module Api
         return render_error(I18n.t("memo.nothing_heard")) if transcript.blank?
         return render_error(I18n.t("capture.rejected.too_long")) if transcript.length > MAX_TEXT_CHARS
 
-        created = extract_names(transcript).filter_map do |name|
+        reading = Memo::ListReader.call(text: transcript, household: current_household, lang: speech_language)
+        created = reading.lines.filter_map do |name|
           next if current_household.memo_items.open_line_for(name)
 
           current_household.memo_items.create!(name: name, source: "voice", added_by_name: actor_name)
         end
-        log_dictation(created.size)
+        log_dictation(created.size, reading)
 
         render json: { transcript: transcript, items: created.map { |m| memo_json(m) } }, status: :created
       end
@@ -119,27 +120,17 @@ module Api
         Dictation::Vocabulary.supported?(params[:lang]) ? params[:lang].to_s : I18n.locale.to_s
       end
 
-      # How the mic was used, so the hold threshold and the default gesture are
-      # decided from numbers (doc 15 §15.8.5) rather than guessed.
-      def log_dictation(lines)
+      # How the mic was used and which path read it, so the hold threshold, the
+      # model timeout and how often a model is needed are decided from numbers
+      # (doc 15 §15.8.5, §15.11) rather than guessed. This line carries no
+      # transcript text.
+      def log_dictation(lines, reading)
         Rails.logger.info(
           "memo dictation household=#{current_household.id} gesture=#{gesture_param} " \
-          "press_ms=#{params[:press_ms].to_i} lang=#{speech_language} ui=#{I18n.locale} lines=#{lines}"
+          "press_ms=#{params[:press_ms].to_i} lang=#{speech_language} ui=#{I18n.locale} lines=#{lines} " \
+          "path=#{reading.path} reason=#{reading.reason} model_ms=#{reading.model_ms.to_i} " \
+          "unresolved=#{reading.unresolved.size}"
         )
-      end
-
-      # A memo line does not need to be a resolved product — "something for
-      # Sunday" is a legitimate entry. So this splits locally and never calls a
-      # model: the memo is the one place where cost per line should be zero.
-      # Sentences the dictionary could not split at all are logged, so how often
-      # a model would have helped is measured before one is ever added.
-      def extract_names(transcript)
-        result = Text::Segmenter.call(text: transcript, household: current_household)
-        if result.unresolved.any?
-          Rails.logger.info("memo dictation unresolved household=#{current_household.id} " \
-                            "chunks=#{result.unresolved.size}")
-        end
-        result.parts
       end
 
       # Only known values reach the log: a free-form param could forge lines.

@@ -82,6 +82,11 @@ module Ai
                                 temperature: nil, token_param: "max_completion_tokens", reasoning: "minimal"),
       "gpt-5-nano" => Model.new(name: "gpt-5-nano", provider: "openai", input_per_m: 0.05, output_per_m: 0.40,
                                 temperature: nil, token_param: "max_completion_tokens", reasoning: "minimal"),
+      # Memo dictation (Memo::ListReader). Measured best on doc 15 §15.11's eval
+      # at effort `none`: `low` bought no accuracy for 2.5x the output tokens.
+      # Price ✅ developers.openai.com/api/docs/models/gpt-6-luna, 2026-11-18.
+      "gpt-6-luna" => Model.new(name: "gpt-6-luna", provider: "openai", input_per_m: 0.10, output_per_m: 0.50,
+                                temperature: nil, token_param: "max_completion_tokens", reasoning: "none"),
       "gpt-4o-mini" => Model.new(name: "gpt-4o-mini", provider: "openai", input_per_m: 0.15, output_per_m: 0.60,
                                  temperature: 0, token_param: "max_tokens"),
 
@@ -121,7 +126,7 @@ module Ai
     # (Recipes::GroundInInventory), so a bigger model buys nothing it can keep.
     DEFAULT_MODELS = {
       "openai" => { receipt_extract: "gpt-5-mini", shelf_photo_extract: "gpt-5-mini",
-                    text_parse: "gpt-5-nano", memo_parse: "gpt-5-nano", recipe_suggest: "gpt-5-nano" },
+                    text_parse: "gpt-5-nano", memo_parse: "gpt-6-luna", recipe_suggest: "gpt-5-nano" },
       "gemini" => { receipt_extract: "gemini-2.5-flash", shelf_photo_extract: "gemini-2.5-flash",
                     text_parse: "gemini-2.5-flash-lite", memo_parse: "gemini-2.5-flash-lite",
                     recipe_suggest: "gemini-2.5-flash-lite" },
