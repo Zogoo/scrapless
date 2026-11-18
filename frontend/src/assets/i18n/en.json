@@ -1,6 +1,6 @@
 {
   "brand": {
-    "name": "restlos"
+    "name": "rettich"
   },
   "nav": {
     "main": "Main",
@@ -11,7 +11,7 @@
     "settings": "You"
   },
   "onboarding": {
-    "title": "restlos",
+    "title": "rettich",
     "lede": "Snap the receipt. We'll tell you what needs eating.",
     "question": "Want to name your fridge?",
     "placeholder": "e.g. Kitchen, Flat 3, Home",
@@ -143,7 +143,7 @@
   },
   "install": {
     "title": "Add to your home screen",
-    "pitch": "Add restlos to your home screen — it opens straight to the camera.",
+    "pitch": "Add rettich to your home screen — it opens straight to the camera.",
     "add": "Add to home screen",
     "not_now": "Not now",
     "ios_steps": "Tap Share, then \"Add to Home Screen\".",
@@ -177,14 +177,6 @@
     "forget_confirm": "Yes, delete it all",
     "failures": "{{count}} reads did not go through. You can always type or say what you got.",
     "language": "Language",
-    "pac_color": "Pac-Man color",
-    "pac_color_note": "On this phone. The eye stays dark.",
-    "pac_colors": {
-      "yellow": "Yellow",
-      "orange": "Orange",
-      "coral": "Coral",
-      "sky": "Sky"
-    },
     "jobs": {
       "receipt_extract": "Reading photos",
       "shelf_photo_extract": "Reading food photos",
@@ -240,7 +232,7 @@
     "title": "Notifications",
     "ask_title": "Want a nudge when food needs using?",
     "ask_body": "Around dinner time, at most once a week, and only when something is worth using. Nothing else.",
-    "needs_install": "On iPhone, add restlos to your Home Screen first (Share, then \"Add to Home Screen\"). Then turn notifications on under You.",
+    "needs_install": "On iPhone, add rettich to your Home Screen first (Share, then \"Add to Home Screen\"). Then turn notifications on under You.",
     "got_it": "Got it",
     "turn_on": "Turn on notifications",
     "turn_off": "Turn off on this phone",

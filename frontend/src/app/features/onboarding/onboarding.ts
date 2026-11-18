@@ -23,12 +23,15 @@ import { FridgeService } from '../../core/services/fridge.service';
       <div class="hero">
         <h1 class="logo-heading">
           <picture>
-            <source srcset="/branding/full_logo_dark.png" media="(prefers-color-scheme: dark)" />
+            <source
+              srcset="/branding/rettich/logo/rettich-logo-dark.svg"
+              media="(prefers-color-scheme: dark)"
+            />
             <img
-              src="/branding/full_logo_light.png"
+              src="/branding/rettich/logo/rettich-logo-light.svg"
               [attr.alt]="'brand.name' | translate"
               width="280"
-              height="112"
+              height="98"
             />
           </picture>
         </h1>

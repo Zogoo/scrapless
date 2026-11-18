@@ -1,6 +1,6 @@
 {
   "brand": {
-    "name": "restlos"
+    "name": "rettich"
   },
   "nav": {
     "main": "Hauptmenü",
@@ -11,7 +11,7 @@
     "settings": "Du"
   },
   "onboarding": {
-    "title": "restlos",
+    "title": "rettich",
     "lede": "Bon abfotografieren. Wir sagen dir, was weg muss.",
     "question": "Willst du deinem Kühlschrank einen Namen geben?",
     "placeholder": "z. B. Küche, WG, Zuhause",
@@ -143,7 +143,7 @@
   },
   "install": {
     "title": "Zum Home-Bildschirm",
-    "pitch": "Leg restlos auf den Home-Bildschirm — dann geht's direkt zur Kamera.",
+    "pitch": "Leg rettich auf den Home-Bildschirm — dann geht's direkt zur Kamera.",
     "add": "Zum Home-Bildschirm",
     "not_now": "Später",
     "ios_steps": "Teilen antippen, dann „Zum Home-Bildschirm\".",
@@ -177,14 +177,6 @@
     "forget_confirm": "Ja, alles löschen",
     "failures": "{{count}} Lesevorgänge haben nicht geklappt. Du kannst jederzeit tippen oder sagen, was du gekauft hast.",
     "language": "Sprache",
-    "pac_color": "Pac-Man-Farbe",
-    "pac_color_note": "Auf diesem Handy. Das Auge bleibt dunkel.",
-    "pac_colors": {
-      "yellow": "Gelb",
-      "orange": "Orange",
-      "coral": "Koralle",
-      "sky": "Himmelblau"
-    },
     "jobs": {
       "receipt_extract": "Fotos lesen",
       "shelf_photo_extract": "Lebensmittelfotos lesen",
@@ -240,7 +232,7 @@
     "title": "Benachrichtigungen",
     "ask_title": "Ein kurzer Hinweis, wenn etwas weg sollte?",
     "ask_body": "Gegen Abendessen, höchstens einmal pro Woche und nur, wenn sich etwas lohnt. Sonst nichts.",
-    "needs_install": "Auf dem iPhone restlos zuerst zum Home-Bildschirm hinzufügen (Teilen, dann „Zum Home-Bildschirm“). Danach unter Du die Benachrichtigungen einschalten.",
+    "needs_install": "Auf dem iPhone rettich zuerst zum Home-Bildschirm hinzufügen (Teilen, dann „Zum Home-Bildschirm“). Danach unter Du die Benachrichtigungen einschalten.",
     "got_it": "Verstanden",
     "turn_on": "Benachrichtigungen einschalten",
     "turn_off": "Auf diesem Handy ausschalten",

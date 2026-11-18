@@ -17,6 +17,7 @@ function pack(
   name = 'milk',
   windowEnd = '2026-11-20',
   openedOn: string | null = null,
+  phase: ScoredItem['phase'] = 'fresh',
 ): ScoredItem {
   return {
     id,
@@ -27,7 +28,7 @@ function pack(
     window_start: '2026-11-14',
     window_end: windowEnd,
     opened_on: openedOn,
-    phase: 'fresh',
+    phase,
   } as ScoredItem;
 }
 
@@ -59,14 +60,16 @@ function sliderOpen(start: number) {
   return { outcome: 'opened', source: 'slider', start_percent: start };
 }
 
-// One open mouth, facing the track. 100% is the closed line. 0% is gone.
-const mouth = 'M 12 12 L 4.929 4.929 A 10 10 0 1 1 4.929 19.071 Z';
+const RADISH = '/branding/rettich/mascot/rettich';
+
+function thumb(root: ParentNode): string | null {
+  return root.querySelector('.bite img')?.getAttribute('src') ?? null;
+}
 
 describe('Item line', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
-    localStorage.removeItem('scrapless_pac');
     TestBed.configureTestingModule({
       imports: [ItemLine],
       providers: [
@@ -297,7 +300,7 @@ describe('Item line', () => {
     expect((root.querySelector('.level') as HTMLElement).style.backgroundImage).toBe('');
   });
 
-  it('draws a closed mouth and one eye while the pack is unopened', () => {
+  it('draws a closed radish while the pack is unopened', () => {
     const fixture = TestBed.createComponent(ItemLine);
     fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
     const translate = TestBed.inject(TranslateService);
@@ -310,39 +313,40 @@ describe('Item line', () => {
     expect(root.querySelectorAll('.bite')).toHaveLength(1);
     expect(bite?.getAttribute('data-bites')).toBe('0');
     expect(bite?.getAttribute('aria-label')).toBe('Unopened');
-    expect(bite?.querySelectorAll('circle.body')).toHaveLength(1);
-    expect(bite?.querySelectorAll('.eye')).toHaveLength(1);
-    expect(bite?.querySelector('.mouth')?.getAttribute('x2')).toBe('2');
-    expect(bite?.querySelector('path')).toBeNull();
-    expect(getComputedStyle(bite!.querySelector('.body')!).fill).toBe('rgb(255, 204, 0)');
-    expect(getComputedStyle(bite!.querySelector('.eye')!).fill).toBe('rgb(26, 28, 25)');
-    expect(bite?.querySelectorAll('.dot')).toHaveLength(0);
+    expect(thumb(root)).toBe(`${RADISH}-fresh.svg`);
     expect(bite?.classList.contains('full')).toBe(true);
     expect(bite?.classList.contains('open')).toBe(false);
     expect(root.querySelector('.slider')?.getAttribute('style')).toContain('--p: 100');
   });
 
-  it('paints the thumb in the color saved on this phone', () => {
-    localStorage.setItem('scrapless_pac', 'coral');
+  it('takes the radish from the bar against the thumb', () => {
     const fixture = TestBed.createComponent(ItemLine);
-    fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
+    fixture.componentRef.setInput(
+      'line',
+      toLines([
+        pack(1, 1, 'milk', '2026-11-14', null, 'at_risk'),
+        pack(2, 1, 'milk', '2026-11-20', null, 'fresh'),
+      ])[0],
+    );
     fixture.detectChanges();
 
-    const bite = (fixture.nativeElement as HTMLElement).querySelector('.bite');
-    expect(getComputedStyle(bite!.querySelector('.body')!).fill).toBe('rgb(255, 138, 101)');
-    expect(getComputedStyle(bite!.querySelector('.eye')!).fill).toBe('rgb(26, 28, 25)');
+    expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-today.svg`);
   });
 
-  it('keeps one open mouth at 75, 50, and 25, with two dots ahead', () => {
+  it('uses the bitten radish once opened, and none at 0%', () => {
     const fixture = TestBed.createComponent(ItemLine);
     const translate = TestBed.inject(TranslateService);
     translate.setTranslation('en', { kitchen: { lock_closed: 'Unopened', lock_open: 'Opened' } });
     translate.use('en');
 
-    const show = (amount: number, openedOn: string | null = '2026-11-12') => {
+    const show = (
+      amount: number,
+      openedOn: string | null = '2026-11-12',
+      phase: ScoredItem['phase'] = 'fresh',
+    ) => {
       fixture.componentRef.setInput(
         'line',
-        toLines([pack(1, amount, 'milk', '2026-11-20', openedOn)])[0],
+        toLines([pack(1, amount, 'milk', '2026-11-20', openedOn, phase)])[0],
       );
       fixture.detectChanges();
       return fixture.nativeElement as HTMLElement;
@@ -350,9 +354,7 @@ describe('Item line', () => {
 
     const full = show(1);
     expect(full.querySelector('.bite')?.getAttribute('data-bites')).toBe('0');
-    expect(full.querySelector('.mouth')).not.toBeNull();
-    expect(full.querySelector('.eye')).not.toBeNull();
-    expect(full.querySelectorAll('.dot')).toHaveLength(0);
+    expect(thumb(full)).toBe(`${RADISH}-fresh-opened.svg`);
     expect(full.querySelector('.bite')?.classList.contains('full')).toBe(true);
     expect(full.querySelector('.bite')?.classList.contains('open')).toBe(false);
 
@@ -360,28 +362,26 @@ describe('Item line', () => {
       const open = show(amount);
       expect(open.querySelector('.bite')?.getAttribute('data-bites')).toBe('1');
       expect(open.querySelector('.bite')?.getAttribute('aria-label')).toBe('Opened');
-      expect(open.querySelectorAll('path')).toHaveLength(1);
-      expect(open.querySelector('path')?.getAttribute('d')).toBe(mouth);
-      expect(open.querySelectorAll('.dot')).toHaveLength(2);
-      expect(open.querySelector('.eye')).not.toBeNull();
-      expect(open.querySelector('.mouth')).toBeNull();
+      expect(thumb(open)).toBe(`${RADISH}-fresh-opened.svg`);
       expect(open.querySelector('.bite')?.classList.contains('full')).toBe(false);
       expect(open.querySelector('.bite')?.classList.contains('open')).toBe(true);
     }
 
+    expect(thumb(show(0.5, '2026-11-12', 'aging'))).toBe(`${RADISH}-soon-opened.svg`);
+    expect(thumb(show(0.5, '2026-11-12', 'at_risk'))).toBe(`${RADISH}-today-opened.svg`);
+    expect(thumb(show(0.5, '2026-11-12', 'ghost'))).toBe(`${RADISH}-today-opened.svg`);
+
     const gone = show(0);
     expect(gone.querySelector('.bite')?.getAttribute('data-bites')).toBe('4');
     expect(gone.querySelector('.bite')?.getAttribute('aria-label')).toBe('Opened');
-    expect(gone.querySelector('svg')).toBeNull();
-    expect(gone.querySelectorAll('.dot')).toHaveLength(0);
+    expect(thumb(gone)).toBeNull();
 
     const shut = show(0.5, null);
     expect(shut.querySelector('.bite')?.getAttribute('data-bites')).toBe('0');
-    expect(shut.querySelector('.mouth')).not.toBeNull();
-    expect(shut.querySelectorAll('.dot')).toHaveLength(0);
+    expect(thumb(shut)).toBe(`${RADISH}-fresh.svg`);
   });
 
-  it('opens the mouth toward the track on the first move', () => {
+  it('bites the radish on the first move', () => {
     const fixture = TestBed.createComponent(ItemLine);
     fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
     const translate = TestBed.inject(TranslateService);
@@ -396,13 +396,12 @@ describe('Item line', () => {
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.bite')?.getAttribute('data-bites')).toBe('1');
     expect(root.querySelector('.bite')?.getAttribute('aria-label')).toBe('Opened');
-    expect(root.querySelector('path')?.getAttribute('d')).toBe(mouth);
-    expect(root.querySelectorAll('.dot')).toHaveLength(2);
+    expect(thumb(root)).toBe(`${RADISH}-fresh-opened.svg`);
     expect(root.querySelector('.slider')?.getAttribute('style')).toContain('--p: 75');
     http.expectOne(`${environment.apiUrl}/items/1/resolve`).flush({});
   });
 
-  it('closes the mouth and removes the dots when the thumb slides back to unopened', () => {
+  it('closes the radish when the thumb slides back to unopened', () => {
     const fixture = TestBed.createComponent(ItemLine);
     fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
     fixture.detectChanges();
@@ -410,18 +409,14 @@ describe('Item line', () => {
 
     screen.slide(slider(50));
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('.dot')).toHaveLength(2);
-    expect(fixture.nativeElement.querySelector('path')?.getAttribute('d')).toBe(mouth);
+    expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-fresh-opened.svg`);
 
     screen.slide(slider(100));
     fixture.detectChanges();
 
     const bite = fixture.nativeElement.querySelector('.bite');
     expect(bite?.getAttribute('data-bites')).toBe('0');
-    expect(bite?.querySelector('circle.body')).not.toBeNull();
-    expect(bite?.querySelector('.mouth')).not.toBeNull();
-    expect(bite?.querySelector('path')).toBeNull();
-    expect(bite?.querySelectorAll('.dot')).toHaveLength(0);
+    expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-fresh.svg`);
     http.expectOne(`${environment.apiUrl}/items/1/resolve`).flush({});
   });
 
@@ -448,7 +443,7 @@ describe('Item line', () => {
       'Accidental touch. This is unopened again.',
     );
     expect(root.querySelector('.bite')?.getAttribute('data-bites')).toBe('0');
-    expect(root.querySelectorAll('.dot')).toHaveLength(0);
+    expect(thumb(root)).toBe(`${RADISH}-fresh.svg`);
   });
 
   // A new pack, opened on the previous release, then put back to full. This
@@ -480,8 +475,7 @@ describe('Item line', () => {
     expect(root.querySelector('.accidental')?.textContent).toContain(
       'Accidental touch. This is unopened again.',
     );
-    expect(root.querySelector('.mouth')).not.toBeNull();
-    expect(root.querySelectorAll('.dot')).toHaveLength(0);
+    expect(thumb(root)).toBe(`${RADISH}-fresh.svg`);
   });
 
   it('does not warn when a pack that was already open comes back to the start', () => {
@@ -503,8 +497,7 @@ describe('Item line', () => {
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.accidental')).toBeNull();
-    expect(root.querySelector('.mouth')).not.toBeNull();
-    expect(root.querySelectorAll('.dot')).toHaveLength(0);
+    expect(thumb(root)).toBe(`${RADISH}-fresh-opened.svg`);
     expect(root.querySelector('.bite')?.classList.contains('full')).toBe(true);
   });
 

@@ -12,7 +12,6 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { Outcome, ScoredItem, Storage } from '../../core/models';
 import { ItemsService } from '../../core/services/items.service';
-import { PacColorService } from '../../core/services/pac-color.service';
 import { UndoService } from '../../core/services/undo.service';
 import {
   KitchenLine,
@@ -51,7 +50,6 @@ export class ItemLine {
 
   private readonly items = inject(ItemsService);
   private readonly undo = inject(UndoService);
-  protected readonly pac = inject(PacColorService);
 
   protected readonly moving = signal<ScoredItem | null>(null);
   /**
@@ -107,8 +105,8 @@ export class ItemLine {
   }
 
   /**
-   * A full line is the closed mouth. Anything still left shares one open
-   * wedge. Nothing left takes the circle.
+   * Where the thumb sits. A full line stays at the end. A partial line centers
+   * on the bar. Nothing left leaves the thumb empty.
    */
   protected bites(): number {
     if (!this.opened()) return 0;
@@ -116,6 +114,21 @@ export class ItemLine {
     if (left <= 0) return 4;
     if (left >= this.line().packs.length) return 0;
     return 1;
+  }
+
+  /**
+   * The thumb. Unopened is the whole radish, opened is the bitten one.
+   * Freshness is the bar against the thumb: fresh, aging, then at risk or ghost.
+   * 0% has nothing to hold.
+   */
+  protected radishSrc(): string | null {
+    if (this.level() <= 0) return null;
+
+    const bars = this.bars().bars;
+    const phase = bars.length > 0 ? bars[bars.length - 1].phase : this.line().first.phase;
+    const kind = phase === 'aging' ? 'soon' : phase === 'fresh' ? 'fresh' : 'today';
+    const bitten = this.opened() ? '-opened' : '';
+    return `/branding/rettich/mascot/rettich-${kind}${bitten}.svg`;
   }
 
   /** Closed until this slider opens the soonest pack. An undone open closes it. */

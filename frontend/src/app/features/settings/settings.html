@@ -105,24 +105,6 @@
   </section>
 
   <section class="block">
-    <h2 id="pac-head">{{ 'settings.pac_color' | translate }}</h2>
-    <p class="meta">{{ 'settings.pac_color_note' | translate }}</p>
-    <div class="choices pac-colors" role="group" aria-labelledby="pac-head">
-      @for (choice of pac.choices; track choice.id) {
-        <button
-          type="button"
-          [class.primary]="pac.color() === choice.hex"
-          [attr.aria-pressed]="pac.color() === choice.hex"
-          (click)="pac.use(choice.id)"
-        >
-          <span class="swatch" [style.background]="choice.hex"></span>
-          {{ 'settings.pac_colors.' + choice.id | translate }}
-        </button>
-      }
-    </div>
-  </section>
-
-  <section class="block">
     <h2 id="language-head">{{ 'settings.language' | translate }}</h2>
     <div class="choices" role="group" aria-labelledby="language-head">
       @for (code of locale.available; track code) {

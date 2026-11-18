@@ -26,7 +26,7 @@
  * is that the thing on screen is current.
  */
 // Bumped when the caching rules change: activate deletes every older cache.
-const VERSION = 'restlos-v2';
+const VERSION = 'rettich-v1';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest'];
 // Same rule as StaticCacheControl on the server.
 const FINGERPRINTED = /^\/(main|chunk|polyfills|styles)-[A-Za-z0-9_]{8}\.(js|css)$/;
@@ -121,7 +121,7 @@ self.addEventListener('push', (event) => {
       self.registration.showNotification(data.title, {
         body: data.body,
         tag: data.tag,
-        icon: '/branding/app_icon_light.png',
+        icon: '/branding/rettich/png/icon-192.png',
         data: { url: data.url },
       }),
       badge,

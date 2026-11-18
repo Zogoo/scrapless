@@ -86,60 +86,27 @@
   top: 50%;
   left: calc((100% - var(--thumb)) * var(--p, 0) / 100);
   width: var(--thumb);
-  height: var(--thumb);
+  height: calc(var(--thumb) * 266 / 200);
   box-sizing: border-box;
   transform: translateY(-50%);
   pointer-events: none;
-  /* Pellets stay ink so they read on the track. The body is yellow below. */
-  color: var(--ink);
 
-  /* The circle sits inside the box. At the right end, shift by that gap. */
+  /* At the right end, cover the same gap the round thumb used to leave. */
   &.full {
     left: calc(100% - var(--thumb) + var(--thumb) / 12);
   }
 
-  /* The range inset leaves empty track in front of an open mouth at 25%, and
-     covers the mouth at 75%. Center the face on the colour so the bite meets
-     the bar and both pellets sit on it. */
+  /* Sit the face on the end of the bar, the same place the thumb has always met it. */
   &.open {
     left: calc(var(--p) * 1% - var(--thumb) / 2);
   }
 
-  svg {
+  img {
     display: block;
     width: 100%;
     height: 100%;
-    overflow: hidden;
-  }
-
-  .mouth {
-    fill: none;
-    stroke: var(--surface);
-    stroke-width: 1.5;
-    stroke-linecap: butt;
-  }
-
-  .eye {
-    /* Dark pupil. --surface would turn white on a light screen and vanish on yellow. */
-    fill: #1a1c19;
-  }
-
-  /* Two pellets on the track, just ahead of the mouth. */
-  .dots {
-    position: absolute;
-    top: 50%;
-    right: calc(100% + 2px);
-    display: flex;
-    gap: 3px;
-    transform: translateY(-50%);
-  }
-
-  .dot {
-    display: block;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: currentColor;
+    /* The drawn bite is on the right. The bar is on the left. */
+    transform: scaleX(-1);
   }
 }
 

@@ -38,7 +38,7 @@ export class App implements OnInit {
   protected readonly ready = signal(false);
   protected readonly showTabs = signal(false);
   protected readonly showYou = signal(false);
-  /** Brand bar matches the restlos shell. Capture keeps the camera full-bleed. */
+  /** Brand bar matches the rettich shell. Capture keeps the camera full-bleed. */
   protected readonly showBrand = signal(false);
 
   /** Only the id: a rename or a budget change is the same kitchen. */
