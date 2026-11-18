@@ -94,10 +94,10 @@
   position: absolute;
   z-index: 1;
   top: 50%;
-  /* Closed stands beside the bar. The root meets the fill, and its bottom
-     lines up with the bottom of the bar. Light files pad the art. */
+  /* Closed stands beside the bar. The root meets the fill, and the tip
+     lines up with the bottom edge of the bar. */
   --inset: 0.44;
-  --stand: calc(var(--radish) * 0.571);
+  --stand: calc(var(--radish) * 0.571 - 1px);
   left: calc(var(--p) * 1% - var(--radish) * var(--inset));
   width: var(--radish);
   height: calc(var(--radish) * 300 / 200);
@@ -128,7 +128,7 @@
   .bite {
     /* Dark files have no padding, so the root meets the fill a little further in. */
     --inset: 0.45;
-    --stand: calc(var(--radish) * 0.644);
+    --stand: calc(var(--radish) * 0.644 - 1px);
 
     &.bitten {
       --inset: 0.65;
