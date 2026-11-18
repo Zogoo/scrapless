@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_17_232502) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_18_215416) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -133,10 +133,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_232502) do
     t.datetime "updated_at", null: false
     t.string "added_by_name"
     t.float "amount_left", default: 1.0, null: false
+    t.integer "product_id"
     t.index ["capture_id"], name: "index_items_on_capture_id"
     t.index ["household_id", "canonical_name"], name: "index_items_on_household_id_and_canonical_name"
     t.index ["household_id", "state", "window_end"], name: "index_items_on_household_id_and_state_and_window_end"
     t.index ["household_id"], name: "index_items_on_household_id"
+    t.index ["product_id"], name: "index_items_on_product_id"
   end
 
   create_table "meal_suggestions", force: :cascade do |t|
@@ -192,9 +194,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_232502) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "household_id"
+    t.integer "product_id"
+    t.string "source", default: "correction", null: false
+    t.string "storage"
     t.index ["canonical_name"], name: "index_product_aliases_on_canonical_name"
     t.index ["household_id", "raw_text", "merchant"], name: "index_product_aliases_on_household_raw_text_merchant", unique: true
     t.index ["household_id"], name: "index_product_aliases_on_household_id"
+    t.index ["product_id"], name: "index_product_aliases_on_product_id"
+    t.index ["raw_text", "merchant"], name: "index_product_aliases_on_raw_text_and_merchant"
+  end
+
+  create_table "products", force: :cascade do |t|
+    t.string "key", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key"], name: "index_products_on_key", unique: true
   end
 
   create_table "push_subscriptions", force: :cascade do |t|
@@ -249,10 +263,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_17_232502) do
   add_foreign_key "item_events", "items"
   add_foreign_key "items", "captures"
   add_foreign_key "items", "households"
+  add_foreign_key "items", "products"
   add_foreign_key "meal_suggestions", "households"
   add_foreign_key "memo_items", "households"
   add_foreign_key "notifications", "households"
   add_foreign_key "product_aliases", "households"
+  add_foreign_key "product_aliases", "products"
   add_foreign_key "push_subscriptions", "households"
   add_foreign_key "suggestion_dismissals", "households"
   add_foreign_key "vocabulary_entries", "households"

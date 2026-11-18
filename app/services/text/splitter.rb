@@ -22,7 +22,11 @@ module Text
 
       Segmenter.call(text: @text, household: @household).parts.each do |part|
         quantity, unit, name = decompose(part)
-        entry = ProductAlias.lookup(name, household: @household)
+        # Exact only. A near-miss used to count as known and skip the model:
+        # "milchreis" became Milch, "butterkekse" Butter. The model now reads
+        # anything the dictionary does not know for certain, and what it says
+        # is kept (ProductAlias.learn!), so the same word is free next time.
+        entry = ProductAlias.lookup(name, household: @household, fuzzy: false)
 
         if entry
           known << { "raw_text" => part, "name" => entry.display_name, "quantity" => quantity,

@@ -51,7 +51,7 @@ module Ai
         "items" => names.first(20).map do |name|
           quantity, cleaned = extract_quantity(name)
           {
-            "raw_text" => name, "name" => cleaned.capitalize, "quantity" => quantity,
+            "raw_text" => name, "name" => cleaned.capitalize, "product" => cleaned.downcase, "quantity" => quantity,
             "unit" => nil, "category" => Categories.guess(cleaned), "storage" => Categories.storage_for(Categories.guess(cleaned))
           }
         end
@@ -86,7 +86,7 @@ module Ai
 
     def line(raw, name, quantity, unit, price, vat, row: "food")
       category = Categories.guess("#{raw} #{name}")
-      { "raw_text" => raw, "name" => name, "quantity" => quantity, "unit" => unit,
+      { "raw_text" => raw, "name" => name, "product" => name.downcase, "quantity" => quantity, "unit" => unit,
         "price" => price, "vat_class" => vat, "row" => row,
         "category" => category, "storage" => Categories.storage_for(category) }
     end

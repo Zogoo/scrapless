@@ -15,6 +15,15 @@ RSpec.describe Text::Splitter do
     expect(unknown).to eq([ "yuzu kosho" ])
   end
 
+  # A near-miss is not knowledge: "milchreis" is not Milch. It goes to the
+  # model, which says what it is, and that answer is kept for next time.
+  it "counts only an exact match as known" do
+    known, unknown = described_class.call(text: "milchreis, milch")
+
+    expect(known.map { |k| k["name"] }).to eq([ "Milch" ])
+    expect(unknown).to eq([ "milchreis" ])
+  end
+
   # A word this kitchen taught it is free here, and only here.
   it "uses the kitchen's own corrections, and no one else's" do
     household = create(:household)

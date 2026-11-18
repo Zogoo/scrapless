@@ -5,7 +5,8 @@ module Items
   # makes feeds back into it, so the share of lines that need a model call falls
   # as the corpus grows — this is the asset the whole cost model rests on.
   class Resolver < ApplicationService
-    Resolved = Struct.new(:display_name, :canonical_name, :category, :emoji, :storage, :source, keyword_init: true)
+    Resolved = Struct.new(:display_name, :canonical_name, :category, :emoji, :storage, :source, :product,
+                          keyword_init: true)
 
     EMOJI = {
       "produce" => "🥦", "dairy" => "🥛", "meat_fish" => "🍗", "bakery" => "🥖",
@@ -13,13 +14,14 @@ module Items
       "drinks" => "🧃", "other" => "🍽️"
     }.freeze
 
-    def initialize(raw_text:, name: nil, category: nil, merchant: nil, storage: nil, household: nil)
+    def initialize(raw_text:, name: nil, category: nil, merchant: nil, storage: nil, household: nil, product: nil)
       @raw_text = raw_text.to_s
       @name = name.presence
       @category = category.presence
       @merchant = merchant.presence
       @storage = storage.presence
       @household = household
+      @product = product
     end
 
     def call
@@ -39,22 +41,26 @@ module Items
       return nil if entry.nil?
 
       build(display: entry.display_name, canonical: entry.canonical_name,
-            category: entry.category, emoji: entry.emoji, source: "dictionary")
+            category: entry.category, emoji: entry.emoji, source: "dictionary", storage: entry.storage,
+            product: entry.product || Product.for(@product))
     end
 
     def from_hints
       display = tidy(@name.presence || @raw_text)
       category = Categories.valid?(@category) ? @category : Categories.guess("#{@name} #{@raw_text}")
-      build(display: display, canonical: display.downcase, category: category, source: "heuristic")
+      build(display: display, canonical: display.downcase, category: category, source: "heuristic",
+            product: Product.for(@product))
     end
 
-    def build(display:, canonical:, category:, source:, emoji: nil)
+    # Where it is: what this line says (a photo shows the fridge), else what
+    # the dictionary learned, else where its category usually lives.
+    def build(display:, canonical:, category:, source:, emoji: nil, product: nil, storage: nil)
       category = Categories.coerce(category)
       Resolved.new(
         display_name: display, canonical_name: canonical, category: category,
         emoji: emoji.presence || EMOJI.fetch(category, "🍽️"),
-        storage: @storage.presence || Categories.storage_for(category),
-        source: source
+        storage: @storage.presence || storage.presence || Categories.storage_for(category),
+        source: source, product: product
       )
     end
 

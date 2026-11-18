@@ -17,6 +17,19 @@ RSpec.describe Items::Correct do
                   window_start: Date.current + 6, window_end: Date.current + 14)
   end
 
+  # A new name can be a different food, so the old product cannot stay on it.
+  it "takes the product the dictionary has for the new name, or none" do
+    bread = Product.for("bread roll")
+    create(:product_alias, raw_text: "brötchen", canonical_name: "Brötchen", category: "bakery", product: bread)
+    item = misfiled_bread.tap { |i| i.update!(product: Product.for("milk")) }
+
+    described_class.call(item: item, changes: { display_name: "Brötchen", canonical_name: "brötchen" })
+    expect(item.reload.product).to eq(bread)
+
+    described_class.call(item: item, changes: { display_name: "Kipferl", canonical_name: "kipferl" })
+    expect(item.reload.product).to be_nil
+  end
+
   it "re-reads the category from a new name and re-dates the food" do
     item = described_class.call(item: misfiled_bread,
                                 changes: { display_name: "Bread rolls", canonical_name: "bread rolls" })

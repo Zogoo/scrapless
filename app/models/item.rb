@@ -11,6 +11,7 @@ class Item < ApplicationRecord
 
   belongs_to :household
   belongs_to :capture, optional: true
+  belongs_to :product, optional: true
   has_many :item_events, dependent: :destroy
 
   # Bounded like memo lines: a name is a few words, and an unbounded one breaks
