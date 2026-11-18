@@ -177,6 +177,14 @@
     "forget_confirm": "Yes, delete it all",
     "failures": "{{count}} reads did not go through. You can always type or say what you got.",
     "language": "Language",
+    "pac_color": "Pac-Man color",
+    "pac_color_note": "On this phone. The eye stays dark.",
+    "pac_colors": {
+      "yellow": "Yellow",
+      "orange": "Orange",
+      "coral": "Coral",
+      "sky": "Sky"
+    },
     "jobs": {
       "receipt_extract": "Reading photos",
       "shelf_photo_extract": "Reading food photos",

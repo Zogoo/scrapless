@@ -177,6 +177,14 @@
     "forget_confirm": "Ja, alles löschen",
     "failures": "{{count}} Lesevorgänge haben nicht geklappt. Du kannst jederzeit tippen oder sagen, was du gekauft hast.",
     "language": "Sprache",
+    "pac_color": "Pac-Man-Farbe",
+    "pac_color_note": "Auf diesem Handy. Das Auge bleibt dunkel.",
+    "pac_colors": {
+      "yellow": "Gelb",
+      "orange": "Orange",
+      "coral": "Koralle",
+      "sky": "Himmelblau"
+    },
     "jobs": {
       "receipt_extract": "Fotos lesen",
       "shelf_photo_extract": "Lebensmittelfotos lesen",

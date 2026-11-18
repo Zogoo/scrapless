@@ -12,6 +12,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { Outcome, ScoredItem, Storage } from '../../core/models';
 import { ItemsService } from '../../core/services/items.service';
+import { PacColorService } from '../../core/services/pac-color.service';
 import { UndoService } from '../../core/services/undo.service';
 import { KitchenLine, TrackDraw, levelFromPercent, levelPercent, trackBars } from './line';
 
@@ -42,6 +43,7 @@ export class ItemLine {
 
   private readonly items = inject(ItemsService);
   private readonly undo = inject(UndoService);
+  protected readonly pac = inject(PacColorService);
 
   protected readonly moving = signal<ScoredItem | null>(null);
   /**

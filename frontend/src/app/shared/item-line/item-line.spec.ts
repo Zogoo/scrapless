@@ -63,6 +63,7 @@ describe('Item line', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
+    localStorage.removeItem('scrapless_pac');
     TestBed.configureTestingModule({
       imports: [ItemLine],
       providers: [
@@ -244,6 +245,17 @@ describe('Item line', () => {
     expect(bite?.classList.contains('full')).toBe(true);
     expect(bite?.classList.contains('open')).toBe(false);
     expect(root.querySelector('.slider')?.getAttribute('style')).toContain('--p: 100');
+  });
+
+  it('paints the thumb in the color saved on this phone', () => {
+    localStorage.setItem('scrapless_pac', 'coral');
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
+    fixture.detectChanges();
+
+    const bite = (fixture.nativeElement as HTMLElement).querySelector('.bite');
+    expect(getComputedStyle(bite!.querySelector('.body')!).fill).toBe('rgb(255, 138, 101)');
+    expect(getComputedStyle(bite!.querySelector('.eye')!).fill).toBe('rgb(26, 28, 25)');
   });
 
   it('keeps one open mouth at 75, 50, and 25, with two dots ahead', () => {
