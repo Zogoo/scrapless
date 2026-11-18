@@ -126,7 +126,7 @@
     "title": "Kitchen",
     "empty_group": "Nothing in here.",
     "how_much": "How much {{name}} is left",
-    "percent": "{{count}}%",
+    "packs": "{{amount}} pk.",
     "remove": "Remove from kitchen",
     "jump": "Places in the kitchen",
     "move_label": "{{name}} is in the {{place}}. Move it",
@@ -222,6 +222,7 @@
   "undo": {
     "action": "Undo",
     "used": "{{name}}: used",
+    "used_up": "Used up",
     "wasted": "Thanks, noted.",
     "partial": "{{name}}: half left",
     "froze": "{{name}} is in the freezer",

@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
 import { ScoredItem } from '../../core/models';
-import { levelFromPercent, levelPercent, lineFor, segments, toLines, trackBars } from './line';
+import {
+  levelFromPercent,
+  levelPercent,
+  lineFor,
+  packAmount,
+  segments,
+  toLines,
+  trackBars,
+} from './line';
 
 function pack(overrides: Partial<ScoredItem>): ScoredItem {
   return {
@@ -162,5 +170,18 @@ describe('levelPercent', () => {
     expect(levelFromPercent(25, 1)).toBe(0.25);
     expect(levelFromPercent(0, 3)).toBe(0);
     expect(levelFromPercent(100, 3)).toBe(3);
+  });
+});
+
+describe('packAmount', () => {
+  it('names whole packs and quarters the way the bars draw them', () => {
+    expect(packAmount(2)).toBe('2');
+    expect(packAmount(1)).toBe('1');
+    expect(packAmount(0.25)).toBe('¼');
+    expect(packAmount(0.5)).toBe('½');
+    expect(packAmount(0.75)).toBe('¾');
+    expect(packAmount(1.5)).toBe('1½');
+    expect(packAmount(2.25)).toBe('2¼');
+    expect(packAmount(0)).toBe('0');
   });
 });

@@ -53,6 +53,7 @@ module Items
         extra[:source] = "slider"
         extra[:start_percent] = percent
       end
+      extra[:amount] = @wasted_amount unless @wasted_amount.nil?
       { before: before }.merge(extra)
     end
 
@@ -66,7 +67,16 @@ module Items
     end
 
     def apply_used = finish("rescued")
-    def apply_wasted = finish("wasted")
+
+    # Thrown away is this one pack (the soonest, when a line groups several).
+    # What was wasted is what was still left: a half-used pack wastes 1/2, not
+    # a whole pack. quantity holds that amount. There is no waste screen; the
+    # event's amount is the same number, for anything that counts later.
+    def apply_wasted
+      @wasted_amount = @item.amount_left.to_f.round(2)
+      finish("wasted")
+      @item.quantity = @wasted_amount
+    end
 
     def finish(state)
       @item.assign_attributes(state: state, resolved_at: Time.current)

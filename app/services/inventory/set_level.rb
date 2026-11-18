@@ -7,10 +7,10 @@ module Inventory
   # turns that line's single level (0..packs) back into per-pack amounts.
   #
   # The level fills newest-added first (highest id). Lowering it therefore
-  # drains the older pack — earliest purchase, lowest id, the left band — and
+  # drains the older pack — earliest purchase, lowest id, the bar against the thumb — and
   # raising it refills that same older pack before any newer one. A pack
-  # drained to nothing is resolved as used, the same as tapping Used, and does
-  # not come back onto the line.
+  # drained to nothing is resolved as used, the same as tapping Used. The event
+  # keeps the pack as it was, so the few seconds of Rückgängig can put it back.
   #
   # Display only: amount_left does not feed Freshness::PresenceModel. Halving
   # presence is still the job of the partial_use event.
@@ -46,8 +46,9 @@ module Inventory
 
     def apply(pack, amount)
       if amount <= 0
+        before = pack.attributes.slice(*Items::Resolve::TRACKED)
         pack.update!(amount_left: 0, state: "rescued", resolved_at: Time.current)
-        log(pack, "used", source: "level")
+        log(pack, "used", source: "level", before: before)
       elsif amount != pack.amount_left
         log(pack, "level_set", from: pack.amount_left, to: amount)
         pack.update!(amount_left: amount)

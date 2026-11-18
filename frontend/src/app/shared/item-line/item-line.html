@@ -9,7 +9,7 @@
   @if (line().first.safety_date) {
     <span class="badge">{{ 'today.safety_date' | translate }}</span>
   }
-  <span class="amount">{{ 'kitchen.percent' | translate: { count: percent() } }}</span>
+  <span class="amount">{{ 'kitchen.packs' | translate: { amount: packsLabel() } }}</span>
 </div>
 <!-- One slider, five stops. Each pack is its own rounded bar: newest at the
      left edge, oldest flush against the thumb, a gap between them. Sliding
@@ -23,7 +23,7 @@
     step="25"
     [value]="percent()"
     [attr.aria-label]="'kitchen.how_much' | translate: { name: line().first.display_name }"
-    [attr.aria-valuetext]="'kitchen.percent' | translate: { count: percent() }"
+    [attr.aria-valuetext]="'kitchen.packs' | translate: { amount: packsLabel() }"
     (pointerdown)="beginGesture()"
     (input)="slide($event)"
     (change)="commitLevel($event)"

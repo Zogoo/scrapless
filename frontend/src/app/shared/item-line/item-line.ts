@@ -14,7 +14,14 @@ import { Outcome, ScoredItem, Storage } from '../../core/models';
 import { ItemsService } from '../../core/services/items.service';
 import { PacColorService } from '../../core/services/pac-color.service';
 import { UndoService } from '../../core/services/undo.service';
-import { KitchenLine, TrackDraw, levelFromPercent, levelPercent, trackBars } from './line';
+import {
+  KitchenLine,
+  TrackDraw,
+  levelFromPercent,
+  levelPercent,
+  packAmount,
+  trackBars,
+} from './line';
 
 /**
  * One food line: the percentage slider, Move, and Gone.
@@ -69,6 +76,11 @@ export class ItemLine {
   private readonly openedNow = signal<{ id: number; open: boolean } | null>(null);
 
   protected readonly storages: Storage[] = ['fridge', 'freezer', 'pantry'];
+
+  /** The bars, in packs: "2", "¼", "1½". The translation adds Pck. / pk. */
+  protected packsLabel(): string {
+    return packAmount(levelFromPercent(this.percent(), this.line().packs.length));
+  }
 
   protected percent(): number {
     const line = this.line();
@@ -257,13 +269,17 @@ export class ItemLine {
     this.preview.set({ key: line.key, percent: levelPercent(level, line.packs.length) });
 
     this.items.level(ids, level).subscribe({
-      next: () =>
+      next: () => {
+        // 0% has already marked every pack on the line used. The toast can
+        // put them back, the same way Weggeworfen can.
+        if (level === 0) this.undo.showUsedUp(ids);
         this.items.load().subscribe({
           next: () => {
             this.preview.set(null);
             this.openingId = null;
           },
-        }),
+        });
+      },
       error: (err: { message?: string }) => this.fail(err),
     });
   }

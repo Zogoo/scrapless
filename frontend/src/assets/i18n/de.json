@@ -126,7 +126,7 @@
     "title": "Küche",
     "empty_group": "Hier ist nichts.",
     "how_much": "Wie viel {{name}} noch da ist",
-    "percent": "{{count}} %",
+    "packs": "{{amount}} Pck.",
     "remove": "Aus der Küche entfernen",
     "jump": "Orte in der Küche",
     "move_label": "{{name}} ist im {{place}}. Woanders hin",
@@ -222,6 +222,7 @@
   "undo": {
     "action": "Rückgängig",
     "used": "{{name}}: verbraucht",
+    "used_up": "Aufgebraucht",
     "wasted": "Danke — notiert.",
     "partial": "{{name}}: Hälfte übrig",
     "froze": "{{name}} ist im Gefrierfach",

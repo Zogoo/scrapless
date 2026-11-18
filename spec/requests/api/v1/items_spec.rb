@@ -96,6 +96,16 @@ RSpec.describe "Api::V1::Items", type: :request do
       expect(item.reload.state).to eq("wasted")
     end
 
+    it "records the amount still left when a partly used pack is thrown away" do
+      item.update!(amount_left: 0.5, quantity: 1)
+
+      post "/api/v1/items/#{item.id}/resolve", params: { outcome: "wasted" }, headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(item.reload.quantity.to_f).to eq(0.5)
+      expect(item.amount_left).to eq(0.5)
+    end
+
     # Freezing is the cheapest real rescue, and it resets the clock properly
     # rather than scaling the fridge window.
     it "recomputes the window from the freezer table when the item is frozen" do
@@ -234,6 +244,18 @@ RSpec.describe "Api::V1::Items", type: :request do
 
       expect(response).to have_http_status(:conflict)
       expect(response.parsed_body).to include("retryable" => true, "error" => /latest/)
+    end
+
+    it "uses the line up at 0% and undo puts that pack back" do
+      milk = create(:item, household: household, amount_left: 0.25)
+
+      post "/api/v1/items/level", params: { ids: [ milk.id ], level: 0 }, headers: headers
+      expect(milk.reload.state).to eq("rescued")
+
+      post "/api/v1/items/#{milk.id}/undo", headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(milk.reload).to have_attributes(state: "active", amount_left: 0.25)
     end
 
     it "sets how much is left across every pack on one Kitchen line" do

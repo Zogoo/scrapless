@@ -128,3 +128,18 @@ export function levelPercent(level: number, packCount: number): number {
 export function levelFromPercent(percent: number, packCount: number): number {
   return (snapPercent(percent) / 100) * packCount;
 }
+
+const QUARTERS = ['', '¼', '½', '¾'];
+
+/**
+ * What the bars add up to, on the same quarter stops as the slider.
+ * Two full packs are "2". One pack at a quarter is "¼". One and a half is "1½".
+ */
+export function packAmount(level: number): string {
+  const quarters = Math.max(0, Math.round(level * 4));
+  const whole = Math.floor(quarters / 4);
+  const fraction = QUARTERS[quarters % 4];
+  if (whole === 0) return fraction || '0';
+
+  return `${whole}${fraction}`;
+}
