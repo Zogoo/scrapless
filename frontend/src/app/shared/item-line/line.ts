@@ -110,23 +110,73 @@ export function trackBars(line: KitchenLine, level = line.level): TrackDraw {
   return { fill: total > 0 ? (at / total) * 100 : 0, bars };
 }
 
-/** The only stops the Kitchen slider has. */
-export const PERCENT_STEP = 25;
+/**
+ * Stops, in quarter-packs. Up to two packs, the line moves by 25%. Past that,
+ * each step is one whole pack until two remain, and those two move by 25%.
+ */
+function quarterStops(packCount: number): number[] {
+  if (packCount <= 0) return [0];
+  if (packCount <= 2) return [0, 1, 2, 3, 4].map((step) => step * packCount);
 
-function snapPercent(percent: number): number {
-  const snapped = Math.round(percent / PERCENT_STEP) * PERCENT_STEP;
-  return Math.min(100, Math.max(0, snapped));
+  const stops = [0, 2, 4, 6, 8];
+  for (let packs = 3; packs <= packCount; packs += 1) stops.push(packs * 4);
+  return stops;
 }
 
-/** Where the thumb sits: 0, 25, 50, 75, or 100, for the whole line. */
+/** Levels the thumb can rest on, low to high. */
+export function levelStops(packCount: number): number[] {
+  return quarterStops(packCount).map((quarters) => quarters / 4);
+}
+
+function nearestQuarter(level: number, packCount: number, toward?: -1 | 1): number {
+  const stops = quarterStops(packCount);
+  const target = Math.min(packCount * 4, Math.max(0, level * 4));
+  let best = stops[0];
+  let bestDist = Math.abs(best - target);
+
+  for (const stop of stops) {
+    const dist = Math.abs(stop - target);
+    const closer = dist < bestDist - 1e-9;
+    const tie = Math.abs(dist - bestDist) <= 1e-9;
+    const prefer = tie && ((toward === -1 && stop < best) || (toward !== -1 && stop > best));
+    if (closer || prefer) {
+      best = stop;
+      bestDist = dist;
+    }
+  }
+
+  return best;
+}
+
+/** Where the thumb sits, as a percent of the track. The label is not this. */
 export function levelPercent(level: number, packCount: number): number {
   if (packCount <= 0) return 0;
-  return snapPercent((level / packCount) * 100);
+  return (nearestQuarter(level, packCount) / 4 / packCount) * 100;
 }
 
-/** The level the server stores for one of those five stops. 0 uses the line up. */
-export function levelFromPercent(percent: number, packCount: number): number {
-  return (snapPercent(percent) / 100) * packCount;
+/**
+ * The level a pointer position selects. A point halfway between two stops
+ * follows the direction of the drag. 0 uses the line up.
+ */
+export function levelFromPercent(percent: number, packCount: number, fromPercent?: number): number {
+  if (packCount <= 0) return 0;
+
+  const clamped = Math.min(100, Math.max(0, percent));
+  const toward: -1 | 1 | undefined =
+    fromPercent === undefined || clamped === fromPercent
+      ? undefined
+      : clamped < fromPercent
+        ? -1
+        : 1;
+  return nearestQuarter((clamped / 100) * packCount, packCount, toward) / 4;
+}
+
+/** One keyboard step: the next stop down or up. FIFO is unchanged. */
+export function stepLevel(level: number, packCount: number, direction: -1 | 1): number {
+  const stops = quarterStops(packCount);
+  const index = stops.indexOf(nearestQuarter(level, packCount));
+  const next = stops[index + direction];
+  return (next ?? stops[index] ?? 0) / 4;
 }
 
 const QUARTERS = ['', '¼', '½', '¾'];

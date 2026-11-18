@@ -11,20 +11,23 @@
   }
   <span class="amount">{{ 'kitchen.packs' | translate: { amount: packsLabel() } }}</span>
 </div>
-<!-- One slider, five stops. Each pack is its own rounded bar: newest at the
-     left edge, oldest flush against the thumb, a gap between them. Sliding
-     down eats that older bar. 0% uses the line. Empty track stays sunken. -->
+<!-- Stops depend on how many packs are on the line. Up to two, each move is
+     a quarter. Past that, each move is one whole pack until two remain.
+     The label is the pack amount. Newest bar at the left, oldest against the
+     thumb. 0 uses the line. Empty track stays sunken. -->
 <div class="slider" [style.--p]="percent()">
   <input
     type="range"
     class="level"
     min="0"
     max="100"
-    step="25"
+    step="any"
     [value]="percent()"
     [attr.aria-label]="'kitchen.how_much' | translate: { name: line().first.display_name }"
     [attr.aria-valuetext]="'kitchen.packs' | translate: { amount: packsLabel() }"
     (pointerdown)="beginGesture()"
+    (keydown)="nudge($event)"
+    (keyup)="releaseNudge($event)"
     (input)="slide($event)"
     (change)="commitLevel($event)"
   />

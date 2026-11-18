@@ -44,6 +44,8 @@ interface ItemLineScreen {
   beginGesture(): void;
   slide(event: Event): void;
   commitLevel(event: Event): void;
+  nudge(event: KeyboardEvent): void;
+  releaseNudge(event: KeyboardEvent): void;
   move(item: ScoredItem, storage: Storage): void;
   resolve(item: ScoredItem, outcome: 'wasted'): void;
 }
@@ -101,6 +103,42 @@ describe('Item line', () => {
     revert.flush({});
     const req = http.expectOne(`${environment.apiUrl}/items/level`);
     expect(req.request.body).toEqual({ ids: [1, 2], level: 1 });
+    req.flush({ items: [] });
+    http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
+  });
+
+  it('takes one whole pack off a 4-pack line, and the label stays a pack amount', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('en', { kitchen: { packs: '{{amount}} pk.' } });
+    translate.use('en');
+    fixture.componentRef.setInput('line', toLines([pack(1), pack(2), pack(3), pack(4)])[0]);
+    fixture.detectChanges();
+    const screen = fixture.componentInstance as unknown as ItemLineScreen;
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.amount')?.textContent).toContain('4 pk.');
+
+    const target = root.querySelector('.level') as HTMLInputElement;
+    const down = {
+      key: 'ArrowLeft',
+      preventDefault() {},
+      target,
+    } as unknown as KeyboardEvent;
+    screen.nudge(down);
+    fixture.detectChanges();
+    expect(root.querySelector('.amount')?.textContent).toContain('3 pk.');
+    expect(root.querySelector('.amount')?.textContent).not.toContain('%');
+
+    screen.releaseNudge(down);
+
+    const opened = http.expectOne(`${environment.apiUrl}/items/1/resolve`);
+    expect(opened.request.body).toEqual(sliderOpen(100));
+    opened.flush({});
+    const revert = http.expectOne(`${environment.apiUrl}/items/1/revert_open`);
+    expect(revert.request.body).toEqual({ percent: 75 });
+    revert.flush({});
+    const req = http.expectOne(`${environment.apiUrl}/items/level`);
+    expect(req.request.body).toEqual({ ids: [1, 2, 3, 4], level: 3 });
     req.flush({ items: [] });
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
   });

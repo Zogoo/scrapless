@@ -4,9 +4,11 @@ import { ScoredItem } from '../../core/models';
 import {
   levelFromPercent,
   levelPercent,
+  levelStops,
   lineFor,
   packAmount,
   segments,
+  stepLevel,
   toLines,
   trackBars,
 } from './line';
@@ -158,18 +160,45 @@ describe('trackBars', () => {
 });
 
 describe('levelPercent', () => {
-  it('snaps the line to 0, 25, 50, 75, or 100', () => {
+  it('snaps one or two packs to quarters of the line', () => {
     expect(levelPercent(1.5, 2)).toBe(75);
     expect(levelPercent(0.1, 1)).toBe(0);
     expect(levelPercent(0.8, 1)).toBe(75);
     expect(levelPercent(2, 2)).toBe(100);
   });
 
-  it('turns those stops back into a level, and 0% uses the line', () => {
+  it('turns those stops back into a level, and 0 uses the line', () => {
     expect(levelFromPercent(50, 2)).toBe(1);
     expect(levelFromPercent(25, 1)).toBe(0.25);
     expect(levelFromPercent(0, 3)).toBe(0);
     expect(levelFromPercent(100, 3)).toBe(3);
+  });
+});
+
+describe('levelStops', () => {
+  function walk(packCount: number, direction: -1 | 1, start: number): number[] {
+    const seen = [start];
+    let level = start;
+    for (;;) {
+      const next = stepLevel(level, packCount, direction);
+      if (next === level) return seen;
+      seen.push(next);
+      level = next;
+    }
+  }
+
+  it('keeps quarter steps for one pack and for two', () => {
+    expect(levelStops(1)).toEqual([0, 0.25, 0.5, 0.75, 1]);
+    expect(levelStops(2)).toEqual([0, 0.5, 1, 1.5, 2]);
+    expect(walk(1, -1, 1)).toEqual([1, 0.75, 0.5, 0.25, 0]);
+    expect(walk(2, -1, 2)).toEqual([2, 1.5, 1, 0.5, 0]);
+  });
+
+  it('removes one whole pack at a time until two remain, then quarters of those two', () => {
+    expect(levelStops(4)).toEqual([0, 0.5, 1, 1.5, 2, 3, 4]);
+    expect(walk(4, -1, 4)).toEqual([4, 3, 2, 1.5, 1, 0.5, 0]);
+    expect(walk(4, 1, 0)).toEqual([0, 0.5, 1, 1.5, 2, 3, 4]);
+    expect(walk(3, -1, 3)).toEqual([3, 2, 1.5, 1, 0.5, 0]);
   });
 });
 
