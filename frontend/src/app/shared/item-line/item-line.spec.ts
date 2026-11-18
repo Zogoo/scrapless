@@ -313,6 +313,7 @@ describe('Item line', () => {
     expect(root.querySelectorAll('.bite')).toHaveLength(1);
     expect(bite?.getAttribute('data-bites')).toBe('0');
     expect(bite?.getAttribute('aria-label')).toBe('Unopened');
+    expect(bite?.classList.contains('bitten')).toBe(false);
     expect(thumb(root)).toBe(`${RADISH}-fresh.svg`);
     expect(bite?.classList.contains('full')).toBe(true);
     expect(bite?.classList.contains('open')).toBe(false);
@@ -355,6 +356,7 @@ describe('Item line', () => {
     const full = show(1);
     expect(full.querySelector('.bite')?.getAttribute('data-bites')).toBe('0');
     expect(thumb(full)).toBe(`${RADISH}-fresh-opened.svg`);
+    expect(full.querySelector('.bite')?.classList.contains('bitten')).toBe(true);
     expect(full.querySelector('.bite')?.classList.contains('full')).toBe(true);
     expect(full.querySelector('.bite')?.classList.contains('open')).toBe(false);
 
@@ -378,6 +380,7 @@ describe('Item line', () => {
 
     const shut = show(0.5, null);
     expect(shut.querySelector('.bite')?.getAttribute('data-bites')).toBe('0');
+    expect(shut.querySelector('.bite')?.classList.contains('bitten')).toBe(false);
     expect(thumb(shut)).toBe(`${RADISH}-fresh.svg`);
   });
 
