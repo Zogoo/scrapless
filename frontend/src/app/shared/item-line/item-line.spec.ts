@@ -350,7 +350,10 @@ describe('Item line', () => {
     expect(bite?.getAttribute('data-bites')).toBe('0');
     expect(bite?.getAttribute('aria-label')).toBe('Unopened');
     expect(bite?.classList.contains('bitten')).toBe(false);
-    expect(thumb(root)).toBe(`${RADISH}-fresh.svg`);
+    expect(thumb(root)).toBe(`${RADISH}-fresh-light.svg`);
+    const dark = bite?.querySelector('source');
+    expect(dark?.getAttribute('srcset')).toBe(`${RADISH}-fresh.svg`);
+    expect(dark?.getAttribute('media')).toBe('(prefers-color-scheme: dark)');
     expect(bite?.classList.contains('full')).toBe(true);
     expect(bite?.classList.contains('open')).toBe(false);
     expect(root.querySelector('.slider')?.getAttribute('style')).toContain('--p: 100');
@@ -367,7 +370,7 @@ describe('Item line', () => {
     );
     fixture.detectChanges();
 
-    expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-today.svg`);
+    expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-today-light.svg`);
   });
 
   it('uses the bitten radish once opened, and none at 0%', () => {
@@ -391,7 +394,7 @@ describe('Item line', () => {
 
     const full = show(1);
     expect(full.querySelector('.bite')?.getAttribute('data-bites')).toBe('0');
-    expect(thumb(full)).toBe(`${RADISH}-fresh-opened.svg`);
+    expect(thumb(full)).toBe(`${RADISH}-fresh-opened-light.svg`);
     expect(full.querySelector('.bite')?.classList.contains('bitten')).toBe(true);
     expect(full.querySelector('.bite')?.classList.contains('full')).toBe(true);
     expect(full.querySelector('.bite')?.classList.contains('open')).toBe(false);
@@ -400,14 +403,14 @@ describe('Item line', () => {
       const open = show(amount);
       expect(open.querySelector('.bite')?.getAttribute('data-bites')).toBe('1');
       expect(open.querySelector('.bite')?.getAttribute('aria-label')).toBe('Opened');
-      expect(thumb(open)).toBe(`${RADISH}-fresh-opened.svg`);
+      expect(thumb(open)).toBe(`${RADISH}-fresh-opened-light.svg`);
       expect(open.querySelector('.bite')?.classList.contains('full')).toBe(false);
       expect(open.querySelector('.bite')?.classList.contains('open')).toBe(true);
     }
 
-    expect(thumb(show(0.5, '2026-11-12', 'aging'))).toBe(`${RADISH}-soon-opened.svg`);
-    expect(thumb(show(0.5, '2026-11-12', 'at_risk'))).toBe(`${RADISH}-today-opened.svg`);
-    expect(thumb(show(0.5, '2026-11-12', 'ghost'))).toBe(`${RADISH}-today-opened.svg`);
+    expect(thumb(show(0.5, '2026-11-12', 'aging'))).toBe(`${RADISH}-soon-opened-light.svg`);
+    expect(thumb(show(0.5, '2026-11-12', 'at_risk'))).toBe(`${RADISH}-today-opened-light.svg`);
+    expect(thumb(show(0.5, '2026-11-12', 'ghost'))).toBe(`${RADISH}-today-opened-light.svg`);
 
     const gone = show(0);
     expect(gone.querySelector('.bite')?.getAttribute('data-bites')).toBe('4');
@@ -417,7 +420,7 @@ describe('Item line', () => {
     const shut = show(0.5, null);
     expect(shut.querySelector('.bite')?.getAttribute('data-bites')).toBe('0');
     expect(shut.querySelector('.bite')?.classList.contains('bitten')).toBe(false);
-    expect(thumb(shut)).toBe(`${RADISH}-fresh.svg`);
+    expect(thumb(shut)).toBe(`${RADISH}-fresh-light.svg`);
   });
 
   it('bites the radish on the first move', () => {
@@ -435,7 +438,7 @@ describe('Item line', () => {
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.bite')?.getAttribute('data-bites')).toBe('1');
     expect(root.querySelector('.bite')?.getAttribute('aria-label')).toBe('Opened');
-    expect(thumb(root)).toBe(`${RADISH}-fresh-opened.svg`);
+    expect(thumb(root)).toBe(`${RADISH}-fresh-opened-light.svg`);
     expect(root.querySelector('.slider')?.getAttribute('style')).toContain('--p: 75');
     http.expectOne(`${environment.apiUrl}/items/1/resolve`).flush({});
   });
@@ -448,14 +451,14 @@ describe('Item line', () => {
 
     screen.slide(slider(50));
     fixture.detectChanges();
-    expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-fresh-opened.svg`);
+    expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-fresh-opened-light.svg`);
 
     screen.slide(slider(100));
     fixture.detectChanges();
 
     const bite = fixture.nativeElement.querySelector('.bite');
     expect(bite?.getAttribute('data-bites')).toBe('0');
-    expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-fresh.svg`);
+    expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-fresh-light.svg`);
     http.expectOne(`${environment.apiUrl}/items/1/resolve`).flush({});
   });
 
@@ -482,7 +485,7 @@ describe('Item line', () => {
       'Accidental touch. This is unopened again.',
     );
     expect(root.querySelector('.bite')?.getAttribute('data-bites')).toBe('0');
-    expect(thumb(root)).toBe(`${RADISH}-fresh.svg`);
+    expect(thumb(root)).toBe(`${RADISH}-fresh-light.svg`);
   });
 
   // A new pack, opened on the previous release, then put back to full. This
@@ -514,7 +517,7 @@ describe('Item line', () => {
     expect(root.querySelector('.accidental')?.textContent).toContain(
       'Accidental touch. This is unopened again.',
     );
-    expect(thumb(root)).toBe(`${RADISH}-fresh.svg`);
+    expect(thumb(root)).toBe(`${RADISH}-fresh-light.svg`);
   });
 
   // The open was latched while the line still had no date. The list then
@@ -536,7 +539,7 @@ describe('Item line', () => {
 
     fixture.componentRef.setInput('line', toLines([opened])[0]);
     fixture.detectChanges();
-    expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-soon-opened.svg`);
+    expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-soon-opened-light.svg`);
 
     const restored = pack(1, 1, 'potato', '2026-11-25', null, 'fresh');
     screen.slide(slider(100));
@@ -552,7 +555,7 @@ describe('Item line', () => {
     fixture.componentRef.setInput('line', toLines([restored])[0]);
     fixture.detectChanges();
 
-    expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-fresh.svg`);
+    expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-fresh-light.svg`);
   });
 
   it('does not warn when a pack that was already open comes back to the start', () => {
@@ -574,7 +577,7 @@ describe('Item line', () => {
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.accidental')).toBeNull();
-    expect(thumb(root)).toBe(`${RADISH}-fresh-opened.svg`);
+    expect(thumb(root)).toBe(`${RADISH}-fresh-opened-light.svg`);
     expect(root.querySelector('.bite')?.classList.contains('full')).toBe(true);
   });
 

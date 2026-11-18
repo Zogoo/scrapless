@@ -118,7 +118,7 @@ describe('Kitchen', () => {
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.bite img')?.getAttribute('src')).toBe(
-      '/branding/rettich/mascot/rettich-soon-opened.svg',
+      '/branding/rettich/mascot/rettich-soon-opened-light.svg',
     );
 
     const slider = root.querySelector('input.level') as HTMLInputElement;
@@ -136,7 +136,7 @@ describe('Kitchen', () => {
     fixture.detectChanges();
 
     expect(root.querySelector('.bite img')?.getAttribute('src')).toBe(
-      '/branding/rettich/mascot/rettich-fresh.svg',
+      '/branding/rettich/mascot/rettich-fresh-light.svg',
     );
   });
 });

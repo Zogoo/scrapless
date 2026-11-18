@@ -136,16 +136,17 @@ export class ItemLine {
   /**
    * The thumb. Unopened is the whole radish, opened is the bitten one.
    * Freshness is the bar against the thumb: fresh, aging, then at risk or ghost.
-   * 0% has nothing to hold.
+   * Light and dark each have their own file. 0% has nothing to hold.
    */
-  protected radishSrc(): string | null {
+  protected radishSrc(): { light: string; dark: string } | null {
     if (this.level() <= 0) return null;
 
     const bars = this.bars().bars;
     const phase = bars.length > 0 ? bars[bars.length - 1].phase : this.line().first.phase;
     const kind = phase === 'aging' ? 'soon' : phase === 'fresh' ? 'fresh' : 'today';
     const bitten = this.opened() ? '-opened' : '';
-    return `/branding/rettich/mascot/rettich-${kind}${bitten}.svg`;
+    const base = `/branding/rettich/mascot/rettich-${kind}${bitten}`;
+    return { light: `${base}-light.svg`, dark: `${base}.svg` };
   }
 
   /** Closed until this slider opens the soonest pack. An undone open closes it. */
