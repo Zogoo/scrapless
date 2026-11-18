@@ -27,10 +27,14 @@ RAILS_ENV=test DATABASE_PATH="$DB" bin/rails runner "$EVAL/build_dataset.rb" "$E
 RAILS_ENV=test DATABASE_PATH="$DB" bin/rails runner "$EVAL/confident.rb" "$OUT/dataset.json" "$OUT/confident.json"
 sqlite3 -separator '|' "$DB" "select raw_text, canonical_name from product_aliases where household_id is null" > "$OUT/aliases.txt"
 
-if [ -z "$OPENAI_API_KEY" ] && [ -f "$ROOT/.env" ]; then
-  OPENAI_API_KEY="$(grep -E '^(export[[:space:]]+)?OPENAI_API_KEY=' "$ROOT/.env" | head -1 | sed -E 's/^(export[[:space:]]+)?OPENAI_API_KEY=//' | tr -d "\"' ")"
-fi
-[ -n "$OPENAI_API_KEY" ] || { echo "OPENAI_API_KEY is not set" >&2; exit 1; }
+# The key from the environment, else this checkout's .env, else the main
+# checkout's .env when this is a git worktree (worktrees share one .git).
+MAIN_ROOT="$(dirname "$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir)")"
+for ENV_FILE in "$ROOT/.env" "$MAIN_ROOT/.env"; do
+  [ -z "$OPENAI_API_KEY" ] && [ -f "$ENV_FILE" ] || continue
+  OPENAI_API_KEY="$(grep -E '^(export[[:space:]]+)?OPENAI_API_KEY=' "$ENV_FILE" | head -1 | sed -E 's/^(export[[:space:]]+)?OPENAI_API_KEY=//' | tr -d "\"' ")"
+done
+[ -n "$OPENAI_API_KEY" ] || { echo "OPENAI_API_KEY is not set, and no .env in $ROOT or $MAIN_ROOT has it" >&2; exit 1; }
 export OPENAI_API_KEY
 
 if [ -z "$LIVE_ONLY" ]; then
