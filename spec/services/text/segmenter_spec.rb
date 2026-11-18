@@ -16,8 +16,12 @@ RSpec.describe Text::Segmenter do
   describe "the evaluation set (spec/fixtures/dictation)" do
     Dir[Rails.root.join("spec/fixtures/dictation/*.yml")].sort.each do |file|
       YAML.safe_load_file(file).each do |example|
+        # Right, or unsure so a model reads it instead; never confidently wrong.
         it "#{File.basename(file, '.yml')}: #{example['said'].inspect}" do
-          expect(parts(example["said"])).to eq(example["lines"])
+          result = described_class.call(text: example["said"])
+
+          expect(result.parts == example["lines"] || !result.sure).to be(true),
+                                                                     "sure of #{result.parts}, want #{example['lines']}"
         end
       end
     end

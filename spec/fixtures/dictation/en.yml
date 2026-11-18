@@ -2,8 +2,10 @@
   lines: [bread, milk, eggs]
 - said: get some milk and also bananas
   lines: [milk, bananas]
+# A vague reminder is not a list line (product decision, 2026-11-18): the
+# segmenter alone cannot know that, so it must report itself unsure here.
 - said: milk toilet paper and something for Sunday
-  lines: [milk, toilet paper, something for Sunday]
+  lines: [milk, toilet paper]
 - said: can you add a dozen eggs please
   lines: [12 eggs]
 - said: two bottles of organic milk

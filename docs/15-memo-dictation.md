@@ -251,11 +251,13 @@ Acceptance cases, in both languages, with no commas from the recogniser:
 | "I want to buy bread milk eggs" | Bread · Milk · Eggs |
 | "ich brauche Brot Milch und Eier" | Brot · Milch · Eier |
 | "wir brauchen noch Butter Käse und zwei Gurken" | Butter · Käse · Gurken (note: 2) |
-| "milk toilet paper and something for Sunday" | Milk · toilet paper · something for Sunday |
+| "milk toilet paper and something for Sunday" | Milk · toilet paper (a vague reminder is not a line; decided 2026-11-18) |
 | "Milch, Klopapier, Brötchen" (English UI) | Milch · Klopapier · Brötchen |
 
-A memo line does not have to be food, and the dictionary is food-only. Unknown words have to
-survive as their own line.
+A memo line does not have to be food (toilet paper), and the dictionary is food-only, so an
+unknown item has to survive as its own line. A vague reminder ("something for Sunday") is not
+an item and is left out (product decision, 2026-11-18). The segmenter cannot tell the two
+apart, so it keeps both and reports itself unsure, and the model decides (§15.11.1).
 
 ---
 
@@ -849,6 +851,19 @@ laptop):
 - **These numbers do not give production's model-call rate or wait.** The hard sentences
   were written to contain unknown words, and the wait was measured from a laptop. Production
   logs (`path`, `model_ms`) answer both.
+
+**The three misses, analysed and acted on (2026-11-18).** None was the model malfunctioning.
+Each case was compared across all five models:
+
+| Said | Cause | Action |
+|---|---|---|
+| "milk toilet paper and something for Sunday" | All five models dropped the reminder, because the prompt says to leave out when and why. The fixture expected the reminder kept: two of our own rules conflicted. | **Product decision: a vague reminder is not a line.** The fixture now expects `milk · toilet paper`. The segmenter alone still keeps every unknown word, so nothing is lost without a model. Its fixture spec is now *right, or not sure*: it may never be confidently wrong. |
+| "Yuzu Tahini und Gochujang" | Ambiguous without a pause. The segmenter and 3 of 5 models read "Yuzu Tahini" as one product, and neither word is in the dictionary. Whether such a product exists was not checked. | None in code. The lever is dictionary data, grown by the team at seed time. |
+| "Rinderhack Tomaten aus der Dose und Basilikum" | The model read it correctly: name "Tomaten", unit "Dose". Our line format, amount + unit + name, then wrote "Dose Tomaten". | **Lines keep the speaker's words.** The line is the shortest stretch of the transcript holding the item's name and unit words, used only when the words in between belong to no other item and, given an amount, are not a number. Otherwise it falls back to amount + unit + name, and the amount is always digits. |
+
+Replaying the saved `gpt-6-luna` answers through the changed code, with no new calls, gives
+**151 of 152**. The one left is "Yuzu Tahini". Confirm it live with
+`script/dictation_eval/run.sh live`.
 
 **Known limits, not handled**
 - **The model can come back short.** Across 152 cases `gpt-6-luna` returned 15 items fewer

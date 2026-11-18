@@ -12,8 +12,9 @@ module Text
   # 4. the longest known item phrase wins, left to right. Numbers, units and
   #    modifiers just before an item belong to it ("2 Flaschen Bio Milch");
   #    any other unknown words stay together as their own line ("toilet
-  #    paper", "something for Sunday"), because a memo line need not be a
-  #    known food.
+  #    paper"), and the result is marked not `sure`. Nothing said is dropped
+  #    here: deciding what is not an item ("something for Sunday") needs a
+  #    model, and Memo::ListReader asks one only when this is unsure.
   #
   # Every language's phrases are used at once: a Berlin list is often mixed.
   # No word list lives here; it is all config/dictation plus what the kitchen

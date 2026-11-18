@@ -68,6 +68,47 @@ RSpec.describe Memo::ListReader do
         .to eq([ "2 Kilo Kartoffeln", "0.5 Kilo Hackfleisch", "Spaghetti" ])
     end
 
+    def model_reads(*items)
+      allow(router).to receive(:json_completion).and_return("items" => items.map do |name, quantity, unit|
+        { "name" => name, "quantity" => quantity, "unit" => unit, "food" => true }
+      end)
+    end
+
+    describe "line wording" do
+      it "keeps the speaker's words when name and unit were said together" do
+        model_reads([ "Rinderhack" ], [ "Tomaten", nil, "Dose" ], [ "Basilikum" ])
+
+        expect(read("Rinderhack Tomaten aus der Dose und Basilikum").lines)
+          .to eq([ "Rinderhack", "Tomaten aus der Dose", "Basilikum" ])
+      end
+
+      it "puts the amount first, in digits, before the words as said" do
+        model_reads([ "organic milk", 2, "bottles" ], [ "yuzu", nil, nil ])
+
+        expect(read("two bottles of organic milk and yuzu", lang: "en").lines)
+          .to eq([ "2 bottles of organic milk", "yuzu" ])
+      end
+
+      it "does not stretch one item's words over another item" do
+        model_reads([ "Paprika rot" ], [ "Paprika gelb" ], [ "Gurke", 1 ])
+
+        expect(read("Paprika rot und gelb und eine Gurke").lines).to eq([ "Paprika rot", "Paprika gelb", "1 Gurke" ])
+      end
+
+      it "finds each item among repeated words" do
+        model_reads([ "chicken breast" ], [ "chicken thighs" ], [ "chicken stock" ])
+
+        expect(read("chicken breast chicken thighs and chicken stock", lang: "en").lines)
+          .to eq([ "chicken breast", "chicken thighs", "chicken stock" ])
+      end
+
+      it "does not repeat an amount that was said inside the stretch" do
+        model_reads([ "Eier", 12, "Stück" ], [ "Yuzu" ])
+
+        expect(read("Eier zwölf Stück und Yuzu").lines).to eq([ "12 Stück Eier", "Yuzu" ])
+      end
+    end
+
     it "adds nothing when the model finds nothing to buy" do
       model_says
 

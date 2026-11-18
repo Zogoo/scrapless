@@ -17,6 +17,7 @@ module Memo
   # takes and how often it fails are measured rather than assumed.
   class ListReader < ApplicationService
     Result = Struct.new(:lines, :path, :reason, :model_ms, :unresolved, keyword_init: true)
+    Spoken = Struct.new(:key, :surface)
 
     # Seconds the person may wait after releasing the mic, for every provider
     # in the chain together. A heuristic, not a verified figure: on 2026-11-18
@@ -57,7 +58,8 @@ module Memo
       items = Array(answer["items"]).select { |item| item.is_a?(Hash) && item["name"].to_s.strip.present? }
       return [ nil, "ungrounded" ] unless items.all? { |item| grounded?(item["name"]) }
 
-      [ items.first(Text::Segmenter::MAX_PARTS).map { |item| line(item) }, nil ]
+      items = items.first(Text::Segmenter::MAX_PARTS)
+      [ items.each_with_index.map { |item, i| line(item, items[0...i] + items[(i + 1)..]) }, nil ]
     rescue Ai::Router::BudgetExceeded
       [ nil, "budget" ]
     rescue Ai::Client::TimedOut
@@ -79,12 +81,63 @@ module Memo
 
     def key_words(text) = ProductAlias.normalize_key(text).split
 
-    # "2 Kilo Kartoffeln": the same shape the segmenter writes, so a line reads
-    # the same whichever path produced it.
-    def line(item)
+    # A line in the speaker's own words where that is unambiguous: "Tomaten aus
+    # der Dose", not the model's split of it into unit and name ("Dose Tomaten").
+    # Otherwise amount, unit, name: "2 Kilo Kartoffeln", the shape the segmenter
+    # writes. The amount is always digits.
+    def line(item, others)
       quantity = item["quantity"]
       amount = quantity.is_a?(Numeric) && quantity.positive? ? format_number(quantity) : nil
-      [ amount, item["unit"].to_s.strip.presence, item["name"].to_s.strip ].compact.join(" ").truncate(120)
+      words = spoken_span(item, others, counted: !amount.nil?) ||
+              [ item["unit"].to_s.strip.presence, item["name"].to_s.strip ].compact.join(" ")
+      [ amount, words ].compact.join(" ").truncate(120)
+    end
+
+    # The shortest stretch of what was said that holds every word of this
+    # item's name and unit, if the words in between belong to no other item
+    # and, when an amount was given, are not a number (which would repeat it).
+    # A rule over the item's own words, not over phrases: it applies to any
+    # language. Not used when the stretch crosses into another item, and the
+    # eval (script/dictation_eval) measures how the lines come out.
+    def spoken_span(item, others, counted:)
+      need = key_words("#{item['name']} #{item['unit']}").tally
+      taken = others.flat_map { |other| key_words("#{other['name']} #{other['unit']}") }.to_set
+      window = shortest_window(need)
+      return if window.nil?
+
+      extra = window.map(&:key).tally.filter_map { |word, n| word if n > need.fetch(word, 0) }
+      return if extra.any? { |word| taken.include?(word) || (counted && number_word?(word)) }
+
+      window.filter_map(&:surface).join(" ")
+    end
+
+    def shortest_window(need)
+      best = nil
+      spoken.each_index do |from|
+        next unless need.key?(spoken[from].key)
+
+        seen = Hash.new(0)
+        spoken[from..].each_with_index do |token, offset|
+          seen[token.key] += 1
+          next unless need.all? { |word, n| seen[word] >= n }
+
+          best = spoken[from, offset + 1] if best.nil? || offset + 1 < best.size
+          break
+        end
+      end
+      best
+    end
+
+    # What was said, one entry per normalised word, keeping the spoken spelling.
+    def spoken
+      @spoken ||= @text.split(/\s+/).flat_map do |raw|
+        surface = raw.gsub(/\A[^\p{L}\p{N}]+|[^\p{L}\p{N}]+\z/, "")
+        key_words(raw).each_with_index.map { |key, i| Spoken.new(key, i.zero? ? surface : nil) }
+      end
+    end
+
+    def number_word?(word)
+      word.match?(/\A\d/) || Dictation::Vocabulary.combined[:numbers].key?(word)
     end
 
     def format_number(value)
