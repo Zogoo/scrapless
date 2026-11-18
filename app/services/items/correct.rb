@@ -25,6 +25,7 @@ module Items
       if @item.display_name_changed?
         recategorise unless @changes.key?("category")
         keep_emoji
+        reidentify
       end
       rewindow if @item.changed.intersect?(WINDOW_INPUTS)
 
@@ -37,6 +38,13 @@ module Items
     end
 
     private
+
+    # A new name may be a different food, so the old product cannot stand. An
+    # exact dictionary entry for the new name says which product it is; with
+    # none, the item has no product until the model next reads that food.
+    def reidentify
+      @item.product = ProductAlias.lookup(Copy.bare_name(@item), household: @item.household, fuzzy: false)&.product
+    end
 
     def recategorise
       guess = Resolver.call(raw_text: "", name: @item.display_name, household: @item.household).category
@@ -78,7 +86,7 @@ module Items
 
       ProductAlias.record_correction!(
         household: @item.household, raw_text: @item.raw_text, canonical_name: @item.canonical_name,
-        category: @item.category, merchant: @item.capture&.merchant
+        category: @item.category, merchant: @item.capture&.merchant, product: @item.product
       )
     end
 

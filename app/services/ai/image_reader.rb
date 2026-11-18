@@ -29,10 +29,11 @@ module Ai
           items: {
             type: "object",
             additionalProperties: false,
-            required: %w[raw_text name quantity unit price vat_class row category storage],
+            required: %w[raw_text name product quantity unit price vat_class row category storage],
             properties: {
               raw_text: { type: "string", description: "verbatim, exactly as printed" },
               name: { type: "string", description: "what a shopper calls it, in the language the instructions name" },
+              product: { type: "string", description: "always English, translated if need be: the food's generic name, lowercase, singular" },
               quantity: { type: %w[number null] },
               unit: { type: %w[string null], description: "g, kg, ml, l, piece" },
               price: { type: %w[number null] },
@@ -85,6 +86,7 @@ module Ai
       name is what a shopper calls the product, written in %<language>s whatever
       language the receipt or packet is in: abbreviations spelled out, normal
       capitalisation, no prices or VAT letters.
+      %<product>s
       category is the closest of these:
       %<categories>s
       storage is where a household keeps it once home. Only a photo taken inside
@@ -109,7 +111,8 @@ module Ai
       Router.new(household: @household).json_completion(
         purpose: purpose, schema: SCHEMA, max_output_tokens: 3000,
         messages: [
-          { role: "system", content: format(SYSTEM, language: Language.name, categories: Categories.prompt_guide) },
+          { role: "system", content: format(SYSTEM, language: Language.name, categories: Categories.prompt_guide,
+                                            product: Product::PROMPT_RULE) },
           { role: "user", content: [
             { type: "text", text: "Read this photo." },
             { type: "image_url", image_url: { url: data_url, detail: "high" } }

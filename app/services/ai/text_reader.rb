@@ -15,10 +15,11 @@ module Ai
           items: {
             type: "object",
             additionalProperties: false,
-            required: %w[raw_text name quantity unit category storage],
+            required: %w[raw_text name product quantity unit category storage],
             properties: {
               raw_text: { type: "string" },
               name: { type: "string" },
+              product: { type: "string", description: "always English, translated if need be: the food's generic name, lowercase, singular" },
               quantity: { type: %w[number null] },
               unit: { type: %w[string null] },
               category: { type: "string", enum: Categories::NAMES },
@@ -35,6 +36,7 @@ module Ai
       Rules:
       - One entry per distinct food. "two chicken breasts" is one entry, quantity 2.
       - name is plain language, written in %<language>s whatever language the input is in.
+      - %<product>s
       - category is the closest of these:
       %<categories>s
       - storage is where a normal household would put it once home.
@@ -54,7 +56,8 @@ module Ai
       Router.new(household: @household).json_completion(
         purpose: :text_parse, schema: SCHEMA, max_output_tokens: 1200,
         messages: [
-          { role: "system", content: format(SYSTEM, language: Language.name, categories: Categories.prompt_guide) },
+          { role: "system", content: format(SYSTEM, language: Language.name, categories: Categories.prompt_guide,
+                                            product: Product::PROMPT_RULE) },
           { role: "user", content: @text }
         ]
       )

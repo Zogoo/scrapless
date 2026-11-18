@@ -1,14 +1,29 @@
 # Receipt jargon -> a name a human recognises. Every confirmed mapping makes the
 # next parse cheaper, because a hit here skips the model call entirely.
 #
-# Two layers. Rows with no household are the shared dictionary — seeded, and
-# never written by a request. Rows with a household are that kitchen's own
+# Two layers. Rows with no household are the shared dictionary — seeded, or
+# promoted once five kitchens agree; never written on one request's own say.
+# Rows with a household are that kitchen's own
 # corrections, and they win inside that kitchen only. Doc 5 §5.6 and doc 7 B6:
 # a free, anonymous fridge must not be able to rename "milch" for everyone.
+#
+# A third way in: when the model reads a line the dictionary did not know
+# exactly, the server keeps its answer for that kitchen (`learn!`), so the next
+# time it is typed or spoken there it costs nothing. Once five independent
+# kitchens agree on what a spelling is, it is shared with everyone
+# (`promote!`) — doc 5 §5.6's k ≥ 5.
 class ProductAlias < ApplicationRecord
+  # Doc 5 §5.6 and doc 7 B6: global promotion needs k ≥ 5 independent kitchens.
+  PROMOTE_AT = 5
+  SOURCES = %w[seed correction ai promoted].freeze
+
   belongs_to :household, optional: true
+  belongs_to :product, optional: true
 
   scope :shared, -> { where(household_id: nil) }
+
+  validates :source, inclusion: { in: SOURCES }
+  validates :storage, inclusion: { in: Item::STORAGES }, allow_nil: true
 
   validates :raw_text, :canonical_name, :category, presence: true
 
@@ -101,16 +116,64 @@ class ProductAlias < ApplicationRecord
   def display_name = canonical_name.upcase_first
 
   # Writes to the correcting kitchen's layer only. The shared dictionary is
-  # changed by a seed or a reviewed promotion, never by a request.
-  def self.record_correction!(household:, raw_text:, canonical_name:, category:, merchant: nil, emoji: nil)
+  # changed by a seed or a promotion, never directly by a request. A correction
+  # always wins over what the model said, and it is a vote like any other.
+  def self.record_correction!(household:, raw_text:, canonical_name:, category:, merchant: nil, emoji: nil,
+                              product: nil)
     key = normalize_key(raw_text)
     return if key.blank? || household.nil?
 
     entry = find_or_initialize_by(household: household, raw_text: key, merchant: merchant)
-    entry.canonical_name = canonical_name
-    entry.category = category
+    entry.assign_attributes(canonical_name: canonical_name, category: category, product: product,
+                            source: "correction")
     entry.emoji ||= emoji
     entry.votes = entry.persisted? ? entry.votes + 1 : 1
-    entry.save
+    promote!(key) if entry.save
+  end
+
+  # The model's answer for a line the dictionary did not know exactly, kept for
+  # this kitchen. Only the first answer is kept: an entry already there — the
+  # model's, or the person's own correction — stands, and the dictionary stays
+  # the thing that decides (doc 5 §5.3: dictionary first, model for the rest).
+  #
+  # Keyed without quantities, so "2 hähnchenbrust" teaches "hähnchenbrust".
+  def self.learn!(household:, raw_text:, canonical_name:, category:, product:, storage: nil, emoji: nil)
+    key = without_quantities(normalize_key(raw_text)).presence || normalize_key(raw_text)
+    return if key.blank? || household.nil? || product.nil?
+    return if exists?(household: household, raw_text: key)
+
+    create!(household: household, raw_text: key, canonical_name: canonical_name, category: category,
+            product: product, storage: storage, emoji: emoji, source: "ai")
+    promote!(key)
+  rescue ActiveRecord::RecordNotUnique
+    nil # the same kitchen sent the same line twice at once; the first one won
+  end
+
+  # Shares a spelling with every kitchen once PROMOTE_AT of them, each on its
+  # own, have said it is the same product. Runs on the write that cast the
+  # vote, so there is no job to schedule and no queue to fall behind.
+  #
+  # It never overwrites a seeded entry, and never turns a high-risk food into
+  # a lower-risk one (doc 7 B6): either would need a person to review it, so
+  # those votes stay in each kitchen's own layer, where they already work.
+  def self.promote!(key)
+    votes = where.not(household_id: nil).where(raw_text: key).where.not(product_id: nil)
+                 .group(:product_id).distinct.count(:household_id)
+    product_id, kitchens = votes.max_by { |_, count| count }
+    return if kitchens.nil? || kitchens < PROMOTE_AT
+
+    agreeing = where.not(household_id: nil).where(raw_text: key, product_id: product_id)
+    (canonical_name, category, storage), = agreeing.group(:canonical_name, :category, :storage).count
+                                                   .max_by { |_, count| count }
+
+    entry = shared.find_or_initialize_by(raw_text: key, merchant: nil)
+    return if entry.source == "seed" || lowers_risk?(entry, category)
+
+    entry.update!(canonical_name: canonical_name, category: category, storage: storage, product_id: product_id,
+                  emoji: agreeing.where.not(emoji: nil).pick(:emoji), votes: kitchens, source: "promoted")
+  end
+
+  def self.lowers_risk?(entry, category)
+    entry.persisted? && Categories.high_risk?(entry.category) && !Categories.high_risk?(category)
   end
 end

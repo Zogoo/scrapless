@@ -34,12 +34,80 @@ RSpec.describe Captures::Ingest do
   it "suppresses non-food lines and reports what it suppressed" do
     result = described_class.call(capture: capture, payload: payload([
       { "raw_text" => "BROKKOLI", "name" => "Brokkoli", "food" => true },
-      { "raw_text" => "PFAND 0,25", "name" => "Pfand", "food" => true },
-      { "raw_text" => "TRAGETASCHE", "name" => "Tasche", "food" => false }
+      { "raw_text" => "PFAND 0,25", "name" => "Pfand", "row" => "deposit" },
+      { "raw_text" => "TRAGETASCHE", "name" => "Tasche", "row" => "not_food" }
     ]))
 
     expect(result[:items].size).to eq(1)
     expect(result[:suppressed]).to contain_exactly("PFAND 0,25", "TRAGETASCHE")
+  end
+
+  # The model's label is trusted. A word list used to overrule it and threw
+  # away dumplings for containing "tasche" (bag).
+  it "keeps food whose name happens to contain a non-food word" do
+    result = described_class.call(capture: capture, payload: payload([
+      { "raw_text" => "MAULTASCHEN", "name" => "Maultaschen", "row" => "food", "category" => "prepared" }
+    ]))
+
+    expect(result[:items].map(&:display_name)).to contain_exactly(include("Maultaschen"))
+  end
+
+  describe "learning what the model read" do
+    before { allow(Ai::Config).to receive(:live?).and_return(true) }
+
+    def model_line(raw, name, product, category: "dairy")
+      { "raw_text" => raw, "name" => name, "product" => product, "row" => "food",
+        "category" => category, "storage" => "fridge" }
+    end
+
+    it "keeps the model's answer for this kitchen, so the dictionary knows it next time" do
+      described_class.call(capture: capture, payload: payload([ model_line("MILCHREIS 500G", "Milchreis", "rice pudding") ]))
+
+      entry = ProductAlias.find_by(household: household, raw_text: "milchreis")
+      expect(entry).to have_attributes(source: "ai", category: "dairy")
+      expect(entry.product.key).to eq("rice pudding")
+      expect(ProductAlias.lookup("Milchreis", household: create(:household), fuzzy: false)).to be_nil
+    end
+
+    # Observed live: the model kept Maultaschen in the cupboard, the next
+    # capture's dictionary hit put them in the fridge, its category's default.
+    it "remembers where the model said the food is kept" do
+      line = model_line("MAULTASCHEN", "Maultaschen", "filled pasta", category: "prepared").merge("storage" => "freezer")
+      described_class.call(capture: capture, payload: payload([ line ]))
+
+      again = described_class.call(capture: create(:capture, household: household),
+                                   payload: payload([ { "raw_text" => "maultaschen", "name" => "Maultaschen" } ]))
+
+      expect(again[:items].first.storage).to eq("freezer")
+    end
+
+    it "links every item to its product, whatever it was called" do
+      milk = Product.for("milk")
+      create(:product_alias, raw_text: "milch", canonical_name: "Milch", category: "dairy", product: milk)
+
+      result = described_class.call(capture: capture, payload: payload([
+        model_line("MILCH", "Milch", "milk"), model_line("VOLLMILCH 1L", "Vollmilch", "milk")
+      ]))
+
+      expect(result[:items].map(&:product)).to all(eq(milk))
+      expect(milk.reload.names).to include("milch", "vollmilch")
+    end
+
+    it "does not learn from the offline stub, which only guesses" do
+      allow(Ai::Config).to receive(:live?).and_return(false)
+
+      described_class.call(capture: capture, payload: payload([ model_line("MILCHREIS", "Milchreis", "rice pudding") ]))
+
+      expect(ProductAlias.where(household: household)).to be_empty
+    end
+
+    it "does not learn from a line the model did not place" do
+      described_class.call(capture: capture, payload: payload([
+        { "raw_text" => "XYZ 12", "name" => "Xyz", "product" => "xyz", "food" => true }
+      ]))
+
+      expect(ProductAlias.where(household: household)).to be_empty
+    end
   end
 
   it "uses the dictionary in preference to the model's own naming" do
@@ -65,7 +133,7 @@ RSpec.describe Captures::Ingest do
 
   it "marks a capture failed when nothing survived, without raising" do
     result = described_class.call(capture: capture, payload: payload([
-      { "raw_text" => "PFAND 0,25", "name" => "Pfand", "food" => true }
+      { "raw_text" => "PFAND 0,25", "name" => "Pfand", "row" => "deposit" }
     ]))
 
     expect(result[:items]).to be_empty

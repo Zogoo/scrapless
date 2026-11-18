@@ -16,9 +16,11 @@ module Captures
       lines = Array(@payload["lines"] || @payload["items"])
       food, suppressed = lines.partition { |line| food?(line) }
 
-      items = food.filter_map { |line| build_item(line) }
+      built = food.filter_map { |line| build_item(line) }
+      items = built.map(&:first)
       Item.transaction { items.each(&:save!) }
       items.each { |item| log_capture_event(item) }
+      built.each { |item, resolved, line| learn(item, resolved, line) }
 
       @capture.update!(
         status: items.any? ? "parsed" : "failed",
@@ -38,15 +40,14 @@ module Captures
     # A deposit line is not food, and proving we filtered it is what makes the
     # parser trustworthy — so suppressed lines are returned, not dropped.
     #
-    # A row the model labelled anything but food — a count or weight printed
-    # under a product, a saving, a deposit — is never an item of its own (see
-    # Ai::ImageReader::ROWS). Typed and spoken lines carry no row label.
+    # The model says what every row is (Ai::ImageReader::ROWS), and that is
+    # trusted. A word list used to second-guess it and threw away real food:
+    # "Maultaschen" contains "tasche" (bag), "Summer rolls" contains "summe"
+    # (total). Typed and spoken lines carry no label: the text reader returns
+    # only food, and a dictionary hit is food by definition.
     def food?(line)
       return false if line["food"] == false
       return false unless line.fetch("row", "food") == "food"
-
-      name = "#{line['name']} #{line['raw_text']}".downcase
-      return false if name.match?(/pfand|leergut|tragetasche|tasche|rabatt|coupon|payback|summe|total/)
 
       line["name"].present? || line["raw_text"].present?
     end
@@ -55,15 +56,16 @@ module Captures
       resolved = Items::Resolver.call(
         raw_text: line["raw_text"], name: line["name"],
         category: line["category"], merchant: @payload["merchant"],
-        storage: line["storage"], household: @household
+        storage: line["storage"], household: @household, product: line["product"]
       )
 
       window = Freshness::Estimator.call(
         category: resolved.category, storage: resolved.storage, acquired_on: purchased_on
       )
 
-      @household.items.new(
+      item = @household.items.new(
         capture: @capture,
+        product: resolved.product,
         display_name: "#{resolved.emoji} #{resolved.display_name}".strip,
         canonical_name: resolved.canonical_name,
         category: resolved.category,
@@ -78,9 +80,24 @@ module Captures
         confidence: resolved.source == "dictionary" ? window.confidence : [ window.confidence - 0.1, 0.2 ].max,
         added_by_name: @capture.added_by_name
       )
+      [ item, resolved, line ]
     rescue StandardError => e
       Rails.logger.warn("skipped line #{line.inspect}: #{e.message}")
       nil
+    end
+
+    # Dictionary first, the model for the rest, and the model's answer kept so
+    # the dictionary knows it next time (ProductAlias.learn!). Only an answer
+    # a live model actually gave: a line it did not place (no category) was
+    # guessed here, and the offline stub guesses from a word list. A guess
+    # must not teach anything.
+    def learn(item, resolved, line)
+      return unless Ai::Config.live?
+      return unless resolved.source == "heuristic" && Categories.valid?(line["category"])
+
+      ProductAlias.learn!(household: @household, raw_text: item.raw_text || line["name"],
+                          canonical_name: item.canonical_name, category: item.category,
+                          storage: item.storage, product: resolved.product, emoji: resolved.emoji)
     end
 
     def log_capture_event(item)

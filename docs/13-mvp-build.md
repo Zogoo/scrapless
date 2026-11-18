@@ -172,7 +172,7 @@ the fixes. All seven are fixed and covered by specs.
 
 | Found | Fix |
 |---|---|
-| **One anonymous fridge could rename a word for every kitchen.** `ProductAlias` was global and a rename overwrote the shared row, seeded ones included. Doc 7 B6 names this exact risk. | Corrections carry a `household_id` and are read before the shared dictionary only in that kitchen. The shared layer is written by seeds. **Promotion at k≥5 households (doc 5 §5.6) is still not built.** |
+| **One anonymous fridge could rename a word for every kitchen.** `ProductAlias` was global and a rename overwrote the shared row, seeded ones included. Doc 7 B6 names this exact risk. | Corrections carry a `household_id` and are read before the shared dictionary only in that kitchen. The shared layer is written by seeds, and by promotion once five kitchens agree (see below). |
 | **A failed boot request could lose the kitchen.** Offline, a 5xx or a waking machine wiped the token; the phone landed on the welcome screen, and Skip minted a new fridge over the cookie. | The client forgets the token only on a 401. `POST /fridge` returns the fridge a browser already holds instead of minting another. |
 | **A correction fixed the label and kept the harm.** Bread filed as dairy, renamed in the Kitchen, kept dairy's 14-day window, and the dictionary learned the new name with the old category. | `Items::Correct`: a rename re-reads the category, a changed category, storage or printed date re-dates the item, and the dictionary learns the corrected pair. |
 | **No way to remove a misread line.** Doc 4 §4.4 makes subtracting the user's one job on the review sheet, and there was no delete anywhere in the UI. | A 48px remove button per review line, calling the household-scoped `DELETE /items/:id`. |
@@ -313,6 +313,34 @@ fixes were re-run against the same images.
 ⚠️ **Still open:** the shared dictionary's own names are German, so an English app reading a
 German Bon still gets "Frischmilch" for an exact hit; and items already captured keep the
 windows they were given.
+
+---
+
+### And what a learning dictionary needed
+
+The dictionary only grew when someone corrected a name, and on typed or spoken input a
+four-letter near-miss counted as known: "milchreis" became Milch without the model ever seeing
+it. Now the dictionary decides when it is certain and the model answers the rest, and the
+model's answers become dictionary entries:
+
+| Who | When | What |
+|---|---|---|
+| `Text::Splitter` | every typed or spoken capture | Only an **exact** dictionary match skips the model; anything else goes to it. |
+| `Captures::Ingest` | every line a **live** model named (never the offline stub, never a line it gave no category) | Saves raw text → name, category, storage, product in *that kitchen's* layer (`source: "ai"`). The next time it is free. A kitchen's own correction is never overwritten. |
+| `ProductAlias.promote!` | on the same write | Once **five kitchens** independently map a spelling to the same product (doc 5 §5.6), it joins the shared dictionary (`source: "promoted"`). Never over a seeded entry, and never turning a high-risk food low-risk (doc 7 B6); those votes stay per kitchen, and **nobody reviews them yet**. |
+
+**Same food, any name.** Both readers return `product`, the food's generic English name, never
+shown. `products` holds one row per key; dictionary entries and items point at it, so
+`Product#names` lists "H-MILCH 3,5%", "Milch" and "Milk" together. Seeds carry keys too.
+
+⚠️ **The key is the model's judgement.** A live run gave "milk porridge" for Milchreis (rice
+pudding) and kept "maultaschen" untranslated; an early prompt left most keys German. Measure it
+before relying on it: products with a single name, and a fixed set of real receipts re-run when
+the prompt changes. Promotion also counts *fridges*, which are free to create, so five
+"kitchens" can be one determined person — the fridge-creation rate limit is the only bound.
+
+Live check, typed "milchreis, butterkekse, maultaschen, mango, kartoffelchips, milch": the first
+capture made one model call for five words; the same words again made **none**.
 
 ---
 

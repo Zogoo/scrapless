@@ -33,4 +33,10 @@ RSpec.describe "db/seeds.rb" do
 
     expect(window.window_end - Date.current).to be <= 1
   end
+
+  # Without a product a seeded word cannot be grouped with its other names.
+  it "gives every seeded word a product" do
+    expect(ProductAlias.shared.where(product_id: nil)).to be_empty
+    expect(ProductAlias.shared.find_by(raw_text: "milch").product).to eq(ProductAlias.shared.find_by(raw_text: "milk").product)
+  end
 end

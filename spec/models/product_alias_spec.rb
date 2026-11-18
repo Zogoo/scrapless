@@ -115,4 +115,59 @@ RSpec.describe ProductAlias do
       end.not_to change(described_class, :count)
     end
   end
+
+  describe "learning and sharing what kitchens agree on" do
+    let(:pudding) { Product.for("rice pudding") }
+
+    def learn_in(household, product: pudding, category: "dairy")
+      described_class.learn!(household: household, raw_text: "MILCHREIS 500G", canonical_name: "milchreis",
+                             category: category, product: product)
+    end
+
+    it "is shared with every kitchen once five of them agree, and not before" do
+      4.times { learn_in(create(:household)) }
+      expect(described_class.shared.find_by(raw_text: "milchreis")).to be_nil
+
+      learn_in(create(:household))
+
+      shared = described_class.shared.find_by(raw_text: "milchreis")
+      expect(shared).to have_attributes(source: "promoted", votes: 5, product: pudding)
+      expect(described_class.lookup("milchreis", household: create(:household), fuzzy: false)).to eq(shared)
+    end
+
+    it "shares nothing while kitchens disagree on what it is" do
+      3.times { learn_in(create(:household)) }
+      2.times { learn_in(create(:household), product: Product.for("rice")) }
+
+      expect(described_class.shared.find_by(raw_text: "milchreis")).to be_nil
+    end
+
+    it "never overwrites a seeded entry" do
+      seeded = create(:product_alias, raw_text: "milchreis", canonical_name: "Milchreis", category: "dairy",
+                                      source: "seed", seeded: true)
+      5.times { learn_in(create(:household), product: Product.for("rice"), category: "pantry") }
+
+      expect(seeded.reload).to have_attributes(category: "dairy", source: "seed")
+    end
+
+    # Doc 7 B6: remapping a high-risk food into a low-risk category would
+    # silently remove its safety carve-out for every kitchen.
+    it "never makes a high-risk food low-risk for everyone" do
+      shared = create(:product_alias, raw_text: "milchreis", canonical_name: "Milchreis", category: "prepared",
+                                      source: "promoted")
+      5.times { learn_in(create(:household), category: "pantry") }
+
+      expect(shared.reload.category).to eq("prepared")
+    end
+
+    it "keeps a kitchen's own correction over what the model said later" do
+      household = create(:household)
+      described_class.record_correction!(household: household, raw_text: "milchreis", canonical_name: "Reis",
+                                         category: "pantry", product: Product.for("rice"))
+      learn_in(household)
+
+      expect(described_class.find_by(household: household, raw_text: "milchreis"))
+        .to have_attributes(canonical_name: "Reis", source: "correction")
+    end
+  end
 end
