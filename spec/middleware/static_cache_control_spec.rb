@@ -19,7 +19,7 @@ RSpec.describe StaticCacheControl do
   end
 
   it "revalidates every file whose name survives a deploy" do
-    %w[/ /index.html /assets/i18n/en.json /sw.js /manifest.webmanifest /branding/app_icon_dark.png].each do |path|
+    %w[/ /index.html /assets/i18n/en.json /sw.js /manifest.webmanifest /branding/rettich/png/icon-512.png].each do |path|
       expect(cache_control(path)).to eq("no-cache"), path
     end
   end

@@ -39,7 +39,7 @@
       }
     </span>
   }
-  <!-- Unopened: a closed line and one eye. Opened: the mouth faces the track and two dots sit just ahead. -->
+  <!-- Unopened: the whole radish. Opened: the bitten one. 0% leaves the thumb empty. -->
   <span
     class="bite"
     [class.full]="percent() === 100"
@@ -48,28 +48,8 @@
     [attr.data-bites]="bites()"
     [attr.aria-label]="(opened() ? 'kitchen.lock_open' : 'kitchen.lock_closed') | translate"
   >
-    @if (bites() > 0 && bites() < 4) {
-      <span class="dots" aria-hidden="true">
-        <span class="dot"></span>
-        <span class="dot"></span>
-      </span>
-    }
-    @if (bites() < 4) {
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        @if (bites() === 0) {
-          <circle class="body" cx="12" cy="12" r="10" [style.fill]="pac.color()" />
-          <line class="mouth" x1="12" y1="12" x2="2" y2="12" />
-        } @else {
-          <path
-            class="body"
-            d="M 12 12 L 4.929 4.929 A 10 10 0 1 1 4.929 19.071 Z"
-            [style.fill]="pac.color()"
-          />
-        }
-        @if (bites() < 3) {
-          <circle class="eye" cx="14" cy="6.5" r="1.5" />
-        }
-      </svg>
+    @if (radishSrc(); as src) {
+      <img [src]="src" alt="" />
     }
   </span>
 </div>

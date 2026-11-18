@@ -1,6 +1,6 @@
 {
-  "name": "restlos",
-  "short_name": "restlos",
+  "name": "rettich",
+  "short_name": "rettich",
   "description": "Kochen. Retten. Genießen.",
   "start_url": "/today",
   "scope": "/",
@@ -11,20 +11,32 @@
   "categories": ["food", "lifestyle", "utilities"],
   "icons": [
     {
-      "src": "/branding/app_icon_light.png",
-      "sizes": "1254x1254",
+      "src": "/branding/rettich/png/icon-192.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/branding/app_icon_dark.png",
-      "sizes": "1254x1254",
+      "src": "/branding/rettich/png/icon-512.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/branding/app_icon_light.png",
-      "sizes": "1254x1254",
+      "src": "/branding/rettich/png/icon-dark-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/branding/rettich/png/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/branding/rettich/png/icon-maskable-512.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
