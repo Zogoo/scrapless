@@ -36,20 +36,55 @@ export class Kitchen implements OnInit {
   protected readonly error = signal('');
   protected readonly editingKey = signal<string | null>(null);
   protected readonly draftName = signal('');
+  /** All places, until a storage button narrows the list. */
+  protected readonly place = signal<'all' | Storage>('all');
+  protected readonly query = signal('');
 
   private readonly all = computed<ScoredItem[]>(() => {
     const today = this.items.today();
     return today ? [...today.use_first, ...today.fine_for_now] : [];
   });
 
+  private readonly lines = computed(() => toLines(this.all()));
+
+  /** Lines that match the place and the name search together. */
+  protected readonly filtered = computed(() => {
+    const place = this.place();
+    const q = this.query().trim().toLowerCase();
+    return this.lines().filter((line) => {
+      if (place !== 'all' && line.first.storage !== place) return false;
+      return !q || line.first.display_name.toLowerCase().includes(q);
+    });
+  });
+
   /** One line per food per place, however many packs of it there are. */
   protected readonly groups = computed(() => {
     const by: Record<Storage, KitchenLine[]> = { fridge: [], freezer: [], pantry: [] };
-    for (const line of toLines(this.all())) by[line.first.storage].push(line);
+    for (const line of this.filtered()) by[line.first.storage].push(line);
     return by;
   });
 
+  /** How many lines each button would show, given the current search. */
+  protected readonly counts = computed(() => {
+    const q = this.query().trim().toLowerCase();
+    const counts = { all: 0, fridge: 0, freezer: 0, pantry: 0 };
+    for (const line of this.lines()) {
+      if (q && !line.first.display_name.toLowerCase().includes(q)) continue;
+      counts.all += 1;
+      counts[line.first.storage] += 1;
+    }
+    return counts;
+  });
+
   protected readonly storages: Storage[] = ['fridge', 'freezer', 'pantry'];
+
+  /** All places, or the one selected. A search hides a place it missed. */
+  protected readonly places = computed((): Storage[] => {
+    const place = this.place();
+    const chosen = place === 'all' ? this.storages : [place];
+    if (!this.query().trim()) return chosen;
+    return chosen.filter((storage) => this.groups()[storage].length > 0);
+  });
 
   protected capture(): void {
     void this.router.navigate(['/add']);
@@ -69,13 +104,6 @@ export class Kitchen implements OnInit {
         this.loading.set(false);
       },
     });
-  }
-
-  protected jump(storage: Storage): void {
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    document
-      .getElementById(`place-${storage}`)
-      ?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
   }
 
   protected startEdit(line: KitchenLine): void {

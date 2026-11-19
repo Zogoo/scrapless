@@ -7,18 +7,28 @@
   margin: 0 auto;
 }
 
-/* Stays in view under the app bar: where each place is, and how much is in it. */
-.jump {
+/* Stays in view under the app bar: search, then which place is showing. */
+.filters {
   position: sticky;
   top: calc(var(--appbar-h) + env(safe-area-inset-top));
   z-index: 2;
   display: flex;
-  gap: 0.4rem;
+  flex-direction: column;
+  gap: 0.5rem;
   margin: 0 -1rem;
   padding: 0.5rem 1rem;
   background: var(--bg);
+}
 
-  /* Name over count, so "Kühlschrank" and "Fridge" give the same shape. */
+.search input {
+  width: 100%;
+}
+
+.jump {
+  display: flex;
+  gap: 0.4rem;
+
+  /* Name over count, so "Kühlschrank" and "All" give the same shape. */
   button {
     flex: 1 1 0;
     min-width: 0;
@@ -27,8 +37,14 @@
     align-items: center;
     justify-content: center;
     padding: 0.2rem 0.25rem;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     line-height: 1.2;
+
+    &[aria-pressed='true'] {
+      background: var(--accent-container);
+      border-color: var(--accent);
+      font-weight: 600;
+    }
 
     .count {
       margin: 0;
@@ -44,7 +60,7 @@
 }
 
 .group {
-  /* A jump lands below the app bar and the place row, not under them. */
+  /* A heading stays below the app bar and the filter row, not under them. */
   scroll-margin-top: calc(var(--appbar-h) + var(--tap) + 1.5rem + env(safe-area-inset-top));
 }
 

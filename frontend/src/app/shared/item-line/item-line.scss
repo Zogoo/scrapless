@@ -12,24 +12,67 @@
   border-left: 4px solid var(--danger);
 }
 
-.row {
+/* One line on a phone: the name and the days give up space, the pack amount does not. */
+.summary {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
 
-  h3 {
-    flex: 1;
+  .toggle,
+  .name-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+    min-height: var(--tap);
     margin: 0;
-    font-size: 1rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    color: inherit;
+    font: inherit;
     font-weight: 500;
+    text-align: left;
+  }
+
+  .toggle {
+    flex: 1 1 auto;
+  }
+
+  .name-btn {
+    flex: 0 1 auto;
+    max-width: 70%;
+  }
+
+  .name,
+  .when {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .name {
+    flex: 1 1 auto;
+  }
+
+  .when {
+    flex: 0 1 45%;
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 400;
   }
 
   .amount {
     flex: none;
+    margin-left: auto;
     min-width: 4ch;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     text-align: right;
+    white-space: nowrap;
   }
 }
 

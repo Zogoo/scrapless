@@ -146,13 +146,17 @@
     "how_much": "Wie viel {{name}} noch da ist",
     "packs": "{{amount}} Pck.",
     "remove": "Aus der Küche entfernen",
-    "jump": "Orte in der Küche",
+    "all": "Alle",
+    "filter": "Küche filtern",
+    "search": "Nach Namen suchen",
+    "no_match": "Nichts passt.",
     "move_label": "{{name}} ist im {{place}}. Woanders hin",
     "move_title": "Wo ist {{name}} jetzt?",
     "here_now": "gerade hier",
     "accidental_open": "Aus Versehen berührt. Wieder ungeöffnet.",
     "lock_closed": "Ungeöffnet",
-    "lock_open": "Geöffnet"
+    "lock_open": "Geöffnet",
+    "collapse": "{{name}} zuklappen"
   },
   "storage": {
     "fridge": "Kühlschrank",

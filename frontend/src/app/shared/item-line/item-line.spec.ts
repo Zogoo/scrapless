@@ -67,6 +67,16 @@ function thumb(root: ParentNode): string | null {
   return root.querySelector('.bite img')?.getAttribute('src') ?? null;
 }
 
+/** The card is closed until the one-liner is tapped. Slider specs need it open. */
+function reveal(fixture: { detectChanges(): void; nativeElement: HTMLElement }): void {
+  fixture.detectChanges();
+  const toggle = fixture.nativeElement.querySelector('.toggle') as HTMLButtonElement | null;
+  if (toggle?.getAttribute('aria-expanded') === 'false') {
+    toggle.click();
+    fixture.detectChanges();
+  }
+}
+
 describe('Item line', () => {
   let http: HttpTestingController;
 
@@ -94,10 +104,83 @@ describe('Item line', () => {
     return fixture.componentInstance as unknown as ItemLineScreen;
   }
 
+  it('starts as one line and opens and closes from that line', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('en', { kitchen: { packs: '{{amount}} pk.' } });
+    translate.use('en');
+    const milk = pack(1);
+    milk.display_name = 'Milk';
+    milk.headline = 'about 4 days left';
+    fixture.componentRef.setInput('line', toLines([milk, pack(2)])[0]);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const toggle = root.querySelector('.toggle') as HTMLButtonElement;
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(root.querySelector('.slider')).toBeNull();
+    expect(root.querySelector('.bite')).toBeNull();
+    expect(root.querySelector('.row-actions')).toBeNull();
+    expect(root.textContent).toContain('Milk');
+    expect(root.textContent).toContain('about 4 days left');
+    expect(root.textContent).toContain('2 pk.');
+    expect(root.textContent).not.toContain('%');
+
+    toggle.click();
+    fixture.detectChanges();
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(root.querySelector('.slider')).not.toBeNull();
+    expect(root.querySelector('.bite')).not.toBeNull();
+    expect(root.querySelector('.row-actions')).not.toBeNull();
+    expect(root.querySelector('.headline')?.textContent).toContain('about 4 days left');
+
+    toggle.click();
+    fixture.detectChanges();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(root.querySelector('.slider')).toBeNull();
+    expect(root.querySelector('.row-actions')).toBeNull();
+  });
+
+  it('keeps the high-risk edge on the collapsed line', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    const milk = pack(1);
+    milk.high_risk = true;
+    fixture.componentRef.setInput('line', toLines([milk])[0]);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.classList.contains('high-risk')).toBe(true);
+    expect(root.querySelector('.slider')).toBeNull();
+  });
+
+  it('does not collapse from the slider, the radish, or an action', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
+    reveal(fixture);
+    const root = fixture.nativeElement as HTMLElement;
+    const toggle = root.querySelector('.toggle') as HTMLButtonElement;
+
+    root.querySelector('.level')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    root.querySelector('.bite')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    fixture.detectChanges();
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(root.querySelector('.slider')).not.toBeNull();
+
+    (root.querySelector('.quiet') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(root.querySelector('.slider')).not.toBeNull();
+
+    const wasted = http.expectOne(`${environment.apiUrl}/items/1/resolve`);
+    expect(wasted.request.body).toEqual({ outcome: 'wasted' });
+    wasted.flush({});
+    http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
+  });
+
   it('drags the slider from a pointer on the radish', () => {
     const fixture = TestBed.createComponent(ItemLine);
     fixture.componentRef.setInput('line', toLines([pack(1), pack(2)])[0]);
-    fixture.detectChanges();
+    reveal(fixture);
     const root = fixture.nativeElement as HTMLElement;
     const input = root.querySelector('.level') as HTMLInputElement;
     const bite = root.querySelector('.bite') as HTMLElement;
@@ -164,7 +247,7 @@ describe('Item line', () => {
     translate.setTranslation('en', { kitchen: { packs: '{{amount}} pk.' } });
     translate.use('en');
     fixture.componentRef.setInput('line', toLines([pack(1), pack(2), pack(3), pack(4)])[0]);
-    fixture.detectChanges();
+    reveal(fixture);
     const screen = fixture.componentInstance as unknown as ItemLineScreen;
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.amount')?.textContent).toContain('4 pk.');
@@ -176,7 +259,7 @@ describe('Item line', () => {
       target,
     } as unknown as KeyboardEvent;
     screen.nudge(down);
-    fixture.detectChanges();
+    reveal(fixture);
     expect(root.querySelector('.amount')?.textContent).toContain('3 pk.');
     expect(root.querySelector('.amount')?.textContent).not.toContain('%');
 
@@ -329,14 +412,14 @@ describe('Item line', () => {
     });
     translate.use('en');
     fixture.componentRef.setInput('line', toLines([pack(1), pack(2)])[0]);
-    fixture.detectChanges();
+    reveal(fixture);
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.amount')?.textContent).toContain('2 pk.');
     expect(root.querySelector('.level')?.getAttribute('aria-valuetext')).toBe('2 pk.');
 
     fixture.componentRef.setInput('line', toLines([pack(3, 0.25)])[0]);
-    fixture.detectChanges();
+    reveal(fixture);
     expect(root.querySelector('.amount')?.textContent).toContain('¼ pk.');
   });
 
@@ -361,7 +444,7 @@ describe('Item line', () => {
     translate.setTranslation('en', { kitchen: { lock_closed: 'Unopened', lock_open: 'Opened' } });
     translate.use('en');
     fixture.componentRef.setInput('line', toLines([pack(1), pack(2)])[0]);
-    fixture.detectChanges();
+    reveal(fixture);
 
     const root = fixture.nativeElement as HTMLElement;
     const bands = root.querySelectorAll('.band');
@@ -375,7 +458,7 @@ describe('Item line', () => {
   it('fills a partial pack out to the thumb', () => {
     const fixture = TestBed.createComponent(ItemLine);
     fixture.componentRef.setInput('line', toLines([pack(1, 0.75)])[0]);
-    fixture.detectChanges();
+    reveal(fixture);
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.bands')?.getAttribute('style')).toContain('width: 75%');
@@ -389,7 +472,7 @@ describe('Item line', () => {
     const translate = TestBed.inject(TranslateService);
     translate.setTranslation('en', { kitchen: { lock_closed: 'Unopened', lock_open: 'Opened' } });
     translate.use('en');
-    fixture.detectChanges();
+    reveal(fixture);
 
     const root = fixture.nativeElement as HTMLElement;
     const bite = root.querySelector('.bite');
@@ -415,7 +498,7 @@ describe('Item line', () => {
         pack(2, 1, 'milk', '2026-11-20', null, 'fresh'),
       ])[0],
     );
-    fixture.detectChanges();
+    reveal(fixture);
 
     expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-today-light.svg`);
   });
@@ -435,7 +518,7 @@ describe('Item line', () => {
         'line',
         lineFor(pack(1, amount, 'milk', '2026-11-20', openedOn, phase)),
       );
-      fixture.detectChanges();
+      reveal(fixture);
       return fixture.nativeElement as HTMLElement;
     };
 
@@ -476,11 +559,11 @@ describe('Item line', () => {
     const translate = TestBed.inject(TranslateService);
     translate.setTranslation('en', { kitchen: { lock_closed: 'Unopened', lock_open: 'Opened' } });
     translate.use('en');
-    fixture.detectChanges();
+    reveal(fixture);
     const screen = fixture.componentInstance as unknown as ItemLineScreen;
 
     screen.slide(slider(75));
-    fixture.detectChanges();
+    reveal(fixture);
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.bite')?.getAttribute('data-bites')).toBe('1');
@@ -493,15 +576,15 @@ describe('Item line', () => {
   it('closes the radish when the thumb slides back to unopened', () => {
     const fixture = TestBed.createComponent(ItemLine);
     fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
-    fixture.detectChanges();
+    reveal(fixture);
     const screen = fixture.componentInstance as unknown as ItemLineScreen;
 
     screen.slide(slider(50));
-    fixture.detectChanges();
+    reveal(fixture);
     expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-fresh-opened-light.svg`);
 
     screen.slide(slider(100));
-    fixture.detectChanges();
+    reveal(fixture);
 
     const bite = fixture.nativeElement.querySelector('.bite');
     expect(bite?.getAttribute('data-bites')).toBe('0');
@@ -525,7 +608,7 @@ describe('Item line', () => {
     http.expectOne(`${environment.apiUrl}/items/1/resolve`).flush({});
     http.expectOne(`${environment.apiUrl}/items/1/revert_open`).flush({ opened_on: null });
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
-    fixture.detectChanges();
+    reveal(fixture);
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.accidental')?.textContent).toContain(
@@ -558,7 +641,7 @@ describe('Item line', () => {
     http.expectOne(`${environment.apiUrl}/items/1/revert_open`).flush({ opened_on: null });
     http.expectOne(`${environment.apiUrl}/items/level`).flush({ items: [] });
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
-    fixture.detectChanges();
+    reveal(fixture);
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.accidental')?.textContent).toContain(
@@ -574,7 +657,7 @@ describe('Item line', () => {
     const fixture = TestBed.createComponent(ItemLine);
     const opened = pack(1, 0.5, 'potato', '2026-11-20', '2026-11-17', 'aging');
     fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
-    fixture.detectChanges();
+    reveal(fixture);
     const screen = fixture.componentInstance as unknown as ItemLineScreen;
 
     screen.slide(slider(50));
@@ -585,7 +668,7 @@ describe('Item line', () => {
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
 
     fixture.componentRef.setInput('line', toLines([opened])[0]);
-    fixture.detectChanges();
+    reveal(fixture);
     expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-soon-opened-light.svg`);
 
     const restored = pack(1, 1, 'potato', '2026-11-25', null, 'fresh');
@@ -600,7 +683,7 @@ describe('Item line', () => {
       probably_gone: [],
     });
     fixture.componentRef.setInput('line', toLines([restored])[0]);
-    fixture.detectChanges();
+    reveal(fixture);
 
     expect(thumb(fixture.nativeElement)).toBe(`${RADISH}-fresh-light.svg`);
   });
@@ -620,7 +703,7 @@ describe('Item line', () => {
     // The server leaves opened_on set: this open was not the slider's to undo.
     http.expectOne(`${environment.apiUrl}/items/1/revert_open`).flush({ opened_on: '2026-11-12' });
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
-    fixture.detectChanges();
+    reveal(fixture);
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.accidental')).toBeNull();
