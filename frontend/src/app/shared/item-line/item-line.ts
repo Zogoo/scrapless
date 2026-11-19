@@ -26,7 +26,8 @@ import {
 } from './line';
 
 /**
- * One food line: the percentage slider, Move, and Gone.
+ * One food line. Collapsed it is the name, how long it has, and the pack
+ * amount. Opened, it is the slider, Move, and Gone.
  *
  * Kitchen groups every pack of a food into the line it passes in. Home passes
  * the single pack its filter already chose. The slider behaviour is the same
@@ -53,6 +54,8 @@ export class ItemLine {
   private readonly items = inject(ItemsService);
   private readonly undo = inject(UndoService);
 
+  /** The one-liner is the default. The slider and actions appear only once opened. */
+  protected readonly expanded = signal(false);
   protected readonly moving = signal<ScoredItem | null>(null);
   /**
    * Set when a release undoes an open this slider made, so the pack is
@@ -99,6 +102,10 @@ export class ItemLine {
 
   /** Ignores a second commit of the same stop, from keyup and change together. */
   private lastCommit: number | null = null;
+
+  protected toggle(): void {
+    this.expanded.update((open) => !open);
+  }
 
   /** The bars, in packs: "2", "¼", "1½". The translation adds Pck. / pk. */
   protected packsLabel(): string {

@@ -152,7 +152,8 @@
     "here_now": "gerade hier",
     "accidental_open": "Aus Versehen berührt. Wieder ungeöffnet.",
     "lock_closed": "Ungeöffnet",
-    "lock_open": "Geöffnet"
+    "lock_open": "Geöffnet",
+    "collapse": "{{name}} zuklappen"
   },
   "storage": {
     "fridge": "Kühlschrank",

@@ -152,7 +152,8 @@
     "here_now": "here now",
     "accidental_open": "Accidental touch. This is unopened again.",
     "lock_closed": "Unopened",
-    "lock_open": "Opened"
+    "lock_open": "Opened",
+    "collapse": "Hide {{name}}"
   },
   "storage": {
     "fridge": "Fridge",

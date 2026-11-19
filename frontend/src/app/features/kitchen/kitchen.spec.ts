@@ -46,9 +46,14 @@ function today(items: ScoredItem[]): Today {
 }
 
 function showing(root: ParentNode): string[] {
-  return [...root.querySelectorAll('li:not(.leaving) .name-btn')].map(
-    (button) => button.textContent?.trim() ?? '',
+  return [...root.querySelectorAll('li:not(.leaving) .summary .name')].map(
+    (name) => name.textContent?.trim() ?? '',
   );
+}
+
+function openFirst(root: ParentNode): void {
+  const toggle = root.querySelector('.toggle') as HTMLButtonElement | null;
+  toggle?.click();
 }
 
 describe('Kitchen', () => {
@@ -80,6 +85,8 @@ describe('Kitchen', () => {
     http.expectOne(`${environment.apiUrl}/items`).flush(today([pasta, milk]));
     fixture.detectChanges();
     expect(showing(fixture.nativeElement)).toEqual(['Pasta', 'Milk']);
+    openFirst(fixture.nativeElement);
+    fixture.detectChanges();
 
     const items = TestBed.inject(ItemsService);
     items.load().subscribe();
@@ -114,6 +121,8 @@ describe('Kitchen', () => {
     fixture.detectChanges();
     const potato = pack(1, 'Potato', 0.5, '2026-11-17', 'aging');
     http.expectOne(`${environment.apiUrl}/items`).flush(today([potato]));
+    fixture.detectChanges();
+    openFirst(fixture.nativeElement);
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;

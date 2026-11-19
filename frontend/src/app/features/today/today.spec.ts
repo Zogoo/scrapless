@@ -180,6 +180,9 @@ describe('Today', () => {
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelectorAll('app-item-line input[type="range"]')).toHaveLength(0);
+    (root.querySelector('app-item-line .toggle') as HTMLButtonElement).click();
+    fixture.detectChanges();
     expect(root.querySelectorAll('app-item-line input[type="range"]')).toHaveLength(1);
     expect(root.querySelector('.rest-toggle')).not.toBeNull();
     // Half, Froze, and Used stay off the card. Sliding to 0% marks the packs used.
