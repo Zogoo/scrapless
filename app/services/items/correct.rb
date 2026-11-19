@@ -32,6 +32,7 @@ module Items
       Item.transaction do
         @item.save!
         teach_dictionary
+        ProductAlias.remember_place!(household: @item.household, item: @item) if @item.saved_change_to_storage?
         log_event
       end
       @item

@@ -67,7 +67,8 @@ module Captures
       resolved = Items::Resolver.call(
         raw_text: line["raw_text"], name: line["name"],
         category: line["category"], merchant: @payload["merchant"],
-        storage: line["storage"], household: @household, product: line["product"]
+        storage: line["storage"], household: @household, product: line["product"],
+        seen_storage: @payload["kind"] == "food"
       )
       [ line, resolved ]
     rescue StandardError => e

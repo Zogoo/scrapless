@@ -182,4 +182,30 @@ RSpec.describe ProductAlias do
         .to have_attributes(canonical_name: "Reis", source: "correction")
     end
   end
+
+  describe ".remember_place!" do
+    let(:household) { create(:household) }
+    let(:tomatoes) do
+      create(:item, household: household, display_name: "🍅 Tomaten", canonical_name: "tomaten",
+                    category: "produce", raw_text: "TOMATEN 500G", storage: "pantry")
+    end
+
+    it "keeps where this kitchen puts a food, as its own correction" do
+      described_class.remember_place!(household: household, item: tomatoes)
+
+      entry = described_class.find_by(household: household, raw_text: "tomaten")
+      expect(entry).to have_attributes(storage: "pantry", source: "correction", canonical_name: "tomaten")
+    end
+
+    it "moves an entry the model taught, and never shares a habit with other kitchens" do
+      described_class.create!(household: household, raw_text: "tomaten", canonical_name: "tomaten",
+                              category: "produce", storage: "fridge", source: "ai")
+
+      described_class.remember_place!(household: household, item: tomatoes)
+
+      expect(described_class.where(household: household, raw_text: "tomaten").pluck(:storage, :source))
+        .to eq([ %w[pantry correction] ])
+      expect(described_class.where(household: nil, raw_text: "tomaten")).to be_empty
+    end
+  end
 end

@@ -161,6 +161,31 @@ class ProductAlias < ApplicationRecord
     nil # the same kitchen sent the same line twice at once; the first one won
   end
 
+  # Where this kitchen keeps a food, learned from the person moving it
+  # (Items::Resolve, Items::Correct): "Tomaten" go in the cupboard here, so the
+  # next receipt puts them there. This kitchen only and never promoted — where
+  # a food lives is a household's habit, not a fact about the food.
+  #
+  # Marked a correction, so it outranks the model's guess (Items::Resolver)
+  # and survives forget!. It changes only the place, never what the food is.
+  def self.remember_place!(household:, item:)
+    raw = item.raw_text.presence || Copy.bare_name(item)
+    exact = normalize_key(raw)
+    key = without_quantities(exact).presence || exact
+    return if key.blank? || household.nil? || !Item::STORAGES.include?(item.storage)
+
+    entries = where(household: household, raw_text: [ key, exact ].uniq)
+    if entries.exists?
+      entries.update_all(storage: item.storage, source: "correction", updated_at: Time.current)
+    else
+      create!(household: household, raw_text: key, canonical_name: item.canonical_name, category: item.category,
+              product: item.product, storage: item.storage, emoji: item.display_name[Copy::LEADING_EMOJI]&.strip,
+              source: "correction")
+    end
+  rescue ActiveRecord::RecordNotUnique
+    nil
+  end
+
   # Takes back what the model taught this kitchen about a line, when the
   # person removed that line as read wrong. Their own corrections stay.
   def self.forget!(household:, raw_text:)
