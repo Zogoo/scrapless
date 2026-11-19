@@ -12,6 +12,7 @@ module Ai
 
       {
         "kind" => "receipt",
+        "seen_inside" => nil,
         "merchant" => "REWE",
         "purchased_on" => Date.current.iso8601,
         "lines" => [
@@ -31,6 +32,7 @@ module Ai
     def shelf_result
       {
         "kind" => "food",
+        "seen_inside" => nil,
         "merchant" => nil,
         "purchased_on" => Date.current.iso8601,
         "lines" => [

@@ -67,13 +67,38 @@ module Captures
       resolved = Items::Resolver.call(
         raw_text: line["raw_text"], name: line["name"],
         category: line["category"], merchant: @payload["merchant"],
-        storage: line["storage"], household: @household, product: line["product"],
-        seen_storage: @payload["kind"] == "food"
+        storage: seen_inside || line["storage"], household: @household, product: line["product"],
+        seen_storage: seen_inside.present?
       )
+      join_existing_pack(resolved) unless seen_inside
       [ line, resolved ]
     rescue StandardError => e
       Rails.logger.warn("skipped line #{line.inspect}: #{e.message}")
       nil
+    end
+
+    # Where the photo showed the food really is. Only a photo taken inside the
+    # fridge or freezer says so (Ai::ImageReader); shopping on a worktop shows
+    # nothing about where it lives, and every food photo used to count as seen.
+    def seen_inside
+      place = @payload["seen_inside"]
+      place if @payload["kind"] == "food" && %w[fridge freezer].include?(place)
+    end
+
+    # Eggs already in the fridge mean the new eggs go in the fridge: where this
+    # kitchen keeps the same food right now beats a place taught by an older
+    # move or a guess from a photo of shopping. A pack in the freezer only
+    # counts for frozen food; one frozen loaf does not send fresh bread there.
+    def join_existing_pack(resolved)
+      place = existing_place(resolved)
+      resolved.storage = place if place
+    end
+
+    def existing_place(resolved)
+      packs = @household.items.active
+      packs = resolved.product ? packs.where(product: resolved.product) : packs.where(canonical_name: resolved.canonical_name)
+      packs = packs.where.not(storage: "freezer") unless resolved.category == "frozen"
+      packs.order(created_at: :desc).pick(:storage)
     end
 
     def build_item(line, resolved)

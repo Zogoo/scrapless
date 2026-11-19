@@ -30,9 +30,11 @@ module Ai
     SCHEMA = {
       type: "object",
       additionalProperties: false,
-      required: %w[kind merchant purchased_on lines totals notes],
+      required: %w[kind seen_inside merchant purchased_on lines totals notes],
       properties: {
         kind: { type: "string", enum: KINDS },
+        seen_inside: { type: %w[string null], enum: [ "fridge", "freezer", nil ],
+                       description: "only when the photo was taken inside a fridge or a freezer" },
         merchant: { type: %w[string null] },
         purchased_on: { type: %w[string null], description: "ISO 8601 date" },
         lines: {
@@ -127,6 +129,8 @@ module Ai
       storage is where this product is normally kept at home: chilled products
       in the fridge, frozen ones in the freezer, shelf-stable ones in the
       pantry. In a photo taken inside a fridge or freezer, that is where it is.
+      seen_inside is "fridge" or "freezer" only when the photo was taken inside
+      one; shopping on a worktop, a bag or a receipt is null.
 
       Never invent a line. If a line is unreadable, omit it and say so in notes.
       An omission is recoverable; an invented item is not, because it reads as

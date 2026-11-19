@@ -17,6 +17,41 @@ RSpec.describe Captures::Ingest do
     { "merchant" => "REWE", "purchased_on" => Date.current.iso8601, "lines" => lines }
   end
 
+  describe "the same food already in the kitchen" do
+    let(:egg) { Product.for("egg") }
+    let(:egg_line) do
+      { "raw_text" => "carton of eggs", "name" => "Eier", "product" => "egg", "row" => "food",
+        "category" => "dairy", "storage" => "pantry" }
+    end
+
+    before do
+      create(:item, household: household, display_name: "🥚 Eier", canonical_name: "eier", category: "dairy",
+                    storage: "fridge", product: egg)
+    end
+
+    # Observed: eggs in the fridge, then a photo of shopping on the worktop
+    # where the model guessed "pantry", and the Kitchen showed two egg lines.
+    it "puts new eggs where the eggs already are, over a guess from a photo of shopping" do
+      photo = payload([ egg_line ]).merge("kind" => "food", "seen_inside" => nil)
+
+      expect(described_class.call(capture: capture, payload: photo)[:items].first.storage).to eq("fridge")
+    end
+
+    it "believes a photo taken inside a place over the existing pack" do
+      photo = payload([ egg_line ]).merge("kind" => "food", "seen_inside" => "freezer")
+
+      expect(described_class.call(capture: capture, payload: photo)[:items].first.storage).to eq("freezer")
+    end
+
+    it "does not send fresh food to the freezer because one pack was frozen" do
+      Item.update_all(storage: "freezer")
+
+      item = described_class.call(capture: capture, payload: payload([ egg_line.merge("storage" => "fridge") ]))[:items].first
+
+      expect(item.storage).to eq("fridge")
+    end
+  end
+
   describe "where this kitchen keeps things" do
     let(:tomato_line) do
       { "raw_text" => "TOMATEN", "name" => "Tomaten", "row" => "food", "category" => "produce", "storage" => "fridge" }
@@ -34,7 +69,7 @@ RSpec.describe Captures::Ingest do
     end
 
     it "believes a photo taken inside the fridge over the habit" do
-      photo = payload([ tomato_line ]).merge("kind" => "food")
+      photo = payload([ tomato_line ]).merge("kind" => "food", "seen_inside" => "fridge")
 
       expect(described_class.call(capture: capture, payload: photo)[:items].first.storage).to eq("fridge")
     end

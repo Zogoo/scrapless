@@ -97,6 +97,18 @@ describe('toLines', () => {
     expect(toLines([eier, eggs])).toHaveLength(1);
   });
 
+  // Observed: eggs from before products existed (no product_id) and eggs from
+  // a photo since (product 9) were two lines in the same fridge.
+  it('puts a pack with no product on the line of the same food that has one', () => {
+    const old = pack({ id: 7, canonical_name: 'eier', product_id: null });
+    const photo = pack({ id: 8, canonical_name: 'eier', product_id: 9 });
+
+    expect(toLines([old, photo])).toHaveLength(1);
+    expect(toLines([old, pack({ id: 9, canonical_name: 'eier', storage: 'pantry' })])).toHaveLength(
+      2,
+    );
+  });
+
   it('drops a pack with nothing left instead of an empty card', () => {
     const gone = pack({ id: 1, amount_left: 0 });
     const left = pack({ id: 2, amount_left: 1 });

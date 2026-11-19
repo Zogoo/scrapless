@@ -166,8 +166,14 @@ module Api
 
       # Adding milk when there is already milk joins the same Kitchen line rather
       # than silently becoming an unrelated second row; the review says so.
+      # Counted the way the Kitchen groups lines (line.ts): the same product,
+      # or the same name for packs that have no product.
       def in_kitchen(item)
-        current_household.items.active.where(canonical_name: item.canonical_name, storage: item.storage).count
+        packs = current_household.items.active.where(storage: item.storage)
+        same_name = packs.where(canonical_name: item.canonical_name, product_id: nil)
+        return packs.where(canonical_name: item.canonical_name).count if item.product_id.nil?
+
+        packs.where(product_id: item.product_id).or(same_name).count
       end
     end
   end
