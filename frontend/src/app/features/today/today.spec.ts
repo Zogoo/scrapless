@@ -182,12 +182,9 @@ describe('Today', () => {
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelectorAll('app-item-line input[type="range"]')).toHaveLength(1);
     expect(root.querySelector('.rest-toggle')).not.toBeNull();
-    // The old per-card Half and Froze buttons stay gone; "Used" is back as the
-    // one-tap twin of sliding to 0%, so eaten food is not recorded as waste.
+    // Half, Froze, and Used stay off the card. Sliding to 0% marks the packs used.
     expect(root.textContent).not.toContain('today.half');
-    expect(root.querySelectorAll('app-item-line .row-actions button')[0].textContent).toContain(
-      'today.used',
-    );
+    expect(root.textContent).not.toContain('today.used');
     expect(root.textContent).not.toContain('today.froze');
     expect(root.textContent).not.toContain('today.partial');
   });
