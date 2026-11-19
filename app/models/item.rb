@@ -19,6 +19,9 @@ class Item < ApplicationRecord
   validates :display_name, :canonical_name, presence: true, length: { maximum: 120 }
   validates :category, inclusion: { in: Categories::NAMES + %w[unknown] }
   validates :quantity, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
+  # The total printed on this item's receipt line, in Capture#currency; nil
+  # for anything not read off a receipt. Savings are not taken off it.
+  validates :price, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validates :storage, inclusion: { in: STORAGES }
   validates :state, inclusion: { in: STATES }
   validates :date_label_type, inclusion: { in: DATE_LABEL_TYPES }

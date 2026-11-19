@@ -380,6 +380,27 @@ food at home ("chicken breast"): matching them would need a food hierarchy, and 
 be wrong elsewhere ("milk chocolate" is not milk). Every toast still leaves after five seconds, as #44
 chose.
 
+### And what prices needed
+
+Receipts already carried prices; nothing kept them. Now `Captures::Ingest` stores, for a receipt:
+
+| Field | What |
+|---|---|
+| `items.price` | The total printed on the item's own line, in its capture's currency |
+| `captures.total` | The receipt's printed total |
+| `captures.currency` | ISO 4217 code read off the receipt (`EUR`) |
+
+Exact decimals (`decimal(12,3)`: scale 3 covers every ISO 4217 minor unit), verified to round-trip and
+sum exactly in SQLite. Typed, spoken and photographed food has no price.
+
+A line's price is **before** a saving printed under it. Asked to take savings off, the model did not
+(2 of 2 runs); doing it in code would hand a basket coupon at the bottom to whatever line came last.
+The savings stay in the stored raw answer (`Capture#raw_payload`, discount rows) and the total says
+what was paid, so attributing them later needs no re-read.
+
+Adding price rules to the prompt also showed how fragile "bill" was (1 of 6 on #68's prompt); asking
+which kind of business printed the paper fixed it there (see `Ai::ImageReader::ISSUERS`).
+
 ---
 
 ## 13.4c Deployment

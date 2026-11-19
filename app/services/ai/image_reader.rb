@@ -22,19 +22,28 @@ module Ai
     # wine in the fridge — because it is a judgement about the document, not
     # about any one line. Captures::Ingest keeps nothing from a bill.
     #
-    # The classification is fragile: any instruction that names "receipt" has
-    # to name "bill" too. "On a receipt, box is null" alone turned the test
-    # bill back into a receipt in 2 of 2 runs; "a receipt or a bill", 3 of 3 bill.
+    # On its own this label proved unreliable: a restaurant bill printed by a
+    # till *is* a receipt, so "receipt" is a fair answer, and the test bill
+    # came back as one in 5 of 6 runs. See ISSUERS.
     KINDS = %w[receipt bill food unclear].freeze
+
+    # Who printed the paper — a fact about the merchant, which the model gets
+    # right: the test bill was "restaurant" in 6 of 6 runs, the REWE receipt
+    # "shop" in 3 of 3, a fridge photo "none" in 2 of 2. A restaurant's paper
+    # is treated as a bill whatever `kind` says (Captures::Ingest#bill?).
+    ISSUERS = %w[shop restaurant none].freeze
 
     SCHEMA = {
       type: "object",
       additionalProperties: false,
-      required: %w[kind merchant purchased_on lines totals notes],
+      required: %w[issuer kind merchant purchased_on currency lines totals notes],
       properties: {
+        issuer: { type: "string", enum: ISSUERS,
+                  description: "the kind of business that printed the paper; none for a photo of food" },
         kind: { type: "string", enum: KINDS },
         merchant: { type: %w[string null] },
         purchased_on: { type: %w[string null], description: "ISO 8601 date" },
+        currency: { type: %w[string null], description: "ISO 4217 code of the prices, e.g. EUR" },
         lines: {
           type: "array",
           items: {
@@ -47,7 +56,7 @@ module Ai
               product: { type: "string", description: "always English, translated if need be: the food's generic name, lowercase, singular" },
               quantity: { type: %w[number null] },
               unit: { type: %w[string null], description: "g, kg, ml, l, piece" },
-              price: { type: %w[number null] },
+              price: { type: %w[number null], description: "the price printed on this product's line" },
               vat_class: { type: %w[string null], enum: [ "A", "B", nil ] },
               row: { type: "string", enum: ROWS },
               category: { type: "string", enum: Categories::NAMES },
@@ -85,7 +94,12 @@ module Ai
     SYSTEM = <<~PROMPT.freeze
       You read photographs taken in a kitchen and return structured JSON.
 
-      First decide what the photo shows:
+      issuer is the kind of business that printed the paper: "shop" for a
+      supermarket, bakery, butcher or market selling food to take home;
+      "restaurant" for a restaurant, cafe, bar, canteen or takeaway that served
+      it; "none" for a photo of food.
+
+      Then decide what the photo shows:
         "receipt" - a shop's till receipt / Kassenbon: food bought to take home
         "bill"    - a restaurant, cafe, bar or takeaway bill: food and drink
                     that was eaten or drunk there, with a table number, a
@@ -111,6 +125,9 @@ module Ai
       For a receipt: raw_text is the product's text as printed, abbreviations
       and typos included, but not the price, the VAT letter or a count or
       weight printed on a row of its own.
+      On a receipt or a bill, price is the total printed on the entry's own
+      line (a saving printed under it is its own discount row), and currency is
+      the ISO 4217 code of the prices.
       For a photo of food: one entry per distinct product you can actually see;
       put a short description in raw_text and leave price null. Do not guess at
       items hidden behind other items. Give each entry a box: where it is in

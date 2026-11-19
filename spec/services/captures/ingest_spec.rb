@@ -134,6 +134,17 @@ RSpec.describe Captures::Ingest do
     expect(result[:notes]).to eq(I18n.t("capture.bill"))
   end
 
+  # The model called the test bill a "receipt" in 5 of 6 runs, but always knew
+  # a restaurant had printed it.
+  it "keeps nothing from a paper a restaurant printed, whatever it is labelled" do
+    result = described_class.call(capture: capture, payload: payload([
+      { "raw_text" => "Gaucho Burger", "name" => "Gaucho burger", "row" => "food", "category" => "prepared" }
+    ]).merge("kind" => "receipt", "issuer" => "restaurant"))
+
+    expect(result[:items]).to be_empty
+    expect(result[:kind]).to eq("bill")
+  end
+
   # The dictionary says what the food is; the name follows the model, which
   # writes it in the person's language.
   it "shows the model's name but takes the food's identity from the dictionary" do
@@ -146,6 +157,28 @@ RSpec.describe Captures::Ingest do
 
     expect(result[:items].first).to have_attributes(product: milk, category: "dairy")
     expect(result[:items].first.display_name).to include("Fresh milk")
+  end
+
+  describe "prices" do
+    it "keeps what each line cost, the receipt's total and its currency" do
+      described_class.call(capture: capture, payload: payload([
+        { "raw_text" => "PAPRIKA ROT", "name" => "Paprika", "price" => 2.37 },
+        { "raw_text" => "BROKKOLI", "name" => "Brokkoli", "price" => nil }
+      ]).merge("currency" => "EUR", "totals" => { "sum" => 19.35 }))
+
+      expect(capture.items.order(:id).pluck(:price)).to eq([ BigDecimal("2.37"), nil ])
+      expect(capture.reload).to have_attributes(total: BigDecimal("19.35"), currency: "EUR")
+    end
+
+    it "keeps the line but not a price it cannot trust" do
+      result = described_class.call(capture: capture, payload: payload([
+        { "raw_text" => "PAPRIKA ROT", "name" => "Paprika", "price" => -0.6 },
+        { "raw_text" => "BROKKOLI", "name" => "Brokkoli", "price" => "zwei Euro" }
+      ]).merge("currency" => "euro"))
+
+      expect(result[:items].map(&:price)).to eq([ nil, nil ])
+      expect(capture.reload.currency).to be_nil
+    end
   end
 
   it "uses the dictionary in preference to the model's own naming" do
