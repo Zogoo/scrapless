@@ -11,6 +11,7 @@ module Ai
       return shelf_result if hint == "shelf_photo"
 
       {
+        "issuer" => "shop",
         "kind" => "receipt",
         "merchant" => "REWE",
         "purchased_on" => Date.current.iso8601,
@@ -30,6 +31,7 @@ module Ai
 
     def shelf_result
       {
+        "issuer" => "none",
         "kind" => "food",
         "merchant" => nil,
         "purchased_on" => Date.current.iso8601,

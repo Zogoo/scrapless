@@ -35,14 +35,14 @@ module Captures
       { items: items, boxes: built.map { |_, _, line| box(line["box"]) },
         suppressed: suppressed.map { |l| l["raw_text"].presence || l["name"] }.compact,
         notes: bill? ? I18n.t("capture.bill") : @payload["notes"].presence,
-        kind: @payload["kind"].presence || "receipt" }
+        kind: bill? ? "bill" : @payload["kind"].presence || "receipt" }
     end
 
     private
 
-    # A meal eaten out (Ai::ImageReader::KINDS): nothing on it is in the
+    # A meal eaten out (Ai::ImageReader::ISSUERS): nothing on it is in the
     # kitchen, so every line is left out and listed.
-    def bill? = @payload["kind"] == "bill"
+    def bill? = @payload["kind"] == "bill" || @payload["issuer"] == "restaurant"
 
     # A deposit line is not food, and proving we filtered it is what makes the
     # parser trustworthy — so suppressed lines are returned, not dropped.
