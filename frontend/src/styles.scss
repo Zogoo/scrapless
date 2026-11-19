@@ -121,9 +121,10 @@ a {
 }
 
 /* .as-button: a <label> that wraps a hidden file input and must look like the
-   buttons beside it ("Pick a photo"). */
+   buttons beside it ("Pick a photo"). A <select> is a tap target too. */
 button,
-.as-button {
+.as-button,
+select {
   font: inherit;
   min-height: var(--tap);
   padding: 0.6rem 1rem;

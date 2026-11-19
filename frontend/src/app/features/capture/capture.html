@@ -271,6 +271,22 @@
                 >
                   ✕
                 </button>
+                <!-- Where it goes, fixable while the bags are still out. -->
+                <label class="place">
+                  <span class="visually-hidden">{{
+                    'capture.place_label' | translate: { name: item.display_name }
+                  }}</span>
+                  <select
+                    [disabled]="placingId() !== null"
+                    (change)="place(item, $any($event.target).value)"
+                  >
+                    @for (storage of storages; track storage) {
+                      <option [value]="storage" [selected]="storage === item.storage">
+                        {{ 'storage.' + storage | translate }}
+                      </option>
+                    }
+                  </select>
+                </label>
                 @if (item.in_kitchen > 1) {
                   <!-- Not a silent duplicate: it joined the line that was already there. -->
                   <small class="stacked">{{

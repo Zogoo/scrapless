@@ -104,7 +104,8 @@
       "on": "Umrisse an · {{ms}} ms",
       "too_slow": "Umrisse aus — zu langsam auf diesem Handy ({{ms}} ms)",
       "failed": "Umrisse konnten nicht geladen werden"
-    }
+    },
+    "place_label": "Wohin {{name}} kommt"
   },
   "memo": {
     "title": "Einkauf",
