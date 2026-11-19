@@ -36,13 +36,14 @@ module Ai
     SCHEMA = {
       type: "object",
       additionalProperties: false,
-      required: %w[issuer kind merchant purchased_on lines totals notes],
+      required: %w[issuer kind merchant purchased_on currency lines totals notes],
       properties: {
         issuer: { type: "string", enum: ISSUERS,
                   description: "the kind of business that printed the paper; none for a photo of food" },
         kind: { type: "string", enum: KINDS },
         merchant: { type: %w[string null] },
         purchased_on: { type: %w[string null], description: "ISO 8601 date" },
+        currency: { type: %w[string null], description: "ISO 4217 code of the prices, e.g. EUR" },
         lines: {
           type: "array",
           items: {
@@ -55,7 +56,7 @@ module Ai
               product: { type: "string", description: "always English, translated if need be: the food's generic name, lowercase, singular" },
               quantity: { type: %w[number null] },
               unit: { type: %w[string null], description: "g, kg, ml, l, piece" },
-              price: { type: %w[number null] },
+              price: { type: %w[number null], description: "the price printed on this product's line" },
               vat_class: { type: %w[string null], enum: [ "A", "B", nil ] },
               row: { type: "string", enum: ROWS },
               category: { type: "string", enum: Categories::NAMES },
@@ -124,6 +125,9 @@ module Ai
       For a receipt: raw_text is the product's text as printed, abbreviations
       and typos included, but not the price, the VAT letter or a count or
       weight printed on a row of its own.
+      On a receipt or a bill, price is the total printed on the entry's own
+      line (a saving printed under it is its own discount row), and currency is
+      the ISO 4217 code of the prices.
       For a photo of food: one entry per distinct product you can actually see;
       put a short description in raw_text and leave price null. Do not guess at
       items hidden behind other items. Give each entry a box: where it is in

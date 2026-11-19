@@ -14,6 +14,8 @@ class Capture < ApplicationRecord
 
   validates :source, inclusion: { in: SOURCES }
   validates :status, inclusion: { in: STATUSES }
+  validates :currency, format: { with: /\A[A-Z]{3}\z/ }, allow_nil: true
+  validates :total, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
 
   scope :recent, -> { order(created_at: :desc) }
 

@@ -29,7 +29,9 @@ module Captures
         purchased_on: purchased_on,
         line_count: lines.size,
         parse_confidence: confidence(lines, items),
-        error_message: items.any? ? nil : "no food lines found"
+        error_message: items.any? ? nil : "no food lines found",
+        total: money(@payload.dig("totals", "sum")),
+        currency: currency
       )
 
       { items: items, boxes: built.map { |_, _, line| box(line["box"]) },
@@ -78,6 +80,7 @@ module Captures
         category: resolved.category,
         raw_text: line["raw_text"].presence,
         quantity: numeric(line["quantity"]),
+        price: money(line["price"]),
         unit: line["unit"].presence,
         quantity_confidence: line["quantity"].present? ? 0.8 : 0.3,
         storage: resolved.storage,
@@ -142,6 +145,24 @@ module Captures
       return nil unless [ x, y, w, h ].all? { |n| n&.between?(0.0, 1.0) } && w.positive? && h.positive?
 
       { x: x, y: y, w: [ w, 1.0 - x ].min, h: [ h, 1.0 - y ].min }
+    end
+
+    # Prices as printed, kept for later (what a kitchen spends, what it wastes
+    # in money). A line's price is what its own line says: the model did not
+    # take a saving printed under it off (2 of 2 runs), and doing it here would
+    # hand a basket coupon to whatever line came last. Exact decimals, never
+    # floats; a negative or unreadable price is left out rather than stored
+    # wrong — the line itself still lands.
+    def money(value)
+      amount = BigDecimal(value.to_s)
+      amount.negative? ? nil : amount.round(3)
+    rescue ArgumentError, TypeError
+      nil
+    end
+
+    def currency
+      code = @payload["currency"].to_s.upcase
+      code.match?(/\A[A-Z]{3}\z/) ? code : nil
     end
 
     def numeric(value)

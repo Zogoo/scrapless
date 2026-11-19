@@ -14,6 +14,7 @@ module Ai
         "issuer" => "shop",
         "kind" => "receipt",
         "merchant" => "REWE",
+        "currency" => "EUR",
         "purchased_on" => Date.current.iso8601,
         "lines" => [
           line("BROKKOLI", "Broccoli", 1, "piece", 1.29, "A"),
@@ -34,6 +35,7 @@ module Ai
         "issuer" => "none",
         "kind" => "food",
         "merchant" => nil,
+        "currency" => nil,
         "purchased_on" => Date.current.iso8601,
         "lines" => [
           line("green broccoli crown", "Broccoli", 1, "piece", nil, nil, box: [ 0.38, 0.35, 0.26, 0.3 ]),
