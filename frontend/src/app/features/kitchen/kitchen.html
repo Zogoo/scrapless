@@ -8,62 +8,84 @@
   @if (loading()) {
     <p class="loading">{{ 'common.loading' | translate }}</p>
   } @else {
-    <!-- Every place open on one page: closing the others lost people's place
-         (NN/g, accordions). This row stays in view and jumps to each one. -->
-    <nav class="jump" [attr.aria-label]="'kitchen.jump' | translate">
-      @for (storage of storages; track storage) {
-        <button type="button" (click)="jump(storage)">
-          {{ 'storage.' + storage | translate }}
-          <span class="count">{{ groups()[storage].length }}</span>
+    <!-- The place buttons filter this list. All is the whole kitchen. -->
+    <div class="filters">
+      <label class="search">
+        <span class="visually-hidden">{{ 'kitchen.search' | translate }}</span>
+        <input
+          type="search"
+          [value]="query()"
+          [attr.placeholder]="'kitchen.search' | translate"
+          (input)="query.set($any($event.target).value)"
+        />
+      </label>
+      <div class="jump" role="group" [attr.aria-label]="'kitchen.filter' | translate">
+        <button type="button" [attr.aria-pressed]="place() === 'all'" (click)="place.set('all')">
+          {{ 'kitchen.all' | translate }}
+          <span class="count">{{ counts().all }}</span>
         </button>
-      }
-    </nav>
-
-    @for (storage of storages; track storage) {
-      <section class="group" [id]="'place-' + storage" [attr.aria-labelledby]="'head-' + storage">
-        <h2 class="group-head" [id]="'head-' + storage">
-          {{ 'storage.' + storage | translate }}
-          <span class="count">{{ groups()[storage].length }}</span>
-        </h2>
-
-        @if (groups()[storage].length === 0) {
-          <p class="lede">{{ 'kitchen.empty_group' | translate }}</p>
-        } @else {
-          <ul>
-            @for (line of groups()[storage]; track line.key) {
-              <li animate.leave="leaving">
-                @if (editingKey() === line.key) {
-                  <div class="edit">
-                    <input
-                      type="text"
-                      maxlength="120"
-                      [value]="draftName()"
-                      (input)="draftName.set($any($event.target).value)"
-                      (keyup.enter)="saveEdit(line)"
-                    />
-                    <button type="button" class="primary" (click)="saveEdit(line)">
-                      {{ 'common.save' | translate }}
-                    </button>
-                    <button type="button" class="ghost" (click)="editingKey.set(null)">
-                      {{ 'common.cancel' | translate }}
-                    </button>
-                    <button type="button" class="ghost danger" (click)="removeLine(line)">
-                      {{ 'kitchen.remove' | translate }}
-                    </button>
-                  </div>
-                } @else {
-                  <app-item-line
-                    [line]="line"
-                    [renamable]="true"
-                    (rename)="startEdit(line)"
-                    (failed)="error.set($event)"
-                  />
-                }
-              </li>
-            }
-          </ul>
+        @for (storage of storages; track storage) {
+          <button
+            type="button"
+            [attr.aria-pressed]="place() === storage"
+            (click)="place.set(storage)"
+          >
+            {{ 'storage.' + storage | translate }}
+            <span class="count">{{ counts()[storage] }}</span>
+          </button>
         }
-      </section>
+      </div>
+    </div>
+
+    @if (filtered().length === 0 && query().trim()) {
+      <p class="lede">{{ 'kitchen.no_match' | translate }}</p>
+    } @else {
+      @for (storage of places(); track storage) {
+        <section class="group" [id]="'place-' + storage" [attr.aria-labelledby]="'head-' + storage">
+          <h2 class="group-head" [id]="'head-' + storage">
+            {{ 'storage.' + storage | translate }}
+            <span class="count">{{ groups()[storage].length }}</span>
+          </h2>
+
+          @if (groups()[storage].length === 0) {
+            <p class="lede">{{ 'kitchen.empty_group' | translate }}</p>
+          } @else {
+            <ul>
+              @for (line of groups()[storage]; track line.key) {
+                <li animate.leave="leaving">
+                  @if (editingKey() === line.key) {
+                    <div class="edit">
+                      <input
+                        type="text"
+                        maxlength="120"
+                        [value]="draftName()"
+                        (input)="draftName.set($any($event.target).value)"
+                        (keyup.enter)="saveEdit(line)"
+                      />
+                      <button type="button" class="primary" (click)="saveEdit(line)">
+                        {{ 'common.save' | translate }}
+                      </button>
+                      <button type="button" class="ghost" (click)="editingKey.set(null)">
+                        {{ 'common.cancel' | translate }}
+                      </button>
+                      <button type="button" class="ghost danger" (click)="removeLine(line)">
+                        {{ 'kitchen.remove' | translate }}
+                      </button>
+                    </div>
+                  } @else {
+                    <app-item-line
+                      [line]="line"
+                      [renamable]="true"
+                      (rename)="startEdit(line)"
+                      (failed)="error.set($event)"
+                    />
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      }
     }
   }
 </section>

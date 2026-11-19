@@ -148,4 +148,43 @@ describe('Kitchen', () => {
       '/branding/rettich/mascot/rettich-fresh-light.svg',
     );
   });
+
+  it('filters by place and by name together', () => {
+    const fixture = TestBed.createComponent(Kitchen);
+    fixture.detectChanges();
+    const milk = pack(1, 'Milk');
+    const peas = { ...pack(2, 'Peas'), storage: 'freezer' as const };
+    const pasta = { ...pack(3, 'Pasta'), storage: 'pantry' as const };
+    http.expectOne(`${environment.apiUrl}/items`).flush(today([milk, peas, pasta]));
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const filters = [...root.querySelectorAll('.jump button')] as HTMLButtonElement[];
+    expect(filters).toHaveLength(4);
+    expect(filters[0].getAttribute('aria-pressed')).toBe('true');
+    expect(showing(root)).toEqual(['Milk', 'Peas', 'Pasta']);
+
+    filters[1].click();
+    fixture.detectChanges();
+    expect(filters[1].getAttribute('aria-pressed')).toBe('true');
+    expect(showing(root)).toEqual(['Milk']);
+
+    filters[0].click();
+    const search = root.querySelector('input[type="search"]') as HTMLInputElement;
+    search.value = 'pa';
+    search.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(showing(root)).toEqual(['Pasta']);
+
+    filters[1].click();
+    fixture.detectChanges();
+    expect(showing(root)).toEqual([]);
+    expect(root.textContent).toContain('kitchen.no_match');
+
+    search.value = 'PE';
+    search.dispatchEvent(new Event('input'));
+    filters[2].click();
+    fixture.detectChanges();
+    expect(showing(root)).toEqual(['Peas']);
+  });
 });
