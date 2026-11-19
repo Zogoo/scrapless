@@ -108,7 +108,8 @@ module Items
       return if @item.opened_on.present?
 
       opened = Date.current
-      cap = opened + (@item.frozen_storage? ? 2 : 3)
+      cap = opened + Freshness::Estimator.opened_days(category: @item.category, storage: @item.storage,
+                                                      product: @item.product)
       @item.opened_on = opened
       @item.window_end = cap if @item.window_end.blank? || cap < @item.window_end
       @item.window_start = [ @item.window_start, opened, @item.window_end ].compact.min
@@ -141,7 +142,7 @@ module Items
     def snooze_days = (@days || 3).to_i.clamp(1, 30)
 
     def rewindow(**inputs)
-      window = Freshness::Estimator.call(category: @item.category, **inputs)
+      window = Freshness::Estimator.call(category: @item.category, product: @item.product, **inputs)
       @item.assign_attributes(window_start: window.window_start, window_end: window.window_end,
                               confidence: window.confidence)
     end

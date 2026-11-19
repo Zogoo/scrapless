@@ -17,7 +17,11 @@ module Captures
       food, suppressed = lines.partition { |line| food?(line) }
       food, suppressed = [ [], lines ] if bill?
 
-      built = food.filter_map { |line| build_item(line) }
+      resolved = food.filter_map { |line| resolve(line) }
+      # Before any window is worked out, so the first pack of a food already
+      # gets its own shelf life rather than its category's.
+      Products::LearnShelfLife.call(products: resolved.filter_map { |_, r| r.product }, household: @household)
+      built = resolved.filter_map { |line, r| build_item(line, r) }
       items = built.map(&:first)
       Item.transaction { items.each(&:save!) }
       items.each { |item| log_capture_event(item) }
@@ -59,15 +63,22 @@ module Captures
       line["name"].present? || line["raw_text"].present?
     end
 
-    def build_item(line)
+    def resolve(line)
       resolved = Items::Resolver.call(
         raw_text: line["raw_text"], name: line["name"],
         category: line["category"], merchant: @payload["merchant"],
         storage: line["storage"], household: @household, product: line["product"]
       )
+      [ line, resolved ]
+    rescue StandardError => e
+      Rails.logger.warn("skipped line #{line.inspect}: #{e.message}")
+      nil
+    end
 
+    def build_item(line, resolved)
       window = Freshness::Estimator.call(
-        category: resolved.category, storage: resolved.storage, acquired_on: purchased_on
+        category: resolved.category, storage: resolved.storage, acquired_on: purchased_on,
+        product: resolved.product
       )
 
       item = @household.items.new(

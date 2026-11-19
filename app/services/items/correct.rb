@@ -75,7 +75,7 @@ module Items
         category: @item.category, storage: @item.storage,
         acquired_on: moved ? Date.current : @item.acquired_on,
         date_label_type: @item.date_label_type, date_label_value: @item.date_label_value,
-        opened_on: @item.opened_on
+        opened_on: @item.opened_on, product: @item.product
       )
       @item.assign_attributes(window_start: window.window_start, window_end: window.window_end,
                               confidence: window.confidence)

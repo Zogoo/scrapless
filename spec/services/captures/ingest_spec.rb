@@ -64,8 +64,30 @@ RSpec.describe Captures::Ingest do
     expect(result[:items].map(&:display_name)).to contain_exactly(include("Maultaschen"))
   end
 
+  describe "a product's own shelf life" do
+    before do
+      allow(Ai::Config).to receive(:live?).and_return(true)
+      allow(Ai::ShelfLifeReader).to receive(:call).and_return(
+        "uht milk" => { "fridge" => { "typical" => 60, "max" => 90, "opened" => 4 }, "freezer" => nil, "pantry" => nil }
+      )
+    end
+
+    it "gives the very first pack of a new food its own window, not its category's" do
+      result = described_class.call(capture: capture, payload: payload([
+        { "raw_text" => "H-MILCH 3,5%", "name" => "H-Milch", "product" => "uht milk", "row" => "food",
+          "category" => "dairy", "storage" => "fridge" }
+      ]))
+
+      expect(result[:items].first.window_end).to eq(Date.current + 90)
+      expect(Product.find_by(key: "uht milk").shelf_life_for("fridge")).to include(max: 90)
+    end
+  end
+
   describe "learning what the model read" do
-    before { allow(Ai::Config).to receive(:live?).and_return(true) }
+    before do
+      allow(Ai::Config).to receive(:live?).and_return(true)
+      allow(Ai::ShelfLifeReader).to receive(:call).and_return({})
+    end
 
     def model_line(raw, name, product, category: "dairy")
       { "raw_text" => raw, "name" => name, "product" => product, "row" => "food",

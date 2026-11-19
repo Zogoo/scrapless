@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_18_224834) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_19_212214) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -208,6 +208,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_18_224834) do
     t.string "key", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.json "shelf_life"
     t.index ["key"], name: "index_products_on_key", unique: true
   end
 

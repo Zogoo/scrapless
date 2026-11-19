@@ -18,6 +18,60 @@ RSpec.describe Freshness::Estimator do
     expect(result.confidence).to eq(0.6)
   end
 
+  describe "a product's own shelf life" do
+    def product(key, places)
+      Product.create!(key: key, shelf_life: places)
+    end
+
+    it "uses the food's own numbers before its category's" do
+      uht = product("uht milk", "fridge" => { "typical" => 60, "max" => 90, "opened" => 4 })
+
+      result = described_class.call(category: "produce", acquired_on: Date.current, product: uht)
+
+      expect(result.window_start).to eq(Date.current + 42)
+      expect(result.window_end).to eq(Date.current + 90)
+      expect(result.confidence).to eq(0.65)
+    end
+
+    it "falls back to the category where the product is not kept" do
+      lettuce = product("lettuce", "fridge" => { "typical" => 5, "max" => 8, "opened" => 3 }, "freezer" => nil)
+
+      result = described_class.call(category: "produce", storage: "freezer", acquired_on: Date.current,
+                                    product: lettuce)
+
+      expect(result.window_end).to eq(Date.current + 300)
+    end
+
+    # The answer came from a model and the key may be coarse: chicken must
+    # never keep longer than raw meat is allowed to.
+    it "never lets high-risk food outlast its category" do
+      chicken = product("chicken breast", "fridge" => { "typical" => 6, "max" => 10, "opened" => 5 })
+
+      result = described_class.call(category: "meat_fish", acquired_on: Date.current, product: chicken)
+
+      expect(result.window_end).to eq(Date.current + 3)
+      expect(described_class.opened_days(category: "meat_fish", storage: "fridge", product: chicken)).to eq(3)
+    end
+
+    it "gives way to a printed date" do
+      uht = product("uht milk", "fridge" => { "typical" => 60, "max" => 90, "opened" => 4 })
+
+      result = described_class.call(category: "produce", acquired_on: Date.current, product: uht,
+                                    date_label_type: "mhd", date_label_value: Date.current + 20)
+
+      expect(result.window_end).to eq(Date.current + 23)
+    end
+
+    it "keeps an opened pack for the product's own opened life" do
+      jam = product("jam", "fridge" => { "typical" => 180, "max" => 365, "opened" => 30 })
+
+      result = described_class.call(category: "produce", acquired_on: Date.current - 10, product: jam,
+                                    opened_on: Date.current)
+
+      expect(result.window_end).to eq(Date.current + 30)
+    end
+  end
+
   it "falls back with low confidence for a category it has no rule for" do
     result = described_class.call(category: "nonsense", acquired_on: Date.current)
 
