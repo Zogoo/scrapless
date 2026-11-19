@@ -36,6 +36,19 @@ RSpec.describe "Api::V1::Captures", type: :request do
       expect(response.parsed_body["items"].map { |i| i["box"] }).to all(be_nil)
     end
 
+    # The Kitchen shows "Milk" and "Milch" as one line (same product); the
+    # review used to count by name and said there was only the new one.
+    it "counts packs on the review the way the Kitchen groups them" do
+      milk = Product.for("milk")
+      ProductAlias.find_by(raw_text: "milch").update!(product: milk)
+      create(:item, household: household, display_name: "Milk", canonical_name: "milk", category: "dairy",
+                    storage: "fridge", product: milk)
+
+      post "/api/v1/captures", params: { source: "text", text: "milch" }, headers: headers
+
+      expect(response.parsed_body["items"].first["in_kitchen"]).to eq(2)
+    end
+
     it "keeps the receipt image so a bad parse can be audited" do
       post "/api/v1/captures", params: { source: "receipt", image: receipt_upload }, headers: headers
 

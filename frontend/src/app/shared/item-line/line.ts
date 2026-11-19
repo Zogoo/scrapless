@@ -33,17 +33,30 @@ export function lineFor(item: ScoredItem): KitchenLine {
   };
 }
 
-/** One line per food per place: by product when known, so "Eier" and "Eggs" are one line. */
-export function lineKey(item: ScoredItem): string {
-  return `${item.storage}:${item.product_id ?? item.canonical_name}`;
+/**
+ * One line per food per place: by product when known, so "Eier" and "Eggs" are
+ * one line. A pack with no product (captured before products existed, or
+ * without a model) joins a pack of the same name in the same place that has
+ * one, rather than starting a second line for the same eggs.
+ */
+export function lineKey(item: ScoredItem, productByName = new Map<string, number>()): string {
+  const product = item.product_id ?? productByName.get(`${item.storage}:${item.canonical_name}`);
+  return `${item.storage}:${product ?? item.canonical_name}`;
 }
 
 export function toLines(items: ScoredItem[]): KitchenLine[] {
+  const productByName = new Map<string, number>();
+  for (const item of items) {
+    const name = `${item.storage}:${item.canonical_name}`;
+    if (item.product_id != null && !productByName.has(name))
+      productByName.set(name, item.product_id);
+  }
+
   const byKey = new Map<string, ScoredItem[]>();
   for (const item of items) {
     // Nothing left is a used pack. It is not an empty card.
     if (item.amount_left <= 0) continue;
-    const key = lineKey(item);
+    const key = lineKey(item, productByName);
     byKey.set(key, [...(byKey.get(key) ?? []), item]);
   }
 
