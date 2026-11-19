@@ -35,6 +35,7 @@ module Items
       Item.transaction do
         send(:"apply_#{@outcome}")
         @item.save!
+        teach_place
         @item.item_events.create!(household: @item.household, kind: kind, at: Time.current,
                                   meta: meta(before).to_json)
       end
@@ -42,6 +43,14 @@ module Items
     end
 
     private
+
+    # A move says where this kitchen keeps the food. Into the freezer counts
+    # only on the day it came home: freezing it later is a rescue, not a habit.
+    def teach_place
+      return unless @outcome == "moved" || (@outcome == "froze" && @item.acquired_on >= Date.current)
+
+      ProductAlias.remember_place!(household: @item.household, item: @item)
+    end
 
     def meta(before)
       extra = {}

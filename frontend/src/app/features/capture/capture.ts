@@ -15,7 +15,7 @@ import { CaptureService } from '../../core/services/capture.service';
 import { ItemsService } from '../../core/services/items.service';
 import { SpeechService, audioFilename, speechTag } from '../../core/services/speech.service';
 import { NotifyAsk } from '../../shared/notify-ask/notify-ask';
-import { CaptureReview } from '../../core/models';
+import { CaptureReview, CapturedItem, Storage } from '../../core/models';
 import { AutoShutter, ShutterStatus } from '../../core/vision/auto-shutter';
 import { analyseFrame, toLuma } from '../../core/vision/frame-analysis';
 import {
@@ -94,6 +94,8 @@ export class Capture implements OnDestroy {
   protected readonly manualText = signal('');
   protected readonly picked = signal<string[]>([]);
   protected readonly removingId = signal<number | null>(null);
+  protected readonly placingId = signal<number | null>(null);
+  protected readonly storages: readonly Storage[] = ['fridge', 'freezer', 'pantry'];
   /** The photo being read, kept on screen so the wait does not look frozen. */
   protected readonly shot = signal<string | null>(null);
   protected readonly slow = signal(false);
@@ -455,6 +457,41 @@ export class Capture implements OnDestroy {
       error: (err: { message?: string }) => {
         this.error.set(err.message ?? this.translate.instant('capture.unreadable'));
         this.removingId.set(null);
+      },
+    });
+  }
+
+  /**
+   * Where it goes, fixed while unpacking. A correction, not a move: the server
+   * re-dates it for the right place from the day it was bought, and this
+   * kitchen remembers the place for next time (Items::Correct).
+   */
+  protected place(item: CapturedItem, storage: Storage): void {
+    if (storage === item.storage || this.placingId() !== null) return;
+
+    this.placingId.set(item.id);
+    this.error.set('');
+    this.items.correct(item.id, { storage }).subscribe({
+      next: (updated) => {
+        this.placingId.set(null);
+        const current = this.review();
+        if (!current) return;
+
+        const items = current.items.map((line) =>
+          line.id === item.id
+            ? {
+                ...line,
+                storage: updated.storage,
+                window_end: updated.window_end,
+                days_left: updated.days_left,
+              }
+            : line,
+        );
+        this.review.set({ ...current, items });
+      },
+      error: (err: { message?: string }) => {
+        this.error.set(err.message ?? this.translate.instant('capture.unreadable'));
+        this.placingId.set(null);
       },
     });
   }

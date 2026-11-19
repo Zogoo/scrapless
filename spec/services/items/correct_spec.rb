@@ -114,4 +114,38 @@ RSpec.describe Items::Correct do
 
     expect(item.item_events.last.meta_payload["changed"]).to include("display_name", "category", "window_end")
   end
+
+  describe "fixing the place on the review screen" do
+    let(:household) { create(:household) }
+
+    before do
+      create(:shelf_life_rule, category: "pantry", storage: "fridge", days_p50: 30, days_p90: 90, consume_p50: 30)
+      create(:shelf_life_rule, category: "pantry", storage: "pantry", days_p50: 180, days_p90: 365, consume_p50: 60)
+    end
+
+    let(:uht) do
+      create(:item, household: household, display_name: "H-Milch", canonical_name: "h-milch", category: "pantry",
+                    raw_text: "H-MILCH", storage: "fridge", acquired_on: Date.current - 1,
+                    window_start: Date.current + 20, window_end: Date.current + 89)
+    end
+
+    # It was never kept in the wrong place, so the bought date stands and the
+    # window is the new place's in full, not the shorter of the two.
+    it "recomputes for the right place from the day it was bought, and remembers the place" do
+      described_class.call(item: uht, changes: { storage: "pantry" })
+
+      expect(uht.reload).to have_attributes(storage: "pantry", window_end: Date.current + 364,
+                                            storage_changed_at: nil)
+      expect(ProductAlias.find_by(household: household, raw_text: "h-milch").storage).to eq("pantry")
+    end
+
+    it "treats a later place change as a move from today" do
+      uht.update_columns(created_at: 3.days.ago)
+
+      described_class.call(item: uht, changes: { storage: "pantry" })
+
+      expect(uht.reload.window_end).to eq(Date.current + 365)
+      expect(uht.storage_changed_at).to be_present
+    end
+  end
 end

@@ -14,12 +14,17 @@ module Items
       "drinks" => "🧃", "other" => "🍽️"
     }.freeze
 
-    def initialize(raw_text:, name: nil, category: nil, merchant: nil, storage: nil, household: nil, product: nil)
+    # `seen_storage`: the line's storage was seen, not guessed — a photo taken
+    # inside the fridge or freezer. Only then does it beat a place this kitchen
+    # taught by moving the food.
+    def initialize(raw_text:, name: nil, category: nil, merchant: nil, storage: nil, household: nil, product: nil,
+                   seen_storage: false)
       @raw_text = raw_text.to_s
       @name = name.presence
       @category = category.presence
       @merchant = merchant.presence
       @storage = storage.presence
+      @seen_storage = seen_storage
       @household = household
       @product = product
     end
@@ -46,6 +51,7 @@ module Items
       display = @name.present? && Categories.valid?(@category) ? tidy(@name) : entry.display_name
       build(display: display, canonical: display.downcase,
             category: entry.category, emoji: entry.emoji, source: "dictionary", storage: entry.storage,
+            taught_place: taught_place(entry),
             product: entry.product || Product.for(@product))
     end
 
@@ -58,14 +64,28 @@ module Items
 
     # Where it is: what this line says (a photo shows the fridge), else what
     # the dictionary learned, else where its category usually lives.
-    def build(display:, canonical:, category:, source:, emoji: nil, product: nil, storage: nil)
+    # A place this kitchen chose by moving the food (ProductAlias.remember_place!).
+    def taught_place(entry)
+      entry.storage if entry.household_id.present? && entry.source == "correction"
+    end
+
+    def build(display:, canonical:, category:, source:, emoji: nil, product: nil, storage: nil, taught_place: nil)
       category = Categories.coerce(category)
       Resolved.new(
         display_name: display, canonical_name: canonical, category: category,
         emoji: emoji.presence || EMOJI.fetch(category, "🍽️"),
-        storage: @storage.presence || storage.presence || Categories.storage_for(category),
+        storage: place(storage, taught_place, category),
         source: source, product: product
       )
+    end
+
+    # Seen beats taught beats guessed: a photo inside the freezer, then where
+    # this kitchen keeps it, then what the model or the dictionary assumed, then
+    # where the category usually lives.
+    def place(dictionary_storage, taught, category)
+      return @storage if @seen_storage && @storage
+
+      taught.presence || @storage || dictionary_storage.presence || Categories.storage_for(category)
     end
 
     # "BABYSPINAT 260G" reads badly in a list; "Babyspinat 260G" reads fine.

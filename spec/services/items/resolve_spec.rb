@@ -176,4 +176,35 @@ RSpec.describe Items::Resolve do
       expect(milk.window_start).to be <= milk.window_end
     end
   end
+
+  describe "teaching the kitchen's places" do
+    let(:bread) do
+      create(:item, household: household, display_name: "Brot", canonical_name: "brot", category: "bakery",
+                    raw_text: "BROT", storage: "pantry", acquired_on: Date.current,
+                    window_start: Date.current + 2, window_end: Date.current + 5)
+    end
+
+    def place_for(raw) = ProductAlias.find_by(household: household, raw_text: raw)&.storage
+
+    it "remembers a move" do
+      described_class.call(item: bread, outcome: "moved", to: "fridge")
+
+      expect(place_for("brot")).to eq("fridge")
+    end
+
+    it "remembers freezing on the day it came home, as a habit" do
+      described_class.call(item: bread, outcome: "froze")
+
+      expect(place_for("brot")).to eq("freezer")
+    end
+
+    # Freezing food that is about to go off is a rescue, not where it lives.
+    it "does not learn from freezing it later" do
+      bread.update!(acquired_on: Date.current - 3, window_start: Date.current - 1, window_end: Date.current + 2)
+
+      described_class.call(item: bread, outcome: "froze")
+
+      expect(place_for("brot")).to be_nil
+    end
+  end
 end

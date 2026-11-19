@@ -17,6 +17,29 @@ RSpec.describe Captures::Ingest do
     { "merchant" => "REWE", "purchased_on" => Date.current.iso8601, "lines" => lines }
   end
 
+  describe "where this kitchen keeps things" do
+    let(:tomato_line) do
+      { "raw_text" => "TOMATEN", "name" => "Tomaten", "row" => "food", "category" => "produce", "storage" => "fridge" }
+    end
+
+    before do
+      ProductAlias.create!(household: household, raw_text: "tomaten", canonical_name: "tomaten",
+                           category: "produce", storage: "pantry", source: "correction")
+    end
+
+    it "puts a food where this kitchen moved it before, over the model's guess" do
+      item = described_class.call(capture: capture, payload: payload([ tomato_line ]))[:items].first
+
+      expect(item.storage).to eq("pantry")
+    end
+
+    it "believes a photo taken inside the fridge over the habit" do
+      photo = payload([ tomato_line ]).merge("kind" => "food")
+
+      expect(described_class.call(capture: capture, payload: photo)[:items].first.storage).to eq("fridge")
+    end
+  end
+
   it "creates an item per food line, with a window on each" do
     result = described_class.call(capture: capture, payload: payload([
       { "raw_text" => "BROKKOLI", "name" => "Brokkoli", "quantity" => 1, "food" => true },

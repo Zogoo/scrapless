@@ -13,7 +13,13 @@ import { Capture, SLOW_READ_MS } from './capture';
 function reviewOf(...ids: number[]): CaptureReview {
   return {
     capture: { id: 1, source: 'receipt', kind: 'receipt', notes: null },
-    items: ids.map((id) => ({ id, display_name: `Item ${id}`, days_left: 5, needs_review: false })),
+    items: ids.map((id) => ({
+      id,
+      display_name: `Item ${id}`,
+      days_left: 5,
+      needs_review: false,
+      storage: 'fridge',
+    })),
     suppressed: [],
   } as unknown as CaptureReview;
 }
@@ -22,6 +28,7 @@ function reviewOf(...ids: number[]): CaptureReview {
 interface ReviewSheet {
   review: { set(value: CaptureReview): void; (): CaptureReview | null };
   reject(id: number): void;
+  place(item: CaptureReview['items'][number], storage: 'fridge' | 'freezer' | 'pantry'): void;
 }
 
 describe('Capture review', () => {
@@ -77,6 +84,27 @@ describe('Capture review', () => {
       .flush(null, { status: 503, statusText: 'Service Unavailable' });
 
     expect(sheet.review()?.items.map((item) => item.id)).toEqual([1, 2]);
+  });
+
+  it('fixes where a line goes as a correction, and shows its new days', () => {
+    sheet.review.set(reviewOf(1, 2));
+
+    sheet.place(sheet.review()!.items[1], 'pantry');
+    const req = http.expectOne(`${environment.apiUrl}/items/2`);
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({ item: { storage: 'pantry' } });
+    req.flush({ id: 2, storage: 'pantry', window_end: '2027-11-19', days_left: 364 });
+
+    expect(sheet.review()!.items[1]).toMatchObject({ storage: 'pantry', days_left: 364 });
+    expect(sheet.review()!.items[0].storage).toBe('fridge');
+  });
+
+  it('sends nothing when the place did not change', () => {
+    sheet.review.set(reviewOf(1));
+
+    sheet.place(sheet.review()!.items[0], 'fridge');
+
+    http.expectNone(`${environment.apiUrl}/items/1`);
   });
 
   // Asked after the first foods land (doc 2 §2.7), never at onboarding.

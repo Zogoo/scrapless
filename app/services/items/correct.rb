@@ -10,7 +10,9 @@ module Items
   #   1. a rename re-reads the category from the new name, unless the client
   #      sent one or the new name tells us nothing ("other");
   #   2. anything the window was computed from changed -> recompute it, from
-  #      today when the food moved somewhere else (doc 5 §5.3 storage_changed_at);
+  #      today when the food moved somewhere else (doc 5 §5.3 storage_changed_at),
+  #      but from the day it was bought when the place is fixed while
+  #      unpacking (the review screen): it was never kept in the wrong place;
   #   3. the dictionary learns the corrected pair, in this kitchen only.
   class Correct < ApplicationService
     WINDOW_INPUTS = %w[category storage date_label_type date_label_value].freeze
@@ -32,6 +34,7 @@ module Items
       Item.transaction do
         @item.save!
         teach_dictionary
+        ProductAlias.remember_place!(household: @item.household, item: @item) if @item.saved_change_to_storage?
         log_event
       end
       @item
@@ -68,7 +71,7 @@ module Items
     end
 
     def rewindow
-      moved = @item.storage_changed?
+      moved = @item.storage_changed? && !placed_on_arrival?
       @item.storage_changed_at = Time.current if moved
 
       window = Freshness::Estimator.call(
@@ -79,6 +82,15 @@ module Items
       )
       @item.assign_attributes(window_start: window.window_start, window_end: window.window_end,
                               confidence: window.confidence)
+    end
+
+    # Unpacking: added today, bought today or yesterday (a receipt snapped the
+    # morning after), and its place fixed now. That corrects where it went; it
+    # is not a move after days somewhere else. Food entered late, bought days
+    # ago, has been kept somewhere all that time, so it moves from today.
+    def placed_on_arrival?
+      @item.created_at.present? && @item.created_at.to_date == Date.current &&
+        @item.acquired_on.present? && @item.acquired_on >= Date.current - 1
     end
 
     def teach_dictionary
