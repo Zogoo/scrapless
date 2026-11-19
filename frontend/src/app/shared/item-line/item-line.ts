@@ -431,15 +431,6 @@ export class ItemLine {
     if (event.target === event.currentTarget) (event.currentTarget as HTMLDialogElement).close();
   }
 
-  /**
-   * The same as sliding to 0%, as one tap: eaten food was otherwise recorded
-   * by the only button there was, "gone" — which counts it as waste.
-   */
-  protected useAll(): void {
-    this.useUp();
-    this.setLevel(0);
-  }
-
   /** The whole line moves: "Where is the Sojaghurt now?" means both packs. */
   protected move(item: ScoredItem, storage: Storage): void {
     this.moveSheet()?.nativeElement.close();
