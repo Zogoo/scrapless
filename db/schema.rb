@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_19_212214) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_19_212528) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -134,6 +134,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_212214) do
     t.string "added_by_name"
     t.float "amount_left", default: 1.0, null: false
     t.integer "product_id"
+    t.date "checked_on"
     t.index ["capture_id"], name: "index_items_on_capture_id"
     t.index ["household_id", "canonical_name"], name: "index_items_on_household_id_and_canonical_name"
     t.index ["household_id", "state", "window_end"], name: "index_items_on_household_id_and_state_and_window_end"

@@ -42,6 +42,7 @@ function pack(overrides: Partial<ScoredItem>): ScoredItem {
     headline: '',
     alertable: false,
     life_fraction: 0.2,
+    check_due: false,
     ...overrides,
   };
 }

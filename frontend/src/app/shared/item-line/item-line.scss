@@ -256,6 +256,17 @@
   font-size: 0.9rem;
 }
 
+/* "Still good?": shown on the closed line too. Buttons come from .row-actions. */
+.check {
+  margin-top: 0.4rem;
+
+  p {
+    flex: 1 1 100%;
+    margin: 0;
+    font-weight: 600;
+  }
+}
+
 .row-actions {
   display: flex;
   flex-wrap: wrap;

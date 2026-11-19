@@ -101,6 +101,7 @@ module Api
           phase: scored.phase,
           headline: Copy.headline(scored),
           alertable: scored.alertable?,
+          check_due: scored.check_due?,
           life_fraction: scored.item.life_fraction.round(3)
         )
       end
@@ -125,6 +126,7 @@ module Api
           state: item.state,
           opened_on: item.opened_on,
           snoozed_until: item.snoozed_until,
+          checked_on: item.checked_on,
           high_risk: item.high_risk?,
           safety_date: item.safety_date?,
           added_by_name: item.added_by_name

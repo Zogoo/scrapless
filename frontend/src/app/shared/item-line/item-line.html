@@ -33,6 +33,22 @@
     <span class="amount">{{ 'kitchen.packs' | translate: { amount: packsLabel() } }}</span>
   </button>
 </div>
+@if (line().first.check_due) {
+  <!-- The one fact the model cannot know. Each answer fixes this pack and is
+   kept as data: "still fine at day X" or "gone off at day X". -->
+  <div class="check row-actions" role="group" [attr.aria-labelledby]="'check-' + line().first.id">
+    <p [id]="'check-' + line().first.id">{{ 'check.question' | translate }}</p>
+    <button type="button" (click)="resolve(line().first, 'still_good')">
+      {{ 'check.yes' | translate }}
+    </button>
+    <button type="button" (click)="resolve(line().first, 'wasted')">
+      {{ 'check.gone' | translate }}
+    </button>
+    <button type="button" (click)="resolve(line().first, 'used')">
+      {{ 'check.used' | translate }}
+    </button>
+  </div>
+}
 @if (expanded()) {
   <div class="details" [id]="'details-' + line().first.id">
     <!-- Stops depend on how many packs are on the line. Up to two, each move is

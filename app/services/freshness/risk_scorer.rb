@@ -13,6 +13,8 @@ module Freshness
     # Worth spending one of the three weekly notifications on — a higher bar,
     # because an interruption costs more than a line in a list.
     SPOILAGE_FLOOR = 0.4
+    # After "still good", wait this long before asking about that pack again.
+    CHECK_AGAIN_AFTER = 2
 
     Scored = Struct.new(:item, :presence, :spoilage, :risk, :days_left, :phase, keyword_init: true) do
       def worth_showing? = risk >= RISK_FLOOR
@@ -23,6 +25,14 @@ module Freshness
 
       # Only ask about it in the sweep if we are unsure *and* the answer changes
       # something. Asking is a cost paid from the weekly effort budget.
+      # Ask "still good?" on food worth showing (so already multiplied by
+      # P(still present), CLAUDE.md rule 2), not frozen, not asked just now.
+      def check_due?(on = Date.current)
+        return false unless worth_showing? && !item.frozen_storage?
+
+        item.checked_on.nil? || item.checked_on <= on - CHECK_AGAIN_AFTER
+      end
+
       def ambiguous?
         PresenceModel::AMBIGUOUS_BAND.cover?(presence) && item.life_fraction >= 0.5
       end

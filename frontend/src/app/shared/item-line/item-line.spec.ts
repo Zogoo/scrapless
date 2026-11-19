@@ -177,6 +177,36 @@ describe('Item line', () => {
     http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
   });
 
+  it('asks "still good?" on a closed line when it is due, and each answer is one tap', () => {
+    const due = { ...pack(1, 1, 'milk', '2026-11-20', null, 'at_risk'), check_due: true };
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput('line', toLines([due])[0]);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+
+    const answers = root.querySelectorAll<HTMLButtonElement>('.check button');
+    expect(answers.length).toBe(3);
+
+    const sent: unknown[] = [];
+    answers.forEach((button) => {
+      button.click();
+      const request = http.expectOne(`${environment.apiUrl}/items/1/resolve`);
+      sent.push(request.request.body);
+      request.flush({});
+      http.expectOne(`${environment.apiUrl}/items`).flush({ use_first: [], fine_for_now: [] });
+    });
+
+    expect(sent).toEqual([{ outcome: 'still_good' }, { outcome: 'wasted' }, { outcome: 'used' }]);
+  });
+
+  it('does not ask when nothing is due', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput('line', toLines([{ ...pack(1), check_due: false }])[0]);
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('.check')).toBeNull();
+  });
+
   it('drags the slider from a pointer on the radish', () => {
     const fixture = TestBed.createComponent(ItemLine);
     fixture.componentRef.setInput('line', toLines([pack(1), pack(2)])[0]);

@@ -12,7 +12,8 @@ export interface Fridge {
 
 export type Phase = 'fresh' | 'aging' | 'at_risk' | 'ghost';
 export type Storage = 'fridge' | 'freezer' | 'pantry';
-export type Outcome = 'used' | 'wasted' | 'partial' | 'froze' | 'opened' | 'snooze' | 'moved';
+export type Outcome =
+  'used' | 'wasted' | 'partial' | 'froze' | 'opened' | 'snooze' | 'moved' | 'still_good';
 
 export interface Item {
   id: number;
@@ -50,6 +51,8 @@ export interface ScoredItem extends Item {
   headline: string;
   alertable: boolean;
   life_fraction: number;
+  /** Worth asking "still good?": shown on Today, not asked again for two days after a yes. */
+  check_due: boolean;
 }
 
 export interface Today {
