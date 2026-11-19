@@ -137,4 +137,43 @@ RSpec.describe Items::Resolve do
     expect { described_class.call(item: create(:item, household: household), outcome: "destroy") }
       .to raise_error(described_class::UnknownOutcome)
   end
+
+  describe "still good" do
+    let(:milk) do
+      create(:item, household: household, category: "dairy", acquired_on: Date.current - 10,
+                    window_start: Date.current - 4, window_end: Date.current + 1)
+    end
+
+    it "moves the band on, records the look, and undo takes it back" do
+      described_class.call(item: milk, outcome: "still_good")
+
+      expect(milk.reload).to have_attributes(window_start: Date.current + 1, window_end: Date.current + 3,
+                                             checked_on: Date.current, state: "active")
+      event = milk.item_events.last
+      expect(event.kind).to eq("checked")
+      expect(event.meta_payload).to include("age_days" => 10)
+
+      Items::Undo.call(item: milk)
+      expect(milk.reload).to have_attributes(window_end: Date.current + 1, checked_on: nil)
+    end
+
+    it "gives high-risk food one more day at most" do
+      chicken = create(:item, household: household, category: "meat_fish", acquired_on: Date.current - 3,
+                              window_start: Date.current - 2, window_end: Date.current + 0)
+
+      described_class.call(item: chicken, outcome: "still_good")
+
+      expect(chicken.reload.window_end).to eq(Date.current + 1)
+    end
+
+    # Doc 3: a Verbrauchsdatum is a safety date and is never extended.
+    it "never passes a printed use-by date" do
+      milk.update!(date_label_type: "verbrauchsdatum", date_label_value: Date.current + 1)
+
+      described_class.call(item: milk, outcome: "still_good")
+
+      expect(milk.reload.window_end).to eq(Date.current + 1)
+      expect(milk.window_start).to be <= milk.window_end
+    end
+  end
 end

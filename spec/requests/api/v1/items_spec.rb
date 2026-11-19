@@ -24,6 +24,17 @@ RSpec.describe "Api::V1::Items", type: :request do
     end
 
     # Choice overload kills action: three cards, then a count.
+    it "asks whether food worth using is still good, and not fresh food" do
+      create(:item, :at_risk, household: household, display_name: "Spinat")
+      create(:item, household: household, display_name: "Gouda")
+
+      get "/api/v1/items", headers: headers
+      body = response.parsed_body
+
+      expect(body["use_first"].first["check_due"]).to be(true)
+      expect(body["fine_for_now"].first["check_due"]).to be(false)
+    end
+
     it "shows at most three things to act on" do
       5.times { |n| create(:item, :at_risk, household: household, display_name: "Item #{n}") }
 

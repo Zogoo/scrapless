@@ -245,7 +245,8 @@
     "froze": "{{name}} ist im Gefrierfach",
     "opened": "{{name}}: geöffnet",
     "snooze": "{{name}}: später nochmal",
-    "moved": "{{name}} ist jetzt im {{place}}"
+    "moved": "{{name}} ist jetzt im {{place}}",
+    "still_good": "{{name}}: noch gut, danke"
   },
   "errors": {
     "offline": "Du bist offline. Sobald du wieder online bist, geht es weiter.",
@@ -282,5 +283,11 @@
     "yesterday": "Gestern",
     "push_offer": "Bekomm sie auch auf den Sperrbildschirm.",
     "push_turn_on": "Einschalten"
+  },
+  "check": {
+    "question": "Noch gut?",
+    "yes": "Ja, noch gut",
+    "gone": "Schlecht geworden",
+    "used": "Schon verbraucht"
   }
 }

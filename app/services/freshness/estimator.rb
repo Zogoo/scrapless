@@ -4,8 +4,10 @@ module Freshness
   #
   # Layers, highest confidence first (doc 3 §3.4):
   #   1. a printed date read off the packet
-  #   2. a category rule for the storage location
-  #   3. the global fallback for that storage location
+  #   2. the product's own shelf life for the storage location, learned once
+  #      from the model (Products::LearnShelfLife)
+  #   3. a category rule for the storage location
+  #   4. the global fallback for that storage location
   #
   # The result is a band [window_start, window_end] — "it goes off somewhere in
   # here" — never a single date. That is the schema enforcing a product promise:
@@ -32,11 +34,28 @@ module Freshness
     THAWED_DAYS = { "meat_fish" => 2 }.freeze
     THAWED_DEFAULT = 3
 
+    # Days an opened pack keeps when the product says nothing (doc 5: a
+    # per-storage remaining life, not a multiplier).
+    OPENED_DEFAULT = { "freezer" => 2 }.freeze
+    OPENED_FALLBACK = 3
+
+    # How long an opened pack keeps, for Items::Resolve as well as here: the
+    # product's own answer, but never longer than the default for high-risk food.
+    def self.opened_days(category:, storage:, product: nil)
+      default = OPENED_DEFAULT.fetch(storage.to_s, OPENED_FALLBACK)
+      own = product&.shelf_life_for(storage)&.dig(:opened)
+      return default if own.nil?
+
+      Categories.high_risk?(category) ? [ own, default ].min : own
+    end
+
     Result = Struct.new(:window_start, :window_end, :confidence, :consume_days, :high_risk, keyword_init: true)
 
     def initialize(category:, storage: "fridge", acquired_on: Date.current,
-                   date_label_type: "none", date_label_value: nil, opened_on: nil, thawed_on: nil)
+                   date_label_type: "none", date_label_value: nil, opened_on: nil, thawed_on: nil,
+                   product: nil)
       @category = category.presence || "unknown"
+      @product = product
       @storage = Item::STORAGES.include?(storage) ? storage : "fridge"
       @acquired_on = acquired_on || Date.current
       @date_label_type = date_label_type.presence || "none"
@@ -46,7 +65,7 @@ module Freshness
     end
 
     def call
-      result = printed_date_window || category_window || fallback_window
+      result = printed_date_window || product_window || category_window || fallback_window
       apply_opened!(result)
       apply_thawed!(result)
       clamp!(result)
@@ -73,6 +92,22 @@ module Freshness
                    confidence: 0.9, consume_days: consume_default, high_risk: false)
       end
     end
+
+    # The food's own numbers. The key can be coarser than the food, and the
+    # answer came from a model, so high-risk food (meat, fish, deli, cooked
+    # dishes outside the freezer) never gets longer than its category allows.
+    def product_window
+      life = @product&.shelf_life_for(@storage)
+      return nil if life.nil?
+
+      max = life[:max]
+      max = [ max, category_max ].min if high_risk?
+      band([ life[:typical], max ].min, max, confidence: 0.65, consume: consume_default, high_risk: high_risk?)
+    end
+
+    def high_risk? = rule&.high_risk || (Categories.high_risk?(@category) && @storage != "freezer")
+
+    def category_max = rule&.days_p90 || FALLBACK.fetch(@storage)[:p90]
 
     def category_window
       return nil if rule.nil? || rule.category == "unknown"
@@ -106,7 +141,7 @@ module Freshness
     def apply_opened!(result)
       return if @opened_on.blank?
 
-      opened_life = @storage == "freezer" ? 2 : 3
+      opened_life = self.class.opened_days(category: @category, storage: @storage, product: @product)
       result.window_end = [ result.window_end, @opened_on + opened_life ].min
       result.window_start = [ result.window_start, @opened_on ].min
       result.confidence = [ result.confidence, 0.7 ].min

@@ -5,10 +5,17 @@
 # in one language on purpose: it is never shown, it only has to come out the
 # same for the same food, in every kitchen and every UI language.
 #
-# What a product is *not* is a shelf life. The key is a model's judgement and
-# can be coarser than the food ("cheese" for a fresh and an aged one), so
-# windows still come from each line's category and storage.
+# A product also carries a shelf life per place (`shelf_life`), asked of the
+# model once, the first time any kitchen meets the food (Products::LearnShelfLife),
+# and then shared. The key can still be coarser than the food ("cheese" for a
+# fresh and an aged one), so the model is told to answer for the most
+# perishable common form, and Freshness::Estimator caps high-risk food at its
+# category's limit. A printed date always wins over it.
 class Product < ApplicationRecord
+  PLACES = %w[fridge freezer pantry].freeze
+  # Three years: past this a number is a guess about the packaging, not food.
+  MAX_DAYS = 1095
+
   # What both readers are told, so a photo and a typed word land on one key.
   PROMPT_RULE = <<~RULE.squish
     product is the food's generic name translated into English, in American
@@ -33,6 +40,30 @@ class Product < ApplicationRecord
     return nil if normalized.blank?
 
     create_or_find_by!(key: normalized)
+  end
+
+  # { typical:, max:, opened: } in days for one place, or nil when the product
+  # is not kept there or nothing is known yet. Re-checked on read, so a bad row
+  # degrades to the category rule rather than to a wrong window.
+  def shelf_life_for(storage)
+    Product.clean_place(shelf_life.is_a?(Hash) ? shelf_life[storage.to_s] : nil)
+  end
+
+  def shelf_life_known? = shelf_life.is_a?(Hash) && PLACES.any? { |place| shelf_life_for(place) }
+
+  # One place from the model, or nil when it is not a usable answer.
+  def self.clean_place(value)
+    return nil unless value.is_a?(Hash)
+
+    typical, max, opened = %w[typical max opened].map { |k| whole_days(value[k] || value[k.to_sym]) }
+    return nil if typical.nil? || max.nil? || typical > max
+
+    { typical: typical, max: max, opened: opened && [ opened, max ].min }
+  end
+
+  def self.whole_days(value)
+    days = Integer(value, exception: false) || Float(value, exception: false)&.round
+    days if days&.between?(1, MAX_DAYS)
   end
 
   # Every name this food has been seen under, in any language: the receipt

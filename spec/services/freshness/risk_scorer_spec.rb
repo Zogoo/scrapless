@@ -54,4 +54,29 @@ RSpec.describe Freshness::RiskScorer do
       "this example is only meaningful while presence sits in the ambiguous band"
     expect(scored.ambiguous?).to be(false), "too early in its life to be worth a question"
   end
+
+  describe "#check_due?" do
+    let(:due) { create(:item, :at_risk, household: household) }
+
+    it "asks about food worth showing, and not about fresh food" do
+      fresh = create(:item, household: household)
+
+      expect(described_class.call(items: [ due ]).first).to be_check_due
+      expect(described_class.call(items: [ fresh ]).first).not_to be_check_due
+    end
+
+    it "waits two days after a \"still good\" before asking again" do
+      due.update!(checked_on: Date.current - 1)
+      expect(described_class.call(items: [ due ]).first).not_to be_check_due
+
+      due.update!(checked_on: Date.current - 2)
+      expect(described_class.call(items: [ due ]).first).to be_check_due
+    end
+
+    it "does not ask about the freezer" do
+      due.update!(storage: "freezer")
+
+      expect(described_class.call(items: [ due ]).first).not_to be_check_due
+    end
+  end
 end

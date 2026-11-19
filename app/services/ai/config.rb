@@ -121,19 +121,24 @@ module Ai
 
     TRANSCRIBE_USD_PER_MINUTE = 0.003
 
+    # shelf_life is asked once per product for every kitchen (Ai::ShelfLifeReader),
+    # general knowledge rather than reading, so the cheapest text model will do.
+    #
     # recipe_suggest sits on the text tier: it writes from a list the server
     # already grounded, and anything it invents is thrown away afterwards
     # (Recipes::GroundInInventory), so a bigger model buys nothing it can keep.
     DEFAULT_MODELS = {
       "openai" => { receipt_extract: "gpt-5-mini", shelf_photo_extract: "gpt-5-mini",
-                    text_parse: "gpt-5-nano", memo_parse: "gpt-6-luna", recipe_suggest: "gpt-5-nano" },
+                    text_parse: "gpt-5-nano", memo_parse: "gpt-6-luna", recipe_suggest: "gpt-5-nano",
+                    shelf_life: "gpt-5-nano" },
       "gemini" => { receipt_extract: "gemini-2.5-flash", shelf_photo_extract: "gemini-2.5-flash",
                     text_parse: "gemini-2.5-flash-lite", memo_parse: "gemini-2.5-flash-lite",
-                    recipe_suggest: "gemini-2.5-flash-lite" },
-      "groq" => %i[receipt_extract shelf_photo_extract text_parse memo_parse recipe_suggest]
+                    recipe_suggest: "gemini-2.5-flash-lite", shelf_life: "gemini-2.5-flash-lite" },
+      "groq" => %i[receipt_extract shelf_photo_extract text_parse memo_parse recipe_suggest shelf_life]
                   .index_with("meta-llama/llama-4-scout-17b-16e-instruct"),
       "local" => { receipt_extract: "qwen2.5vl:7b", shelf_photo_extract: "qwen2.5vl:7b",
-                   text_parse: "qwen2.5vl:7b", memo_parse: "qwen2.5vl:7b", recipe_suggest: "qwen2.5vl:7b" }
+                   text_parse: "qwen2.5vl:7b", memo_parse: "qwen2.5vl:7b", recipe_suggest: "qwen2.5vl:7b",
+                   shelf_life: "qwen2.5vl:7b" }
     }.freeze
 
     DEFAULT_TRANSCRIBE = { "openai" => "gpt-4o-mini-transcribe", "groq" => "whisper-large-v3-turbo" }.freeze

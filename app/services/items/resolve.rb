@@ -10,11 +10,11 @@ module Items
 
     KINDS = { "used" => "used", "wasted" => "wasted", "partial" => "partial_use",
               "froze" => "frozen", "opened" => "opened", "snooze" => "snoozed",
-              "moved" => "moved" }.freeze
+              "moved" => "moved", "still_good" => "checked" }.freeze
 
     # Everything an outcome may change, so undo can put it back exactly.
     TRACKED = %w[state resolved_at quantity amount_left storage storage_changed_at
-                 window_start window_end confidence opened_on snoozed_until].freeze
+                 window_start window_end confidence opened_on snoozed_until checked_on].freeze
 
     def initialize(item:, outcome:, days: nil, to: nil, source: nil, start_percent: nil)
       @item = item
@@ -46,6 +46,9 @@ module Items
     def meta(before)
       extra = {}
       extra[:days] = snooze_days if @outcome == "snooze"
+      # "Still fine at day X": with "wasted at day X", what a learned shelf
+      # life is built from later (survival data per product).
+      extra[:age_days] = (Date.current - @item.acquired_on).to_i if @outcome == "still_good"
       # The percent the thumb was on before this drag. A later release there
       # can undo the open after it has already been saved.
       percent = slider_start_percent
@@ -108,7 +111,8 @@ module Items
       return if @item.opened_on.present?
 
       opened = Date.current
-      cap = opened + (@item.frozen_storage? ? 2 : 3)
+      cap = opened + Freshness::Estimator.opened_days(category: @item.category, storage: @item.storage,
+                                                      product: @item.product)
       @item.opened_on = opened
       @item.window_end = cap if @item.window_end.blank? || cap < @item.window_end
       @item.window_start = [ @item.window_start, opened, @item.window_end ].compact.min
@@ -133,6 +137,21 @@ module Items
       @item.assign_attributes(storage: @to, storage_changed_at: Time.current)
     end
 
+    # Someone looked and it is still good. That is the one fact the model
+    # cannot know, so it moves the band: it opens tomorrow at the earliest, and
+    # the end moves out by half the band's width. High-risk food gains one day
+    # at most and a Verbrauchsdatum is never passed (doc 3: a safety date is
+    # never extended). checked_on keeps the question from coming straight back.
+    def apply_still_good
+      today = Date.current
+      half = ([ (@item.window_end - @item.window_start).to_i, 2 ].max / 2.0).ceil
+      ending = [ @item.window_end, today + (@item.high_risk? ? 1 : half) ].max
+      ending = [ ending, @item.date_label_value ].min if @item.safety_date?
+      start = [ [ @item.window_start, today + 1 ].max, ending ].min
+
+      @item.assign_attributes(window_start: start, window_end: ending, checked_on: today)
+    end
+
     # A "no" must not become a delete.
     def apply_snooze
       @item.snoozed_until = Date.current + snooze_days
@@ -141,7 +160,7 @@ module Items
     def snooze_days = (@days || 3).to_i.clamp(1, 30)
 
     def rewindow(**inputs)
-      window = Freshness::Estimator.call(category: @item.category, **inputs)
+      window = Freshness::Estimator.call(category: @item.category, product: @item.product, **inputs)
       @item.assign_attributes(window_start: window.window_start, window_end: window.window_end,
                               confidence: window.confidence)
     end

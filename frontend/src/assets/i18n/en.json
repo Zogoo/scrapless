@@ -245,7 +245,8 @@
     "froze": "{{name}} is in the freezer",
     "opened": "{{name}}: opened",
     "snooze": "{{name}}: asked again later",
-    "moved": "{{name}} moved to {{place}}"
+    "moved": "{{name}} moved to {{place}}",
+    "still_good": "{{name}}: still good, thanks"
   },
   "errors": {
     "offline": "You're offline. This will keep working when you're back.",
@@ -282,5 +283,11 @@
     "yesterday": "Yesterday",
     "push_offer": "Get these on your lock screen too.",
     "push_turn_on": "Turn on"
+  },
+  "check": {
+    "question": "Still good?",
+    "yes": "Yes, still good",
+    "gone": "Gone off",
+    "used": "Used it"
   }
 }
