@@ -1,0 +1,32 @@
+/*
+ * Correcting a name on the review: the name is a quiet button with a pencil,
+ * and opens a field in its place. Kept apart from capture.scss, which is at
+ * its size budget.
+ */
+.review-list {
+  button.name {
+    min-height: var(--tap);
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+  }
+
+  .pen {
+    color: var(--muted);
+    font-size: 0.9em;
+  }
+
+  .rename {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+
+    input {
+      flex: 1 1 100%;
+    }
+  }
+}

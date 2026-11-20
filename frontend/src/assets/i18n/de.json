@@ -111,7 +111,8 @@
     "rec_starting": "Mikrofon startet…",
     "rec_on": "Aufnahme läuft",
     "rec_prompt": "Sag, was du gekauft hast. Dann tipp auf Fertig.",
-    "rec_sending": "Aufnahme wird übertragen…"
+    "rec_sending": "Aufnahme wird übertragen…",
+    "rename": "Namen von {{name}} ändern"
   },
   "memo": {
     "title": "Einkauf",
@@ -163,7 +164,9 @@
     "accidental_open": "Aus Versehen berührt. Wieder ungeöffnet.",
     "lock_closed": "Ungeöffnet",
     "lock_open": "Geöffnet",
-    "collapse": "{{name}} zuklappen"
+    "collapse": "{{name}} zuklappen",
+    "mistake": "Versehentlich hinzugefügt",
+    "mistake_confirm": "Löschen? Nochmal tippen"
   },
   "storage": {
     "fridge": "Kühlschrank",

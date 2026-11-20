@@ -1,27 +1,14 @@
+<!-- The whole row opens and closes the card, every time, name included.
+ Renaming happens on the review, where a misread is noticed (Capture). -->
 <div class="summary">
-  @if (renamable() && expanded()) {
-    <button
-      type="button"
-      class="name-btn name"
-      [id]="'line-' + line().first.id"
-      (click)="rename.emit()"
-    >
-      {{ line().title }}
-    </button>
-  }
   <button
     type="button"
     class="toggle"
     [attr.aria-expanded]="expanded()"
     [attr.aria-controls]="'details-' + line().first.id"
-    [attr.aria-label]="
-      renamable() && expanded() ? ('kitchen.collapse' | translate: { name: line().title }) : null
-    "
     (click)="toggle()"
   >
-    @if (!(renamable() && expanded())) {
-      <span class="name" [id]="'line-' + line().first.id">{{ line().title }}</span>
-    }
+    <span class="name" [id]="'line-' + line().first.id">{{ line().title }}</span>
     @if (!expanded()) {
       <span class="when">{{ line().first.headline }}</span>
     }
@@ -137,6 +124,18 @@
       <button type="button" class="quiet" (click)="resolve(line().first, 'wasted')">
         🗑 {{ 'today.gone' | translate }}
       </button>
+      @if (removable()) {
+        <!-- Not waste: a line that should never have been added. Deleted, so it
+         asks once more; "Weg" above is the one that counts as wasted. -->
+        <button
+          type="button"
+          class="quiet mistake"
+          [class.confirming]="confirmingRemove()"
+          (click)="askRemove()"
+        >
+          {{ (confirmingRemove() ? 'kitchen.mistake_confirm' : 'kitchen.mistake') | translate }}
+        </button>
+      }
     </div>
 
     <dialog #moveSheet class="sheet" (close)="moving.set(null)" (click)="closeOnBackdrop($event)">

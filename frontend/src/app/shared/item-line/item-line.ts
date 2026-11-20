@@ -46,9 +46,12 @@ import {
 })
 export class ItemLine {
   readonly line = input.required<KitchenLine>();
-  /** Kitchen renames from the name. Home does not. */
-  readonly renamable = input(false);
-  readonly rename = output<void>();
+  /** The Kitchen can delete a line added by mistake. Home does not. */
+  readonly removable = input(false);
+  readonly remove = output<void>();
+  /** The first tap on "added by mistake" only asks; the second one deletes. */
+  protected readonly confirmingRemove = signal(false);
+  private confirmTimer: ReturnType<typeof setTimeout> | null = null;
   readonly failed = output<string>();
 
   private readonly items = inject(ItemsService);
@@ -102,6 +105,18 @@ export class ItemLine {
 
   /** Ignores a second commit of the same stop, from keyup and change together. */
   private lastCommit: number | null = null;
+
+  protected askRemove(): void {
+    if (this.confirmTimer !== null) clearTimeout(this.confirmTimer);
+    if (this.confirmingRemove()) {
+      this.confirmingRemove.set(false);
+      this.remove.emit();
+      return;
+    }
+    this.confirmingRemove.set(true);
+    // A question that stays forever turns the next tap into a delete.
+    this.confirmTimer = setTimeout(() => this.confirmingRemove.set(false), 4000);
+  }
 
   protected toggle(): void {
     this.expanded.update((open) => !open);

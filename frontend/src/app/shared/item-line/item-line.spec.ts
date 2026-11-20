@@ -207,6 +207,49 @@ describe('Item line', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('.check')).toBeNull();
   });
 
+  // The name used to rename once the card was open, so the same tap did two
+  // different things. Renaming moved to the review.
+  it('opens and closes from the name every time, and never renames', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
+    fixture.componentRef.setInput('removable', true);
+    reveal(fixture);
+    const root = fixture.nativeElement as HTMLElement;
+
+    (root.querySelector('.summary .name') as HTMLElement).click();
+    fixture.detectChanges();
+
+    expect(root.querySelector('.toggle')?.getAttribute('aria-expanded')).toBe('false');
+    expect(root.querySelector('input[type=text]')).toBeNull();
+  });
+
+  it('deletes a line added by mistake only on the second tap', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
+    fixture.componentRef.setInput('removable', true);
+    let removed = 0;
+    fixture.componentInstance.remove.subscribe(() => removed++);
+    reveal(fixture);
+    const root = fixture.nativeElement as HTMLElement;
+    const mistake = () => root.querySelector('.mistake') as HTMLButtonElement;
+
+    mistake().click();
+    fixture.detectChanges();
+    expect(removed).toBe(0);
+    expect(mistake().classList).toContain('confirming');
+
+    mistake().click();
+    expect(removed).toBe(1);
+  });
+
+  it('offers no delete where the line is not removable (Today)', () => {
+    const fixture = TestBed.createComponent(ItemLine);
+    fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
+    reveal(fixture);
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('.mistake')).toBeNull();
+  });
+
   it('drags the slider from a pointer on the radish', () => {
     const fixture = TestBed.createComponent(ItemLine);
     fixture.componentRef.setInput('line', toLines([pack(1), pack(2)])[0]);

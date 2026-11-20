@@ -31,6 +31,9 @@ interface ReviewSheet {
   review: { set(value: CaptureReview): void; (): CaptureReview | null };
   reject(id: number): void;
   place(item: CaptureReview['items'][number], storage: 'fridge' | 'freezer' | 'pantry'): void;
+  startRename(item: CaptureReview['items'][number]): void;
+  draftName: { set(value: string): void };
+  saveName(item: CaptureReview['items'][number]): void;
 }
 
 describe('Capture review', () => {
@@ -133,7 +136,7 @@ describe('Capture review', () => {
     it('shows the product as the title and the variety underneath', () => {
       const root = render([{ display_name: '🍚 Basmatireis', product_name: 'Reis', merged: true }]);
 
-      expect(root.querySelector('.review-list .name')?.textContent?.trim()).toBe('🍚 Reis');
+      expect(root.querySelector('.review-list .name .title')?.textContent?.trim()).toBe('🍚 Reis');
       expect(root.querySelector('.review-list .variety')?.textContent?.trim()).toBe('Basmatireis');
     });
 
@@ -178,9 +181,43 @@ describe('Capture review', () => {
     it('shows a plain item as itself, with no second line', () => {
       const root = render([{ display_name: '🥛 Milch', product_name: null, merged: false }]);
 
-      expect(root.querySelector('.review-list .name')?.textContent?.trim()).toBe('🥛 Milch');
+      expect(root.querySelector('.review-list .name .title')?.textContent?.trim()).toBe('🥛 Milch');
       expect(root.querySelector('.review-list .variety')).toBeNull();
     });
+  });
+
+  // A misread is fixed where it is noticed; the server re-reads the food and
+  // teaches the dictionary (Items::Correct).
+  it('corrects a misread name on the review and shows what came back', () => {
+    sheet.review.set(reviewOf(1, 2));
+    const row = sheet.review()!.items[1];
+
+    sheet.startRename(row);
+    sheet.draftName.set('Tilsiter');
+    sheet.saveName(row);
+
+    const req = http.expectOne(`${environment.apiUrl}/items/2`);
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({
+      item: { display_name: 'Tilsiter', canonical_name: 'tilsiter' },
+    });
+    req.flush({ id: 2, display_name: '🧀 Tilsiter', storage: 'fridge', days_left: 21 });
+
+    expect(sheet.review()!.items[1]).toMatchObject({
+      display_name: '🧀 Tilsiter',
+      days_left: 21,
+      merged: false,
+    });
+  });
+
+  it('sends nothing when the name did not change', () => {
+    sheet.review.set(reviewOf(1));
+    const row = sheet.review()!.items[0];
+
+    sheet.startRename(row);
+    sheet.saveName(row);
+
+    http.expectNone(`${environment.apiUrl}/items/1`);
   });
 
   it('fixes where a line goes as a correction, and shows its new days', () => {

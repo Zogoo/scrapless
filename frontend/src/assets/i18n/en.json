@@ -111,7 +111,8 @@
     "rec_starting": "Starting the microphone…",
     "rec_on": "Recording",
     "rec_prompt": "Say what you bought, then tap Done.",
-    "rec_sending": "Sending your recording…"
+    "rec_sending": "Sending your recording…",
+    "rename": "Change the name of {{name}}"
   },
   "memo": {
     "title": "Shopping",
@@ -163,7 +164,9 @@
     "accidental_open": "Accidental touch. This is unopened again.",
     "lock_closed": "Unopened",
     "lock_open": "Opened",
-    "collapse": "Hide {{name}}"
+    "collapse": "Hide {{name}}",
+    "mistake": "Added by mistake",
+    "mistake_confirm": "Delete it? Tap again"
   },
   "storage": {
     "fridge": "Fridge",

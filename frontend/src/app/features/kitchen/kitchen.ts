@@ -34,8 +34,6 @@ export class Kitchen implements OnInit {
 
   protected readonly loading = signal(true);
   protected readonly error = signal('');
-  protected readonly editingKey = signal<string | null>(null);
-  protected readonly draftName = signal('');
   /** All places, until a storage button narrows the list. */
   protected readonly place = signal<'all' | Storage>('all');
   protected readonly query = signal('');
@@ -106,39 +104,10 @@ export class Kitchen implements OnInit {
     });
   }
 
-  protected startEdit(line: KitchenLine): void {
-    this.editingKey.set(line.key);
-    // The server keeps the emoji (Items::Correct); the field is just the name.
-    this.draftName.set(
-      line.first.display_name.replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, ''),
-    );
-  }
-
-  /**
-   * Correction must be cheaper than capture, so it is one field and one tap —
-   * and it pays for itself, because the server feeds the change back into the
-   * receipt dictionary.
-   */
-  protected saveEdit(line: KitchenLine): void {
-    const name = this.draftName().trim();
-    if (!name) return;
-
-    // A rename is about the food, not one carton of it, so every pack follows.
-    const changes = { display_name: name, canonical_name: name.toLowerCase() };
-    forkJoin(line.packs.map((pack) => this.items.correct(pack.id, changes))).subscribe({
-      next: () => {
-        this.editingKey.set(null);
-        this.load();
-      },
-      error: (err: { message?: string }) => this.error.set(err.message ?? ''),
-    });
-  }
-
   /** For a line read wrong, not eaten or binned: it is not waste, so it is deleted. */
   protected removeLine(line: KitchenLine): void {
     forkJoin(line.packs.map((pack) => this.items.remove(pack.id))).subscribe({
       next: () => {
-        this.editingKey.set(null);
         this.load();
       },
       error: (err: { message?: string }) => this.error.set(err.message ?? ''),
