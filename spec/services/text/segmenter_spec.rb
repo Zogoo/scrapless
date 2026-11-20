@@ -144,21 +144,46 @@ RSpec.describe Text::Segmenter do
       .to eq([ "something nice for the weekend party" ])
   end
 
+  # Observed: "basmati reis" became "Reis" plus a separate item "Basmati".
+  describe "unknown words before a known item" do
+    def result(text) = described_class.call(text: text)
+
+    it "keeps them on the item's line, unsure" do
+      expect(result("basmati reis")).to have_attributes(parts: [ "basmati reis" ], sure: false)
+      expect(result("rote zwiebeln")).to have_attributes(parts: [ "rote zwiebeln" ], sure: false)
+    end
+
+    it "leaves known items and their amounts as they were" do
+      expect(result("milch brot eier")).to have_attributes(parts: %w[milch brot eier], sure: true)
+      expect(result("2 flaschen bio milch")).to have_attributes(parts: [ "2 flaschen bio milch" ], sure: true)
+    end
+
+    it "still splits where there is punctuation" do
+      expect(result("toilet paper, milch").parts).to eq([ "toilet paper", "milch" ])
+    end
+  end
+
   describe "what a kitchen has taught it" do
     let(:household) { create(:household) }
 
     it "keeps a phrase it learned as one line" do
       create(:vocabulary_entry, household: household, kind: "item", phrase: "hafer milch")
 
-      expect(parts("hafer milch brot", household: household)).to eq([ "hafer milch", "brot" ])
-      expect(parts("hafer milch brot")).to eq(%w[hafer milch brot])
+      expect(described_class.call(text: "hafer milch brot", household: household))
+        .to have_attributes(parts: [ "hafer milch", "brot" ], sure: true)
+      # Untaught, "hafer" still stays on its item's line, but only a guess.
+      expect(described_class.call(text: "hafer milch brot")).to have_attributes(parts: [ "hafer milch", "brot" ],
+                                                                               sure: false)
     end
 
     it "drops filler it learned, in that kitchen only" do
       create(:vocabulary_entry, household: household, kind: "leading", phrase: "ich hätt gern")
 
       expect(parts("ich hätt gern Milch", household: household)).to eq([ "Milch" ])
-      expect(parts("ich hätt gern Milch", household: create(:household))).to eq([ "ich hätt gern", "Milch" ])
+      # Another kitchen does not know it is filler, so it is not sure, and a
+      # model reads the line.
+      expect(described_class.call(text: "ich hätt gern Milch", household: create(:household)))
+        .to have_attributes(parts: [ "ich hätt gern Milch" ], sure: false)
     end
 
     it "learns from lines a person typed, not from lines the mic wrote" do

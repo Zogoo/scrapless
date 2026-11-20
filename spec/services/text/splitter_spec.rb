@@ -52,4 +52,25 @@ RSpec.describe Text::Splitter do
   it "returns nothing rather than guessing at an empty input" do
     expect(described_class.call(text: "  ")).to eq([ [], [] ])
   end
+
+  describe "unknown words before a known one" do
+    before { create(:product_alias, raw_text: "reis", canonical_name: "Reis", category: "pantry") }
+
+    # One line for the model, not "Reis" plus a separate "Basmati".
+    it "sends the whole line to the model while the dictionary does not know it" do
+      known, unknown = described_class.call(text: "basmati reis")
+
+      expect(known).to be_empty
+      expect(unknown).to eq([ "basmati reis" ])
+    end
+
+    it "is free once the dictionary knows it" do
+      create(:product_alias, raw_text: "basmati reis", canonical_name: "Basmati-Reis", category: "pantry")
+
+      known, unknown = described_class.call(text: "basmati reis")
+
+      expect(known.map { |k| k["name"] }).to eq([ "Basmati-Reis" ])
+      expect(unknown).to be_empty
+    end
+  end
 end

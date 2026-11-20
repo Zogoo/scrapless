@@ -10,9 +10,11 @@ module Text
   # 2. spoken numbers become digits ("ein dutzend" -> 12);
   # 3. filler off both ends of each group ("ich brauche noch ... bitte");
   # 4. the longest known item phrase wins, left to right. Numbers, units and
-  #    modifiers just before an item belong to it ("2 Flaschen Bio Milch");
-  #    any other unknown words stay together as their own line ("toilet
-  #    paper"), and the result is marked not `sure`. Nothing said is dropped
+  #    modifiers just before an item belong to it ("2 Flaschen Bio Milch").
+  #    Other unknown words directly before an item probably describe it too
+  #    ("basmati reis", "rote zwiebeln"), so they stay on its line; unknown
+  #    words with no item after them are their own line ("toilet paper").
+  #    Either way the result is marked not `sure`. Nothing said is dropped
   #    here: deciding what is not an item ("something for Sunday") needs a
   #    model, and Memo::ListReader asks one only when this is unsure.
   #
@@ -120,9 +122,12 @@ module Text
         if n.positive?
           matched = true
           attached = pending.reverse.take_while { |t| t.role == :attachable }.reverse
-          loose = pending[0...(pending.size - attached.size)]
-          flush(pieces, loose)
-          pieces << join(attached + tokens[i, n])
+          loose = trim(pending[0...(pending.size - attached.size)])
+          # "basmati reis" was "Reis" plus a separate item "Basmati": the model
+          # read "basmati" alone. Kept on the item's line it reads as one food.
+          # Not sure, so a model reads the whole line (Text::Splitter, ListReader).
+          @leftover = true if loose.any?
+          pieces << join(loose + attached + tokens[i, n])
           pending = []
           i += n
           next
