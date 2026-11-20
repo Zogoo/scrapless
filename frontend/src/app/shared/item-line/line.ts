@@ -15,6 +15,19 @@ export interface KitchenLine {
   first: ScoredItem;
   /** Total left across packs, 0..packs.length. */
   level: number;
+  /**
+   * What the line is called. The soonest pack's name, unless varieties stack
+   * on one product (a basmati and a jasmine pack): then the product's title,
+   * "Reis". Each pack keeps its own name, window and amount.
+   */
+  title: string;
+}
+
+const LEADING_EMOJI = /^\p{Extended_Pictographic}\uFE0F?\s*/u;
+
+export function lineTitle(packs: ScoredItem[], first: ScoredItem): string {
+  const names = new Set(packs.map((pack) => pack.display_name.replace(LEADING_EMOJI, '').trim()));
+  return names.size > 1 && first.product_name ? first.product_name : first.display_name;
 }
 
 export interface Segment {
@@ -30,6 +43,7 @@ export function lineFor(item: ScoredItem): KitchenLine {
     packs: [item],
     first: item,
     level: item.amount_left,
+    title: item.display_name,
   };
 }
 
@@ -67,7 +81,7 @@ export function toLines(items: ScoredItem[]): KitchenLine[] {
         (a, b) => a.window_end.localeCompare(b.window_end) || a.id - b.id,
       )[0];
       const level = packs.reduce((sum, pack) => sum + pack.amount_left, 0);
-      return { key, packs, first, level };
+      return { key, packs, first, level, title: lineTitle(packs, first) };
     })
     .sort(
       (a, b) => a.first.window_end.localeCompare(b.first.window_end) || a.first.id - b.first.id,

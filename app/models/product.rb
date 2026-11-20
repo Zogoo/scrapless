@@ -35,12 +35,30 @@ class Product < ApplicationRecord
   def self.normalize_key(key) = key.to_s.downcase.gsub(/[^[:alnum:] ]/, " ").squeeze(" ").strip
 
   # nil for a blank key, so a line the model gave no product for stays loose.
-  def self.for(key)
+  #
+  # With a category, interchangeable varieties become one product first
+  # (Products::MergeKey, config/product_merge.yml): "basmati rice" is "rice".
+  # The caller keeps the key it started from on the item (source_product_key),
+  # so a change to the merge list can be recomputed and split back apart.
+  def self.for(key, category: nil)
     normalized = normalize_key(key)
     return nil if normalized.blank?
 
-    create_or_find_by!(key: normalized)
+    normalized = Products::MergeKey.call(key: normalized, category: category) if category
+    create_or_find_by!(key: normalized).tap(&:name_from_config!)
   end
+
+  # The title a Kitchen line shows when varieties stack ("Reis" over a
+  # basmati and a jasmine pack). Written once, from the merge list.
+  def name_from_config!
+    return self if names.present?
+
+    title = Products::MergeKey.name_for(key, :de)
+    update!(names: { "de" => title }) if title
+    self
+  end
+
+  def name_in(locale) = names.is_a?(Hash) ? names[locale.to_s].presence : nil
 
   # { typical:, max:, opened: } in days for one place, or nil when the product
   # is not kept there or nothing is known yet. Re-checked on read, so a bad row
@@ -67,8 +85,9 @@ class Product < ApplicationRecord
   end
 
   # Every name this food has been seen under, in any language: the receipt
-  # spellings and the names people were shown.
-  def names
+  # spellings and the names people were shown. (`names` is the column of line
+  # titles per language.)
+  def seen_names
     product_aliases.pluck(:raw_text, :canonical_name).flatten.uniq.sort
   end
 end

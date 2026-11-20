@@ -46,7 +46,9 @@ module Items
     # exact dictionary entry for the new name says which product it is; with
     # none, the item has no product until the model next reads that food.
     def reidentify
-      @item.product = ProductAlias.lookup(Copy.bare_name(@item), household: @item.household, fuzzy: false)&.product
+      key = ProductAlias.lookup(Copy.bare_name(@item), household: @item.household, fuzzy: false)&.product&.key
+      @item.source_product_key = key
+      @item.product = Product.for(key, category: @item.category)
     end
 
     def recategorise

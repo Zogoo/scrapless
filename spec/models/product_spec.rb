@@ -15,7 +15,7 @@ RSpec.describe Product do
     create(:product_alias, raw_text: "milch", canonical_name: "Milch", category: "dairy", product: milk)
     create(:product_alias, raw_text: "milk", canonical_name: "Milk", category: "dairy", product: milk)
 
-    expect(milk.names).to include("Milch", "Milk", "milch", "milk")
+    expect(milk.seen_names).to include("Milch", "Milk", "milch", "milk")
   end
 
   describe "#shelf_life_for" do

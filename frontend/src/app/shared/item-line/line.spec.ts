@@ -109,6 +109,51 @@ describe('toLines', () => {
     );
   });
 
+  it('calls a line of stacked varieties by the product title', () => {
+    const basmati = pack({
+      id: 10,
+      display_name: '🍚 Basmati-Reis',
+      product_id: 3,
+      product_name: 'Reis',
+    });
+    const jasmine = pack({
+      id: 11,
+      display_name: '🍚 Jasmin-Reis',
+      product_id: 3,
+      product_name: 'Reis',
+    });
+
+    const [line] = toLines([basmati, jasmine]);
+
+    expect(line.title).toBe('Reis');
+    expect(line.packs.map((p) => p.display_name)).toEqual(['🍚 Basmati-Reis', '🍚 Jasmin-Reis']);
+  });
+
+  it('keeps the pack name when one variety is on the line', () => {
+    const one = pack({
+      id: 12,
+      display_name: '🍚 Basmati-Reis',
+      product_id: 3,
+      product_name: 'Reis',
+    });
+    const same = pack({
+      id: 13,
+      display_name: 'Basmati-Reis',
+      product_id: 3,
+      product_name: 'Reis',
+    });
+
+    expect(toLines([one])[0].title).toBe('🍚 Basmati-Reis');
+    expect(toLines([one, same])[0].title).toBe('🍚 Basmati-Reis');
+  });
+
+  it('keeps the pack name when no title is written for this language', () => {
+    const a = pack({ id: 14, display_name: 'Basmati rice', product_id: 3, product_name: null });
+    const b = pack({ id: 15, display_name: 'Jasmine rice', product_id: 3, product_name: null });
+
+    expect(toLines([a, b])[0].title).toBe(toLines([a, b])[0].first.display_name);
+  });
+
   it('drops a pack with nothing left instead of an empty card', () => {
     const gone = pack({ id: 1, amount_left: 0 });
     const left = pack({ id: 2, amount_left: 1 });

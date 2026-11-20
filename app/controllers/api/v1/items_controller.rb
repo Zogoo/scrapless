@@ -16,7 +16,7 @@ module Api
       # food we stopped believing in.
       def index
         Inventory::Retire.call(household: current_household)
-        scored = Freshness::RiskScorer.call(items: current_household.items.active.by_urgency.to_a)
+        scored = Freshness::RiskScorer.call(items: current_household.items.active.includes(:product).by_urgency.to_a)
 
         use_first = scored.select(&:worth_showing?).first(MAX_RESCUE_CARDS)
         rest = scored - use_first
@@ -112,6 +112,9 @@ module Api
           display_name: item.display_name,
           canonical_name: item.canonical_name,
           product_id: item.product_id,
+          # The line title where varieties stack ("Reis"), in this request's
+          # language; nil when none is written down.
+          product_name: item.product&.name_in(I18n.locale),
           category: item.category,
           raw_text: item.raw_text,
           quantity: item.quantity&.to_f,

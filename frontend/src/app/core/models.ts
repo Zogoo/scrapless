@@ -21,6 +21,8 @@ export interface Item {
   canonical_name: string;
   /** One food under any name ("Eier", "Eggs"); null for a line no model has named. */
   product_id?: number | null;
+  /** The product's title where varieties stack ("Reis"), in the UI's language; null if none. */
+  product_name?: string | null;
   category: string;
   raw_text: string | null;
   quantity: number | null;

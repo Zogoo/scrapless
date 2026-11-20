@@ -400,7 +400,7 @@ export class ItemLine {
   private useUp(): void {
     const ids = this.line().packs.map((pack) => pack.id);
     this.preview.set(null);
-    this.undo.showUsedUp(ids, this.line().first.display_name);
+    this.undo.showUsedUp(ids, this.line().title);
     this.items.removeFromList(ids);
   }
 

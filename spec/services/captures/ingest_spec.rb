@@ -17,6 +17,47 @@ RSpec.describe Captures::Ingest do
     { "merchant" => "REWE", "purchased_on" => Date.current.iso8601, "lines" => lines }
   end
 
+  describe "interchangeable varieties" do
+    def rice_line(raw, name, product)
+      { "raw_text" => raw, "name" => name, "product" => product, "row" => "food",
+        "category" => "pantry", "storage" => "pantry" }
+    end
+
+    it "puts basmati and jasmine rice on one product, keeping what the model called each" do
+      items = described_class.call(capture: capture, payload: payload([
+        rice_line("BASMATI REIS 1KG", "Basmati-Reis", "basmati rice"),
+        rice_line("JASMIN REIS", "Jasmin-Reis", "jasmine rice")
+      ]))[:items]
+
+      expect(items.map(&:product).uniq.map(&:key)).to eq([ "rice" ])
+      expect(items.first.product.names).to eq("de" => "Reis")
+      expect(items.map(&:source_product_key)).to eq([ "basmati rice", "jasmine rice" ])
+    end
+
+    # The seeds map "Babyspinat" to "baby spinach"; a dictionary hit has to
+    # merge the same way a photo does, or it starts its own line again.
+    it "merges a dictionary hit too" do
+      ProductAlias.create!(raw_text: "babyspinat", canonical_name: "Babyspinat", category: "produce",
+                           product: Product.create!(key: "baby spinach"), source: "seed")
+
+      item = described_class.call(capture: capture, payload: payload([
+        { "raw_text" => "BABYSPINAT", "name" => "Babyspinat", "row" => "food", "category" => "produce" }
+      ]))[:items].first
+
+      expect(item.product.key).to eq("spinach")
+      expect(item.source_product_key).to eq("baby spinach")
+    end
+
+    it "keeps bread specific" do
+      item = described_class.call(capture: capture, payload: payload([
+        { "raw_text" => "ROGGENBROT", "name" => "Roggenbrot", "product" => "rye bread", "row" => "food",
+          "category" => "bakery" }
+      ]))[:items].first
+
+      expect(item.product.key).to eq("rye bread")
+    end
+  end
+
   describe "the same food already in the kitchen" do
     let(:egg) { Product.for("egg") }
     let(:egg_line) do
@@ -182,7 +223,7 @@ RSpec.describe Captures::Ingest do
       ]))
 
       expect(result[:items].map(&:product)).to all(eq(milk))
-      expect(milk.reload.names).to include("milch", "vollmilch")
+      expect(milk.reload.seen_names).to include("milch", "vollmilch")
     end
 
     it "does not learn from the offline stub, which only guesses" do
