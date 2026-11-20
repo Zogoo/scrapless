@@ -29,6 +29,19 @@ type SpeechWindow = Window & {
   webkitSpeechRecognition?: new () => SpeechRecognitionLike;
 };
 
+/**
+ * An iPhone or iPad, in any browser: Apple makes them all use WebKit, so
+ * Chrome on an iPhone has Safari's recogniser. iPadOS reports itself as a Mac,
+ * so a touch screen gives it away.
+ */
+export function isAppleMobile(
+  userAgent = navigator.userAgent,
+  platform = navigator.platform,
+  touchPoints = navigator.maxTouchPoints,
+): boolean {
+  return /iPad|iPhone|iPod/.test(userAgent) || (platform === 'MacIntel' && touchPoints > 1);
+}
+
 /** One of environment.availableLocales. */
 export type SpeechLang = string;
 
@@ -105,9 +118,20 @@ export class SpeechService {
   private chunks: Blob[] = [];
   private stream: MediaStream | null = null;
 
+  /**
+   * Not on iOS. Its recogniser (Siri's) works for the first session in a page
+   * and then hears nothing until a reload, in Safari and in Chrome alike;
+   * releasing the old recogniser and the deaf fallback were not enough on a
+   * real iPhone. Recording works every time there, so iOS records and the
+   * server transcribes (doc 15 §15.2.4).
+   */
   get recognitionSupported(): boolean {
     const w = window as SpeechWindow;
-    return !this.recognitionRefused && Boolean(w.SpeechRecognition ?? w.webkitSpeechRecognition);
+    return (
+      !this.recognitionRefused &&
+      !isAppleMobile() &&
+      Boolean(w.SpeechRecognition ?? w.webkitSpeechRecognition)
+    );
   }
 
   get recordingSupported(): boolean {

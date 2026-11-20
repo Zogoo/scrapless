@@ -214,6 +214,14 @@ Two findings follow:
   ([WebKit, Safari 14.1](https://webkit.org/blog/11648/new-webkit-features-in-safari-14-1/)).
   So the recording path today serves mainly **Firefox Android** and **iPhones with Siri off**.
   Doc 14 §14.2's "only on iOS" is out of date.
+- **iOS records, always ⚠️ (2026-11-20).** On a real iPhone, in Safari and in Chrome (every iOS
+  browser is WebKit), the recogniser heard the first session in a page and nothing after it
+  until a reload, with no error. Chrome on a Mac was fine. Releasing the old recogniser and a
+  4-second "deaf" fallback to recording were not enough, so `SpeechService.recognitionSupported`
+  is false on iPhone and iPad and they take the recording path: about $0.003 a minute and a
+  second or two slower, but it works every time. Reports of the same:
+  [WebKit 225298](https://bugs.webkit.org/show_bug.cgi?id=225298),
+  [web-speech-api #96](https://github.com/WebAudio/web-speech-api/issues/96).
 - **iOS home-screen apps ❓.** In 2021 a WebKit engineer wrote that the API "is not available in
   SafariViewController and web apps added to Home Screen for now". The bug is RESOLVED LATER and
   its last comment (2025-03-01) asks for an update ([WebKit bug 225298](https://bugs.webkit.org/show_bug.cgi?id=225298)).
@@ -282,7 +290,7 @@ page, checked 2026-11-17.
 | **What** | Web Speech, single-shot (`continuous = false`), started and stopped by a hold-to-talk / tap-to-toggle mic (§15.8); `stop()` not `abort()`; a DE/EN speech-language toggle. The server splits with a dictionary-driven segmenter (§15.6 step 5). No continuous listening in the alpha. |
 | **Cost per use** | **$0** wherever SpeechRecognition exists. **$0.00075** on the recording fallback (0.25 min × $0.003). |
 | **Latency** | Words appear live through interim results; one server round trip after stop, with no model call. |
-| **Platform support ✅** | Chrome desktop and Android, Safari and iOS Safari (Siri must be on), and Firefox desktop 160+. Firefox Android takes the recording path. iOS home-screen behaviour is unverified ❓. |
+| **Platform support ✅** | Chrome desktop and Android, Safari on a Mac, and Firefox desktop 160+. Firefox Android and every browser on iPhone and iPad take the recording path (iOS recognition hears only the first session in a page, §15.2.4). iOS home-screen behaviour is unverified ❓. |
 | **Accuracy** | Recogniser accuracy in German and English is not published by Google or Apple, so we must measure it on our own sentences. The parser is limited by the dictionary (76 shared aliases + household history today). |
 | **Complexity** | No new dependency, no new infrastructure. |
 | **Optional extra ✅** | `unspokenPunctuation = true` makes the engine insert commas. It is in Chrome 151 per MDN compat data. The intent to ship says "Shipping on desktop" while the compat data marks Chrome Android as matching desktop: **conflicting**, so test on a phone ❓. Not in Safari. Harmless to set; the segmenter does not depend on it. |
