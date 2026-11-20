@@ -110,6 +110,7 @@ module Captures
       item = @household.items.new(
         capture: @capture,
         product: resolved.product,
+        source_product_key: resolved.source_product_key,
         display_name: "#{resolved.emoji} #{resolved.display_name}".strip,
         canonical_name: resolved.canonical_name,
         category: resolved.category,

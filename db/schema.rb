@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_19_223639) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_20_080918) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -135,11 +135,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_223639) do
     t.float "amount_left", default: 1.0, null: false
     t.integer "product_id"
     t.date "checked_on"
+    t.string "source_product_key"
     t.index ["capture_id"], name: "index_items_on_capture_id"
     t.index ["household_id", "canonical_name"], name: "index_items_on_household_id_and_canonical_name"
     t.index ["household_id", "state", "window_end"], name: "index_items_on_household_id_and_state_and_window_end"
     t.index ["household_id"], name: "index_items_on_household_id"
     t.index ["product_id"], name: "index_items_on_product_id"
+    t.index ["source_product_key"], name: "index_items_on_source_product_key"
   end
 
   create_table "meal_suggestions", force: :cascade do |t|
@@ -210,6 +212,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_19_223639) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.json "shelf_life"
+    t.json "names", default: {}, null: false
     t.index ["key"], name: "index_products_on_key", unique: true
   end
 

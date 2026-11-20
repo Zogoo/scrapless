@@ -1,0 +1,150 @@
+# Product merging for Scrapless / Rettich ("Design B")
+#
+# Read by Products::MergeKey. A product key is the model's generic English
+# name (American spelling, lowercase, singular), e.g. "basmati rice".
+#
+# Rule, in this order:
+#   1. category not in `categories`          -> key unchanged
+#   2. key listed in `keep_exceptions`        -> key unchanged
+#   3. key contains a `processing_words` word -> key unchanged
+#   4. key ENDS with a `merge_heads` entry    -> that head (longest head wins)
+#   5. otherwise                              -> key unchanged
+#
+# All matching is on WHOLE WORDS: "pineapple" is not "apple",
+# "watermelon" is not "melon". Changing this file: rerun
+# `rake products:recompute_merges` (DRY_RUN=1 first).
+
+# Merging only happens for these categories. Bakery, dairy, meat_fish, deli,
+# prepared and frozen keep their specific products (bread, milk, cheese, ...).
+categories:
+  - produce
+  - pantry
+  - drinks
+
+# head (English product key) => German line title shown when varieties stack
+merge_heads:
+  # --- Obst -----------------------------------------------------------------
+  apple: Äpfel
+  pear: Birnen
+  banana: Bananen
+  orange: Orangen
+  mandarin: Mandarinen
+  clementine: Clementinen
+  lemon: Zitronen
+  lime: Limetten
+  grapefruit: Grapefruits
+  grape: Weintrauben
+  strawberry: Erdbeeren
+  raspberry: Himbeeren
+  blueberry: Heidelbeeren
+  blackberry: Brombeeren
+  currant: Johannisbeeren
+  cherry: Kirschen
+  plum: Pflaumen
+  peach: Pfirsiche
+  nectarine: Nektarinen
+  apricot: Aprikosen
+  kiwi: Kiwis
+  mango: Mangos
+  melon: Melonen
+  watermelon: Wassermelonen
+  avocado: Avocados
+
+  # --- Gemüse ---------------------------------------------------------------
+  potato: Kartoffeln
+  onion: Zwiebeln
+  garlic: Knoblauch
+  carrot: Karotten
+  tomato: Tomaten
+  cucumber: Gurken
+  bell pepper: Paprika
+  zucchini: Zucchini
+  eggplant: Auberginen
+  lettuce: Salat
+  spinach: Spinat
+  cabbage: Kohl
+  broccoli: Brokkoli
+  cauliflower: Blumenkohl
+  kohlrabi: Kohlrabi
+  leek: Lauch
+  celery: Sellerie
+  asparagus: Spargel
+  mushroom: Pilze
+  pumpkin: Kürbis
+  radish: Radieschen
+  beetroot: Rote Bete
+
+  # --- Vorrat ---------------------------------------------------------------
+  rice: Reis
+  pasta: Nudeln
+  noodle: Nudeln
+  flour: Mehl
+  sugar: Zucker
+  salt: Salz
+  lentil: Linsen
+  chickpea: Kichererbsen
+  oat: Haferflocken
+  muesli: Müsli
+  honey: Honig
+  coffee: Kaffee
+  tea: Tee
+
+  # --- Getränke -------------------------------------------------------------
+  mineral water: Mineralwasser
+  beer: Bier
+
+# A key containing any of these words is a processed product and never merged:
+# "tomato sauce", "apple juice", "dried apricot", "canned tomato",
+# "apple vinegar", "strawberry jam", "powdered sugar".
+processing_words:
+  - canned
+  - tinned
+  - dried
+  - frozen
+  - pickled
+  - smoked
+  - powdered
+  - puree
+  - paste
+  - sauce
+  - juice
+  - nectar
+  - syrup
+  - concentrate
+  - jam
+  - jelly
+  - compote
+  - spread
+  - chips
+  - soup
+  - ketchup
+  - pesto
+  - vinegar
+  - wine
+  - cider
+  - liqueur
+  - chocolate
+
+# Keys that end with a head but are a different food.
+keep_exceptions:
+  # different vegetable or fruit
+  - sweet potato
+  - spring onion
+  - bitter melon
+  - white radish
+  - daikon radish
+  # products made from the head
+  - rice noodle
+  - rice cake
+  - rice milk
+  - oat milk
+  - potato starch
+  - vanilla sugar
+  - icing sugar
+  - garlic salt
+  - celery salt
+  # ready-to-drink, not the dry product
+  - iced tea
+  - bubble tea
+  - iced coffee
+  - cold brew coffee

@@ -53,7 +53,7 @@ export class Kitchen implements OnInit {
     const q = this.query().trim().toLowerCase();
     return this.lines().filter((line) => {
       if (place !== 'all' && line.first.storage !== place) return false;
-      return !q || line.first.display_name.toLowerCase().includes(q);
+      return !q || matches(line, q);
     });
   });
 
@@ -69,7 +69,7 @@ export class Kitchen implements OnInit {
     const q = this.query().trim().toLowerCase();
     const counts = { all: 0, fridge: 0, freezer: 0, pantry: 0 };
     for (const line of this.lines()) {
-      if (q && !line.first.display_name.toLowerCase().includes(q)) continue;
+      if (q && !matches(line, q)) continue;
       counts.all += 1;
       counts[line.first.storage] += 1;
     }
@@ -144,4 +144,11 @@ export class Kitchen implements OnInit {
       error: (err: { message?: string }) => this.error.set(err.message ?? ''),
     });
   }
+}
+
+/** A search finds a line by its title or by any pack on it ("basmati" finds "Reis"). */
+function matches(line: KitchenLine, q: string): boolean {
+  return [line.title, ...line.packs.map((pack) => pack.display_name)].some((name) =>
+    name.toLowerCase().includes(q),
+  );
 }
