@@ -1,0 +1,48 @@
+/*
+ * The recording path (iPhone, Firefox on Android): a red, pulsing mic, a
+ * "recording" line with a timer, then "sending". Kept apart from capture.scss,
+ * which is at its size budget.
+ */
+.voice .pulse.rec {
+  display: grid;
+  place-items: center;
+  width: 6rem;
+  height: 6rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  box-shadow: 0 0 0 0.35rem color-mix(in srgb, var(--danger) 35%, transparent);
+}
+
+.rec-state {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.rec-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: var(--danger);
+  animation: rec-blink 1s steps(2, start) infinite;
+}
+
+.rec-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+@keyframes rec-blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rec-dot {
+    animation: none;
+  }
+}

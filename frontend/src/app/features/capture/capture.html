@@ -123,11 +123,32 @@
 
     @case ('voice') {
       <div class="voice">
-        <span class="pulse" [class.live]="speech.listening()" aria-hidden="true">🎙</span>
-        <p class="prompt">{{ 'capture.voice_prompt' | translate }}</p>
-        <p class="interim" role="status" aria-live="polite">
-          {{ speech.interim() || transcript() }}
-        </p>
+        @if (recording()) {
+          <!-- Recording: no words show while speaking, so say what is happening. -->
+          <span class="pulse rec" [class.live]="speech.capturing() && !busy()" aria-hidden="true"
+            >🎙</span
+          >
+          <p class="rec-state" role="status">
+            @if (busy()) {
+              {{ 'capture.rec_sending' | translate }}
+            } @else if (speech.capturing()) {
+              <span class="rec-dot" aria-hidden="true"></span>
+              {{ 'capture.rec_on' | translate }}
+              <span class="rec-time" aria-hidden="true">{{ elapsedLabel() }}</span>
+            } @else {
+              {{ 'capture.rec_starting' | translate }}
+            }
+          </p>
+          @if (!busy()) {
+            <p class="prompt">{{ 'capture.rec_prompt' | translate }}</p>
+          }
+        } @else {
+          <span class="pulse" [class.live]="speech.listening()" aria-hidden="true">🎙</span>
+          <p class="prompt">{{ 'capture.voice_prompt' | translate }}</p>
+          <p class="interim" role="status" aria-live="polite">
+            {{ speech.interim() || transcript() }}
+          </p>
+        }
 
         @if (error()) {
           <p class="error">{{ error() }}</p>
@@ -338,7 +359,7 @@
     }
   }
 
-  @if (busy() && mode() !== 'reading') {
+  @if (busy() && mode() !== 'reading' && !recording()) {
     <p class="loading">{{ 'capture.reading' | translate }}</p>
   }
 </section>
