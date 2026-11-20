@@ -107,7 +107,11 @@
     },
     "place_label": "Wohin {{name}} kommt",
     "joins": "kommt zu {{name}} · jetzt {{count}} in der Küche",
-    "say_again": "Das kam nicht an. Sag es bitte noch einmal und tipp dann auf Fertig."
+    "say_again": "Das kam nicht an. Sag es bitte noch einmal und tipp dann auf Fertig.",
+    "rec_starting": "Mikrofon startet…",
+    "rec_on": "Aufnahme läuft",
+    "rec_prompt": "Sag, was du gekauft hast. Dann tipp auf Fertig.",
+    "rec_sending": "Aufnahme wird übertragen…"
   },
   "memo": {
     "title": "Einkauf",

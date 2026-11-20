@@ -107,7 +107,11 @@
     },
     "place_label": "Where {{name}} goes",
     "joins": "joins {{name}} · now {{count}} in your kitchen",
-    "say_again": "Sorry, that did not come through. Say it once more, then tap Done."
+    "say_again": "Sorry, that did not come through. Say it once more, then tap Done.",
+    "rec_starting": "Starting the microphone…",
+    "rec_on": "Recording",
+    "rec_prompt": "Say what you bought, then tap Done.",
+    "rec_sending": "Sending your recording…"
   },
   "memo": {
     "title": "Shopping",

@@ -74,7 +74,7 @@ export const TAP_GRID: readonly { emoji: string; key: string }[] = [
   imports: [FormsModule, TranslatePipe, NotifyAsk],
   templateUrl: './capture.html',
   changeDetection: ChangeDetectionStrategy.Eager,
-  styleUrls: ['./capture.scss', './capture-detect.scss'],
+  styleUrls: ['./capture.scss', './capture-detect.scss', './capture-voice.scss'],
 })
 export class Capture implements OnDestroy {
   private readonly captures = inject(CaptureService);
@@ -102,6 +102,14 @@ export class Capture implements OnDestroy {
   protected readonly shot = signal<string | null>(null);
   protected readonly slow = signal(false);
   private slowTimer: number | null = null;
+  /**
+   * The recording path (iPhone, Firefox on Android, a refused or deaf
+   * recogniser): no words appear while speaking, so the screen has to say
+   * plainly that it is recording, for how long, and then that it is sending.
+   */
+  protected readonly recording = signal(false);
+  protected readonly elapsed = signal(0);
+  private recordTimer: number | null = null;
   /** Live outlines while aiming — the `?detect=1` experiment. Names come after the shot. */
   protected readonly outlines = signal<NormBox[]>([]);
   protected readonly outlinerState = signal<OutlinerState>('off');
@@ -118,6 +126,7 @@ export class Capture implements OnDestroy {
   private readonly canvas = document.createElement('canvas');
 
   ngOnDestroy(): void {
+    this.stopRecordTimer();
     this.stopCamera();
     this.clearShot();
     this.speech.cancel();
@@ -375,11 +384,32 @@ export class Capture implements OnDestroy {
       return;
     }
 
-    // Safari: no SpeechRecognition, so record and pay for a transcription.
-    void this.speech.startRecording().catch((err: Error) => {
-      this.error.set(this.micError(err));
-      this.mode.set('choose');
-    });
+    // iPhone and the rest: record, and the server transcribes.
+    this.recording.set(true);
+    this.elapsed.set(0);
+    this.speech
+      .startRecording()
+      .then(() => {
+        this.stopRecordTimer();
+        this.recordTimer = window.setInterval(() => this.elapsed.update((s) => s + 1), 1000);
+      })
+      .catch((err: Error) => {
+        this.stopRecordTimer();
+        this.recording.set(false);
+        this.error.set(this.micError(err));
+        this.mode.set('choose');
+      });
+  }
+
+  /** 0:07, 1:12: how long it has been recording. */
+  protected elapsedLabel(): string {
+    const seconds = this.elapsed();
+    return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  }
+
+  private stopRecordTimer(): void {
+    if (this.recordTimer !== null) clearInterval(this.recordTimer);
+    this.recordTimer = null;
   }
 
   protected async stopVoice(): Promise<void> {
@@ -389,7 +419,18 @@ export class Capture implements OnDestroy {
       return;
     }
 
-    const recording = await this.speech.stopRecording();
+    if (this.busy()) return;
+    this.stopRecordTimer();
+    this.busy.set(true); // "sending" from the tap, not only once the upload starts
+    let recording: Awaited<ReturnType<SpeechService['stopRecording']>>;
+    try {
+      recording = await this.speech.stopRecording();
+    } catch (err) {
+      this.busy.set(false);
+      this.recording.set(false);
+      this.error.set(this.micError(err as Error));
+      return;
+    }
     this.send(
       this.captures.spokenAudio(
         recording.blob,
@@ -429,6 +470,7 @@ export class Capture implements OnDestroy {
 
     request.subscribe({
       next: (result) => {
+        this.recording.set(false);
         // A food photo comes back with a box per item: keep the photo so the
         // review can show the names where the food is.
         this.clearShot(result.items.some((item) => item.box));
@@ -437,6 +479,7 @@ export class Capture implements OnDestroy {
         this.busy.set(false);
       },
       error: (err: { message?: string }) => {
+        this.recording.set(false);
         this.clearShot();
         // The camera is off by now, so the error goes where the next try starts.
         if (this.mode() === 'reading') this.mode.set('choose');
@@ -535,6 +578,8 @@ export class Capture implements OnDestroy {
   }
 
   protected back(): void {
+    this.stopRecordTimer();
+    this.recording.set(false);
     this.clearShot();
     this.stopCamera();
     this.speech.cancel();

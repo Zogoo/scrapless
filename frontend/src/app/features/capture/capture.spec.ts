@@ -1,5 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { TranslateService, provideTranslateService } from '@ngx-translate/core';
@@ -8,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { environment } from '../../../environments/environment';
 import { CaptureReview } from '../../core/models';
 import { PushService } from '../../core/services/push.service';
+import { SpeechService } from '../../core/services/speech.service';
 import { Capture, SLOW_READ_MS } from './capture';
 
 function reviewOf(...ids: number[]): CaptureReview {
@@ -303,5 +305,102 @@ describe('Capture review', () => {
       expect(reader.shot()).toBeNull();
       expect(reader.error()).not.toBe('');
     });
+  });
+});
+
+// The recording path (iPhone and others): no words appear while speaking, so
+// the screen says it is recording, for how long, and then that it is sending.
+describe('Capture voice, recording', () => {
+  let http: HttpTestingController;
+  let resolveStart: () => void;
+  const capturing = signal(false);
+  const speech = {
+    recognitionSupported: false,
+    recordingSupported: true,
+    supported: true,
+    interim: signal(''),
+    listening: signal(false),
+    capturing,
+    speechLang: () => 'de',
+    startRecording: vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveStart = () => {
+            capturing.set(true);
+            resolve();
+          };
+        }),
+    ),
+    stopRecording: vi.fn(async () => ({
+      blob: new Blob(['x'], { type: 'audio/mp4' }),
+      seconds: 3,
+      mimeType: 'audio/mp4',
+    })),
+    cancel: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    capturing.set(false);
+    TestBed.configureTestingModule({
+      imports: [Capture],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        provideTranslateService(),
+        { provide: SpeechService, useValue: speech },
+      ],
+    });
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('de', {
+      capture: {
+        rec_starting: 'Mikrofon startet…',
+        rec_on: 'Aufnahme läuft',
+        rec_sending: 'Aufnahme wird übertragen…',
+        reading: 'Wird gelesen…',
+      },
+    });
+    translate.use('de');
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    TestBed.resetTestingModule();
+  });
+
+  it('says it is starting, then recording with a timer, then sending', async () => {
+    const fixture = TestBed.createComponent(Capture);
+    const screen = fixture.componentInstance as unknown as {
+      startVoice(): void;
+      stopVoice(): Promise<void>;
+    };
+    const root = fixture.nativeElement as HTMLElement;
+    const state = () => root.querySelector('.rec-state')?.textContent?.replace(/\s+/g, ' ').trim();
+
+    screen.startVoice();
+    fixture.detectChanges();
+    expect(state()).toBe('Mikrofon startet…');
+
+    resolveStart();
+    await Promise.resolve();
+    vi.advanceTimersByTime(7000);
+    fixture.detectChanges();
+    expect(state()).toBe('Aufnahme läuft 0:07');
+    expect(root.querySelector('.pulse.rec.live')).not.toBeNull();
+
+    const stopping = screen.stopVoice();
+    fixture.detectChanges();
+    expect(state()).toBe('Aufnahme wird übertragen…');
+    // "Tap Done" is no longer something to do.
+    expect(root.querySelector('.voice .prompt')).toBeNull();
+    await stopping;
+    fixture.detectChanges();
+    // One line about it, not "sending" and "reading" both.
+    expect(root.textContent).not.toContain('Wird gelesen…');
+
+    const upload = http.expectOne(`${environment.apiUrl}/captures`);
+    expect(upload.request.method).toBe('POST');
   });
 });
