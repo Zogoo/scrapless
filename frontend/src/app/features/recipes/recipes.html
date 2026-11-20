@@ -36,8 +36,18 @@
   } @else if (selected() && !error() && recipes().length === 0) {
     <div class="calm">
       <span class="mark" aria-hidden="true">🍲</span>
-      <h2>{{ 'recipes.empty_title' | translate }}</h2>
-      <p>{{ 'recipes.empty_body' | translate }}</p>
+      @if (kitchenEmpty()) {
+        <h2>{{ 'recipes.empty_title' | translate }}</h2>
+        <p>{{ 'recipes.empty_body' | translate }}</p>
+      } @else if (selected(); as meal) {
+        <!-- There is food, nothing came of it this time. Not stored, so asking
+         again asks the model again. -->
+        <h2>{{ 'recipes.no_idea_title' | translate }}</h2>
+        <p>{{ 'recipes.no_idea_body' | translate }}</p>
+        <button type="button" class="primary" (click)="ask(meal)">
+          {{ 'recipes.try_again' | translate }}
+        </button>
+      }
     </div>
   } @else if (recipes().length > 0) {
     @for (recipe of recipes(); track recipe.title) {

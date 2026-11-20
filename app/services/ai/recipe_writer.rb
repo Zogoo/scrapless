@@ -57,7 +57,10 @@ module Ai
          just as good without - never for what the recipe is built on.
       6. Never call food expired, off or bad, and never tell anyone off.
       7. Write titles, steps and amounts in %<language>s.
-      8. If nothing sensible can be made, return an empty list rather than forcing it.
+      8. Simple counts, above all for breakfast: eggs on bread, yoghurt with
+         fruit, a cheese sandwich, porridge. A plate of a few listed foods is a
+         fine suggestion. Return an empty list only if no listed food fits this
+         meal at all.
     PROMPT
 
     def initialize(pantry:, meal:, household: nil, locale: I18n.locale)

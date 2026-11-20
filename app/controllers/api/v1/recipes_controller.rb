@@ -12,7 +12,8 @@ module Api
 
       def suggest
         result = Recipes::Suggest.call(household: current_household, meal: params.require(:meal))
-        render json: { meal: result.meal, recipes: result.recipes, cached: result.cached, mode: Ai::Config.mode }
+        render json: { meal: result.meal, recipes: result.recipes, cached: result.cached,
+                       kitchen_empty: result.kitchen_empty, mode: Ai::Config.mode }
       end
 
       private

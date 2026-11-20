@@ -31,7 +31,20 @@ RSpec.describe "Api::V1::Recipes", type: :request do
       post "/api/v1/recipes/suggest", params: { meal: "lunch" }, headers: headers
 
       expect(response).to have_http_status(:ok)
-      expect(response.parsed_body["recipes"]).to eq([])
+      expect(response.parsed_body).to include("recipes" => [], "kitchen_empty" => true)
+    end
+
+    it "tells a full kitchen with no idea this time apart from an empty one" do
+      create(:item, household: household)
+      allow(Ai::RecipeWriter).to receive(:call).and_return("recipes" => [])
+
+      post "/api/v1/recipes/suggest", params: { meal: "breakfast" }, headers: headers
+
+      expect(response.parsed_body).to include("recipes" => [], "kitchen_empty" => false)
+    end
+
+    it "lets breakfast be simple instead of coming back empty" do
+      expect(Ai::RecipeWriter::SYSTEM).to include("Simple counts, above all for breakfast")
     end
 
     it "answers a repeat tap for the same meal from the stored result" do

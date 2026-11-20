@@ -41,6 +41,30 @@ RSpec.describe Recipes::Suggest do
     expect(Ai::RecipeWriter).to have_received(:call).once
   end
 
+  # Observed: a full kitchen, and breakfast said "nothing to cook" all day.
+  # An empty answer was stored like a real one, so every later tap that day
+  # got it back without asking again.
+  it "does not keep an empty answer for the day; the next tap asks again" do
+    eggs = create(:item, household: household, display_name: "Eier", canonical_name: "eier")
+    model_answers
+    expect(suggest(meal: "breakfast").recipes).to eq([])
+
+    model_answers(recipe("Rührei", eggs))
+    result = suggest(meal: "breakfast")
+
+    expect(result.recipes.map { |r| r[:title] }).to eq([ "Rührei" ])
+    expect(result.cached).to be(false)
+  end
+
+  it "does not keep an answer whose every recipe was thrown out" do
+    create(:item, household: household, display_name: "Eier", canonical_name: "eier")
+    model_answers({ "title" => "Pancakes", "minutes" => 10, "steps" => [ "Mix." ],
+                    "ingredients" => [ { "item_id" => nil, "name" => "flour", "amount" => nil, "optional" => false } ] })
+
+    expect(suggest(meal: "breakfast").recipes).to eq([])
+    expect(household.meal_suggestions).to be_empty
+  end
+
   it "shows the model the food most at risk first, flagged as use-first" do
     fresh = create(:item, household: household, display_name: "Nudeln", canonical_name: "nudeln")
     urgent = create(:item, :at_risk, household: household, display_name: "Brokkoli")
@@ -191,6 +215,7 @@ RSpec.describe Recipes::Suggest do
     end
 
     it "still answers from the cache once the limit is reached" do
+      model_answers(recipe("Gemüsepfanne", household.items.first)) # only an answer with recipes is kept
       suggest
       log_calls(described_class::MAX_CALLS_PER_HOUR)
 
