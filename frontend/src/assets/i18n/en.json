@@ -167,7 +167,8 @@
     "collapse": "Hide {{name}}",
     "remove_confirm": "Delete {{name}}?",
     "remove_not_waste": "Added by mistake. It does not count as wasted.",
-    "remove_yes": "Delete"
+    "remove_yes": "Delete",
+    "swipe_hint": "Tip: swipe a card left to delete it"
   },
   "storage": {
     "fridge": "Fridge",

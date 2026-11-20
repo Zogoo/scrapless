@@ -32,6 +32,8 @@ export class Kitchen implements OnInit {
   private readonly items = inject(ItemsService);
   private readonly router = inject(Router);
 
+  /** "Swipe left to delete", shown until the first swipe that asks. */
+  protected readonly showSwipeHint = signal(!swipeLearnedBefore());
   protected readonly loading = signal(true);
   protected readonly error = signal('');
   /** All places, until a storage button narrows the list. */
@@ -105,6 +107,15 @@ export class Kitchen implements OnInit {
   }
 
   /** For a line read wrong, not eaten or binned: it is not waste, so it is deleted. */
+  protected swipeLearned(): void {
+    this.showSwipeHint.set(false);
+    try {
+      localStorage.setItem(SWIPE_LEARNED_KEY, '1');
+    } catch {
+      /* private mode: the hint just stays */
+    }
+  }
+
   protected removeLine(line: KitchenLine): void {
     forkJoin(line.packs.map((pack) => this.items.remove(pack.id))).subscribe({
       next: () => {
@@ -120,4 +131,14 @@ function matches(line: KitchenLine, q: string): boolean {
   return [line.title, ...line.packs.map((pack) => pack.display_name)].some((name) =>
     name.toLowerCase().includes(q),
   );
+}
+
+const SWIPE_LEARNED_KEY = 'scrapless_swipe_learned';
+
+function swipeLearnedBefore(): boolean {
+  try {
+    return localStorage.getItem(SWIPE_LEARNED_KEY) === '1';
+  } catch {
+    return false;
+  }
 }

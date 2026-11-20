@@ -57,6 +57,8 @@ export class ItemLine {
   /** The Kitchen can delete a line added by mistake. Home does not. */
   readonly removable = input(false);
   readonly remove = output<void>();
+  /** A swipe reached the delete question: the gesture is learned (Kitchen's hint). */
+  readonly swiped = output<void>();
   /** Asking whether to delete, after a swipe (or Delete on the keyboard). */
   protected readonly confirmingRemove = signal(false);
   /** How far the card is pulled left, in px, while swiping. */
@@ -161,7 +163,10 @@ export class ItemLine {
     const from = this.swipeFrom;
     if (from?.tracking) {
       this.swipedAt = Date.now();
-      if (this.swipe() >= Math.min(SWIPE_TO_ASK_PX, from.width * SWIPE_TO_ASK)) this.askRemove();
+      if (this.swipe() >= Math.min(SWIPE_TO_ASK_PX, from.width * SWIPE_TO_ASK)) {
+        this.askRemove();
+        this.swiped.emit();
+      }
     }
     this.swipeCancel();
   }

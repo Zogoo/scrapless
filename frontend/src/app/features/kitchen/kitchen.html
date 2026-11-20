@@ -37,6 +37,11 @@
       </div>
     </div>
 
+    @if (showSwipeHint() && filtered().length > 0) {
+      <!-- Nothing on a card shows it can be swiped, so say it once, until used. -->
+      <p class="swipe-hint">{{ 'kitchen.swipe_hint' | translate }}</p>
+    }
+
     @if (filtered().length === 0 && query().trim()) {
       <p class="lede">{{ 'kitchen.no_match' | translate }}</p>
     } @else {
@@ -57,6 +62,7 @@
                     [line]="line"
                     [removable]="true"
                     (remove)="removeLine(line)"
+                    (swiped)="swipeLearned()"
                     (failed)="error.set($event)"
                   />
                 </li>

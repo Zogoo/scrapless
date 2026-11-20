@@ -167,7 +167,8 @@
     "collapse": "{{name}} zuklappen",
     "remove_confirm": "{{name}} löschen?",
     "remove_not_waste": "Versehentlich hinzugefügt. Zählt nicht als weggeworfen.",
-    "remove_yes": "Löschen"
+    "remove_yes": "Löschen",
+    "swipe_hint": "Tipp: Karte nach links wischen zum Löschen"
   },
   "storage": {
     "fridge": "Kühlschrank",
