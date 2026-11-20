@@ -153,6 +153,8 @@ export interface RecipeSuggestions {
   meal: Meal;
   recipes: Recipe[];
   cached: boolean;
+  /** True only when there was no food to cook from; false when nothing came of it. */
+  kitchen_empty?: boolean;
   mode: 'live' | 'stub';
 }
 

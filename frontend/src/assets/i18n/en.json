@@ -146,7 +146,10 @@
     "minutes": "{{count}} min",
     "uses_first": "Uses what should go first",
     "optional": "optional",
-    "pick": "Pick a meal and we'll suggest something from what's in the kitchen."
+    "pick": "Pick a meal and we'll suggest something from what's in the kitchen.",
+    "no_idea_title": "No idea for this one yet.",
+    "no_idea_body": "There is food here; this time nothing good came of it.",
+    "try_again": "Try again"
   },
   "kitchen": {
     "title": "Kitchen",

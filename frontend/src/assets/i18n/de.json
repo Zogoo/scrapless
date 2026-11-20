@@ -146,7 +146,10 @@
     "minutes": "{{count}} Min.",
     "uses_first": "Verbraucht, was zuerst dran ist",
     "optional": "optional",
-    "pick": "Wähle eine Mahlzeit, dann schlagen wir etwas aus deiner Küche vor."
+    "pick": "Wähle eine Mahlzeit, dann schlagen wir etwas aus deiner Küche vor.",
+    "no_idea_title": "Dazu fällt uns gerade nichts ein.",
+    "no_idea_body": "Essen ist da, nur kam diesmal nichts Gutes dabei heraus.",
+    "try_again": "Nochmal versuchen"
   },
   "kitchen": {
     "title": "Küche",

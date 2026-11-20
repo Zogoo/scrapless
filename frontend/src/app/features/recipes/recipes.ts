@@ -26,6 +26,8 @@ export class Recipes {
   protected readonly loading = signal(false);
   protected readonly error = signal('');
   protected readonly retryable = signal(false);
+  /** No food to cook from, as opposed to no idea this time (which may be retried). */
+  protected readonly kitchenEmpty = signal(false);
 
   protected ask(meal: Meal): void {
     this.selected.set(meal);
@@ -38,6 +40,7 @@ export class Recipes {
         if (this.selected() !== meal) return;
 
         this.recipes.set(page.recipes.slice(0, 3));
+        this.kitchenEmpty.set(page.kitchen_empty === true);
         this.loading.set(false);
       },
       error: (err: { message?: string; retryable?: boolean }) => {

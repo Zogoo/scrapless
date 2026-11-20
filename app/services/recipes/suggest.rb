@@ -4,7 +4,9 @@ module Recipes
   #
   # Breakfast, lunch and dinner are each generated at most once a day for a
   # fridge. The answer is stored, so a second tap shows it again and does not
-  # call the model, even after a restart or a change in the kitchen. A fridge
+  # call the model, even after a restart or a change in the kitchen. Only an
+  # answer with recipes is stored: an empty one was kept for the whole day, and
+  # a full kitchen said "nothing to cook" at every breakfast tap after it. A fridge
   # still only gets a few real model calls an hour, counted out of the ai_calls
   # ledger, and the daily Ai::Budget still applies underneath, through the router.
   class Suggest < ApplicationService
@@ -18,7 +20,8 @@ module Recipes
     MAX_ITEMS = 30
     MAX_CALLS_PER_HOUR = 6
 
-    Result = Struct.new(:recipes, :cached, :meal, keyword_init: true)
+    # kitchen_empty tells "there is no food" apart from "nothing came of it".
+    Result = Struct.new(:recipes, :cached, :meal, :kitchen_empty, keyword_init: true)
 
     def initialize(household:, meal:, locale: I18n.locale, on: Date.current)
       @household = household
@@ -31,11 +34,14 @@ module Recipes
       raise UnknownMeal, @meal unless MEALS.include?(@meal)
 
       stored = remembered
-      return Result.new(recipes: stored.payload, cached: true, meal: @meal) if stored
-      return Result.new(recipes: [], cached: false, meal: @meal) if pantry.empty?
+      return Result.new(recipes: stored.payload, cached: true, meal: @meal, kitchen_empty: false) if stored
+      return Result.new(recipes: [], cached: false, meal: @meal, kitchen_empty: true) if pantry.empty?
 
-      record = save(write_recipes)
-      Result.new(recipes: record.payload, cached: !record.previously_new_record?, meal: @meal)
+      recipes = write_recipes
+      return Result.new(recipes: [], cached: false, meal: @meal, kitchen_empty: false) if recipes.empty?
+
+      record = save(recipes)
+      Result.new(recipes: record.payload, cached: !record.previously_new_record?, meal: @meal, kitchen_empty: false)
     end
 
     private
@@ -57,7 +63,17 @@ module Recipes
       raise TooMany if Ai::Config.live? && calls_this_hour >= MAX_CALLS_PER_HOUR
 
       raw = Ai::RecipeWriter.call(pantry: pantry, meal: @meal, household: @household, locale: @locale)
-      Array(raw["recipes"])
+      written = Array(raw["recipes"])
+      grounded(written).tap do |kept|
+        # Which of the two it was, without what is in anyone's kitchen.
+        if kept.empty?
+          Rails.logger.info("recipes empty meal=#{@meal} pantry=#{pantry.size} written=#{written.size} kept=0")
+        end
+      end
+    end
+
+    def grounded(written)
+      written
         .filter_map { |recipe| GroundInInventory.call(recipe: recipe, items: items, use_first_ids: use_first_ids,
                                               household: @household) }
         .uniq { |recipe| recipe[:title].downcase }

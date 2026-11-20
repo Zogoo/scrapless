@@ -50,4 +50,45 @@ describe('Recipes', () => {
     expect(req.request.body).toEqual({ meal: 'breakfast' });
     req.flush({ meal: 'breakfast', recipes: [], cached: false, mode: 'stub' });
   });
+
+  // Observed: a full kitchen at breakfast was told "nothing to cook yet, once
+  // there is food here" — the empty-kitchen message, with no way to ask again.
+  describe('with no recipes back', () => {
+    function answer(kitchenEmpty: boolean) {
+      const fixture = TestBed.createComponent(Recipes);
+      (fixture.componentInstance as unknown as RecipesScreen).ask('breakfast');
+      http.expectOne(`${environment.apiUrl}/recipes/suggest`).flush({
+        meal: 'breakfast',
+        recipes: [],
+        cached: false,
+        kitchen_empty: kitchenEmpty,
+        mode: 'live',
+      });
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('offers to try again when there is food, and asks the model again', () => {
+      const root = answer(false);
+      const again = root.querySelector('.calm button') as HTMLButtonElement;
+
+      expect(root.textContent).toContain('recipes.no_idea_title');
+      again.click();
+
+      http.expectOne(`${environment.apiUrl}/recipes/suggest`).flush({
+        meal: 'breakfast',
+        recipes: [],
+        cached: false,
+        kitchen_empty: false,
+        mode: 'live',
+      });
+    });
+
+    it('says the kitchen is empty only when it is, with nothing to retry', () => {
+      const root = answer(true);
+
+      expect(root.textContent).toContain('recipes.empty_title');
+      expect(root.querySelector('.calm button')).toBeNull();
+    });
+  });
 });
