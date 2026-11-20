@@ -102,6 +102,29 @@ describe('SpeechService', () => {
     expect(run.done()).toBe(true);
   });
 
+  // Observed: "it won't be added by microphone". Safari, and Chrome on some
+  // Androids, show the words as interim results and end on stop() without
+  // ever marking them final; only final text was kept, so nothing was sent.
+  it('keeps the words on screen when stop() ends before they were final', () => {
+    const run = listen();
+    FakeRecognition.last?.hear(['Milch Brot', false]);
+
+    speech.finish();
+    FakeRecognition.last?.onend?.();
+
+    expect(run.got).toEqual(['Milch Brot']);
+  });
+
+  it('prefers final text, then adds what was still being heard', () => {
+    const run = listen();
+    FakeRecognition.last?.hear(['Milch', true], [' Brot', false]);
+
+    speech.finish();
+    FakeRecognition.last?.onend?.();
+
+    expect(run.got).toEqual(['Milch Brot']);
+  });
+
   it('emits nothing for a cancelled session', () => {
     const run = listen();
     FakeRecognition.last?.hear(['Milch', true]);

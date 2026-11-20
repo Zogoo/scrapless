@@ -119,7 +119,8 @@ export class SpeechService {
   }
 
   /**
-   * Emits the final transcript once (possibly empty), then completes. A
+   * Emits what was heard once (possibly empty), then completes: the final
+   * results plus any still-interim words when the session ended. A
    * cancelled session completes without emitting. Errors only for a real
    * failure, with the recogniser's error code as the message.
    */
@@ -139,7 +140,10 @@ export class SpeechService {
       recognition.continuous = false;
       recognition.interimResults = true;
 
-      let finalText = '';
+      // Everything heard so far, final or not: the words on screen. Safari, and
+      // Chrome on some Androids, end on stop() without marking the last words
+      // final, and keeping only final text sent nothing at all.
+      let heard = '';
       this.interim.set('');
       this.listening.set(true);
       this.capturing.set(false);
@@ -156,8 +160,8 @@ export class SpeechService {
           if (result.isFinal) done += result[0].transcript;
           else pending += result[0].transcript;
         }
-        finalText = squeeze(done);
-        this.interim.set(squeeze(`${done} ${pending}`));
+        heard = squeeze(`${done} ${pending}`);
+        this.interim.set(heard);
       };
 
       recognition.onerror = (event) => {
@@ -171,7 +175,7 @@ export class SpeechService {
 
       recognition.onend = () => {
         this.endSession(session);
-        if (!session.cancelled) subscriber.next(finalText.trim());
+        if (!session.cancelled) subscriber.next(heard);
         subscriber.complete();
       };
 
