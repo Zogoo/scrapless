@@ -300,3 +300,33 @@ label.field {
   white-space: nowrap !important;
   border: 0 !important;
 }
+
+/*
+ * "Recording" indicator, shared by the Kitchen add screen and the shopping
+ * list: on the recording path (iPhone, Firefox on Android) no words appear
+ * while speaking, so a blinking red dot and a timer say it is recording.
+ */
+.rec-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: var(--danger);
+  animation: rec-blink 1s steps(2, start) infinite;
+}
+
+.rec-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+@keyframes rec-blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rec-dot {
+    animation: none;
+  }
+}

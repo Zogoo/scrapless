@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideTranslateService } from '@ngx-translate/core';
+import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import { Subject } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -209,5 +209,103 @@ describe('Memo mic', () => {
     http.expectOne(`${environment.apiUrl}/memo`).flush({ items: [], suggestions: [] });
 
     expect(mic.justAdded().map((item) => item.name)).toEqual(['Hafermilch']);
+  });
+});
+
+// iPhone records: no words appear while speaking, so the status bar has to
+// say it is recording, for how long, and then that it is sending.
+describe('Memo mic, recording', () => {
+  let http: HttpTestingController;
+  let resolveStart: () => void;
+  let now = 1_000;
+  const capturing = signal(false);
+  const listening = signal(false);
+  const speech = {
+    listening,
+    capturing,
+    interim: signal(''),
+    speechLang: signal('de'),
+    recognitionSupported: false,
+    recordingSupported: true,
+    supported: true,
+    setSpeechLang: vi.fn(),
+    cancel: vi.fn(() => listening.set(false)),
+    startRecording: vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          listening.set(true);
+          resolveStart = () => {
+            capturing.set(true);
+            resolve();
+          };
+        }),
+    ),
+    stopRecording: vi.fn(async () => {
+      listening.set(false);
+      capturing.set(false);
+      return { blob: new Blob(['x'], { type: 'audio/mp4' }), seconds: 4, mimeType: 'audio/mp4' };
+    }),
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.useFakeTimers();
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    TestBed.configureTestingModule({
+      imports: [Memo],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideTranslateService(),
+        { provide: SpeechService, useValue: speech },
+      ],
+    });
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('de', {
+      capture: { rec_on: 'Aufnahme läuft', rec_sending: 'Aufnahme wird übertragen…' },
+      memo: { starting: 'Einen Moment…', listening: 'Ich höre…' },
+    });
+    translate.use('de');
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    TestBed.resetTestingModule();
+  });
+
+  it('shows starting, then recording with a timer, then sending until the lines arrive', async () => {
+    const fixture = TestBed.createComponent(Memo);
+    const mic = fixture.componentInstance as unknown as MicSurface;
+    const root = fixture.nativeElement as HTMLElement;
+    const status = () =>
+      [...root.querySelectorAll('.interim span')]
+        .map((s) => s.textContent!.replace(/\s+/g, ' ').trim())
+        .find((t) => t.length > 0);
+
+    mic.onMicDown(pointer('pointerdown'));
+    fixture.detectChanges();
+    expect(status()).toBe('Einen Moment…');
+
+    resolveStart();
+    await Promise.resolve();
+    vi.advanceTimersByTime(5000);
+    fixture.detectChanges();
+    expect(root.querySelector('.interim .rec-dot')).not.toBeNull();
+    expect(status()).toBe('Aufnahme läuft 0:05');
+
+    now += HOLD_MS + 5000;
+    mic.onMicUp(pointer('pointerup'));
+    fixture.detectChanges();
+    expect(status()).toBe('Aufnahme wird übertragen…');
+
+    await Promise.resolve();
+    await Promise.resolve();
+    http
+      .expectOne(`${environment.apiUrl}/memo/dictate`)
+      .flush({ transcript: 'Milch', items: [milch] });
+    fixture.detectChanges();
+    expect(root.textContent).not.toContain('Aufnahme wird übertragen…');
   });
 });

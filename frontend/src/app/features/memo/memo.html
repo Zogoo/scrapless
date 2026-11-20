@@ -42,13 +42,29 @@
 
   @if (speech.listening()) {
     <div class="interim" role="status" aria-live="polite">
-      <span>{{
-        speech.interim() ||
-          (speech.capturing() ? ('memo.listening' | translate) : ('memo.starting' | translate))
-      }}</span>
+      @if (recording() && speech.capturing()) {
+        <!-- Recording: no words show while speaking, so say that it records. -->
+        <span class="rec">
+          <span class="rec-dot" aria-hidden="true"></span>
+          {{ 'capture.rec_on' | translate }}
+          <span class="rec-time" aria-hidden="true">{{ elapsedLabel() }}</span>
+        </span>
+      } @else {
+        <span>{{
+          speech.interim() ||
+            (speech.capturing() ? ('memo.listening' | translate) : ('memo.starting' | translate))
+        }}</span>
+      }
       <button type="button" class="ghost cancel" (click)="cancelDictation()">
         ✕ {{ 'memo.cancel' | translate }}
       </button>
+    </div>
+  }
+
+  @if (sending()) {
+    <!-- Between letting go and the lines appearing: the upload and transcription. -->
+    <div class="interim" role="status">
+      <span>{{ 'capture.rec_sending' | translate }}</span>
     </div>
   }
 

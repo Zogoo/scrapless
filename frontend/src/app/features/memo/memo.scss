@@ -84,6 +84,15 @@
     flex: none;
     width: auto;
   }
+
+  .rec {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--ink);
+    font-weight: 600;
+    white-space: nowrap;
+  }
 }
 
 .just-added {
