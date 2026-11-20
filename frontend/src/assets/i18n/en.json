@@ -106,7 +106,8 @@
       "failed": "Outlines could not load"
     },
     "place_label": "Where {{name}} goes",
-    "joins": "joins {{name}} · now {{count}} in your kitchen"
+    "joins": "joins {{name}} · now {{count}} in your kitchen",
+    "say_again": "Sorry, that did not come through. Say it once more, then tap Done."
   },
   "memo": {
     "title": "Shopping",

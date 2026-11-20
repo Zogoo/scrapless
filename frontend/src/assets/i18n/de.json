@@ -106,7 +106,8 @@
       "failed": "Umrisse konnten nicht geladen werden"
     },
     "place_label": "Wohin {{name}} kommt",
-    "joins": "kommt zu {{name}} · jetzt {{count}} in der Küche"
+    "joins": "kommt zu {{name}} · jetzt {{count}} in der Küche",
+    "say_again": "Das kam nicht an. Sag es bitte noch einmal und tipp dann auf Fertig."
   },
   "memo": {
     "title": "Einkauf",

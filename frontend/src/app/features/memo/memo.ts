@@ -279,7 +279,10 @@ export class Memo implements OnInit, OnDestroy {
           this.micMode.set('idle');
           // The recogniser exists but may not be used here: record instead
           // (SpeechService has stopped offering recognition by now).
-          if (err.message === 'service-not-allowed' && this.speech.recordingSupported) {
+          if (
+            ['service-not-allowed', 'deaf'].includes(err.message) &&
+            this.speech.recordingSupported
+          ) {
             this.error.set(this.translate.instant('memo.try_again'));
             return;
           }

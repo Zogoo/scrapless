@@ -361,7 +361,16 @@ export class Capture implements OnDestroy {
           // Silence used to leave the screen as it was, which read as broken.
           else this.error.set(this.translate.instant('capture.no_mic'));
         },
-        error: (err: Error) => this.error.set(this.micError(err)),
+        error: (err: Error) => {
+          // Heard nothing at all (iOS, after the first session in a page): the
+          // service now records instead, so start that and ask once more.
+          if (err.message === 'deaf' && this.speech.recordingSupported) {
+            this.startVoice();
+            this.error.set(this.translate.instant('capture.say_again'));
+            return;
+          }
+          this.error.set(this.micError(err));
+        },
       });
       return;
     }
