@@ -358,6 +358,8 @@ export class Capture implements OnDestroy {
         next: (text) => {
           this.transcript.set(text);
           if (text) this.send(this.captures.spoken(text));
+          // Silence used to leave the screen as it was, which read as broken.
+          else this.error.set(this.translate.instant('capture.no_mic'));
         },
         error: (err: Error) => this.error.set(this.micError(err)),
       });
