@@ -1,0 +1,74 @@
+/*
+ * Swipe left to delete (Kitchen only). The card moves by --swipe, and a red
+ * strip just outside its right edge moves with it, filling the space it
+ * leaves. Kept apart from item-line.scss, which is at its size budget.
+ */
+:host {
+  position: relative;
+  transform: translateX(calc(var(--swipe, 0px) * -1));
+  transition: transform 0.2s ease;
+}
+
+:host.swiping {
+  transition: none;
+}
+
+:host::after {
+  content: '🗑';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 100%;
+  width: var(--swipe, 0px);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--danger);
+  color: #fff;
+}
+
+/* Vertical drags scroll the page; horizontal ones are the swipe. */
+.summary {
+  touch-action: pan-y;
+}
+
+.confirm-remove {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+
+  p {
+    flex: 1 1 100%;
+    margin: 0;
+    font-weight: 600;
+  }
+
+  small {
+    display: block;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  button {
+    flex: 1 1 auto;
+    min-height: var(--tap);
+  }
+
+  .danger {
+    border-color: var(--danger);
+    background: var(--danger);
+    color: #fff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host {
+    transition: none;
+  }
+}

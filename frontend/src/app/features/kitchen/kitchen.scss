@@ -82,16 +82,6 @@
   overflow: hidden;
 }
 
-.edit {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-
-  input {
-    flex: 1 1 100%;
-  }
-}
-
 .lede {
   margin: 0.25rem 0 0;
   color: var(--muted);
@@ -118,4 +108,10 @@
   .leaving {
     animation-duration: 1ms;
   }
+}
+
+.swipe-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
 }

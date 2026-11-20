@@ -149,6 +149,62 @@ describe('Kitchen', () => {
     );
   });
 
+  // Nothing on a card shows it can be swiped, so the list says it once.
+  describe('the swipe hint', () => {
+    function load(): {
+      fixture: ReturnType<typeof TestBed.createComponent<Kitchen>>;
+      root: HTMLElement;
+    } {
+      const fixture = TestBed.createComponent(Kitchen);
+      fixture.detectChanges();
+      http.expectOne(`${environment.apiUrl}/items`).flush(today([pack(1, 'Milk')]));
+      fixture.detectChanges();
+      return { fixture, root: fixture.nativeElement as HTMLElement };
+    }
+
+    beforeEach(() => localStorage.clear());
+
+    it('shows above the list until a swipe reaches the delete question, then stays gone', () => {
+      const { fixture, root } = load();
+      expect(root.querySelector('.swipe-hint')).not.toBeNull();
+
+      const row = root.querySelector('app-item-line .summary') as HTMLElement;
+      row.getBoundingClientRect = () => ({ width: 300 }) as DOMRect;
+      for (const [type, x] of [
+        ['pointerdown', 300],
+        ['pointermove', 290],
+        ['pointermove', 150],
+        ['pointerup', 150],
+      ] as const) {
+        row.dispatchEvent(new PointerEvent(type, { clientX: x, clientY: 100, bubbles: true }));
+      }
+      fixture.detectChanges();
+      expect(root.querySelector('.swipe-hint')).toBeNull();
+
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [Kitchen],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          provideRouter([]),
+          provideTranslateService(),
+        ],
+      });
+      http = TestBed.inject(HttpTestingController);
+      expect(load().root.querySelector('.swipe-hint')).toBeNull();
+    });
+
+    it('is not shown over an empty kitchen', () => {
+      const fixture = TestBed.createComponent(Kitchen);
+      fixture.detectChanges();
+      http.expectOne(`${environment.apiUrl}/items`).flush(today([]));
+      fixture.detectChanges();
+
+      expect((fixture.nativeElement as HTMLElement).querySelector('.swipe-hint')).toBeNull();
+    });
+  });
+
   it('filters by place and by name together', () => {
     const fixture = TestBed.createComponent(Kitchen);
     fixture.detectChanges();

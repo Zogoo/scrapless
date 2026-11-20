@@ -281,7 +281,37 @@
             <!-- Uncertainty floats to the top; everything else is pre-accepted. -->
             @for (item of result.items; track item.id) {
               <li [class.uncertain]="item.needs_review">
-                <span class="name">{{ rowTitle(item) }}</span>
+                @if (editingId() === item.id) {
+                  <!-- Where a misread is noticed: fixing it here also teaches the
+                   kitchen's dictionary, so the next receipt reads it right. -->
+                  <span class="rename">
+                    <input
+                      type="text"
+                      maxlength="120"
+                      [value]="draftName()"
+                      [attr.aria-label]="'capture.rename' | translate: { name: item.display_name }"
+                      (input)="draftName.set($any($event.target).value)"
+                      (keyup.enter)="saveName(item)"
+                      (keyup.escape)="editingId.set(null)"
+                    />
+                    <button type="button" class="primary" (click)="saveName(item)">
+                      {{ 'common.save' | translate }}
+                    </button>
+                    <button type="button" class="ghost" (click)="editingId.set(null)">
+                      {{ 'common.cancel' | translate }}
+                    </button>
+                  </span>
+                } @else {
+                  <button
+                    type="button"
+                    class="name"
+                    [attr.aria-label]="'capture.rename' | translate: { name: item.display_name }"
+                    (click)="startRename(item)"
+                  >
+                    <span class="title">{{ rowTitle(item) }}</span>
+                    <span class="pen" aria-hidden="true">✎</span>
+                  </button>
+                }
                 <span class="days">
                   {{ 'capture.about_days' | translate: { count: item.days_left } }}
                 </span>

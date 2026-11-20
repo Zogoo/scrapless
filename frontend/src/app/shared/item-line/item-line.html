@@ -1,27 +1,23 @@
-<div class="summary">
-  @if (renamable() && expanded()) {
-    <button
-      type="button"
-      class="name-btn name"
-      [id]="'line-' + line().first.id"
-      (click)="rename.emit()"
-    >
-      {{ line().title }}
-    </button>
-  }
+<!-- The whole row opens and closes the card, every time, name included.
+ Renaming happens on the review, where a misread is noticed (Capture).
+ In the Kitchen, swiping this row left asks to delete a line added by mistake. -->
+<div
+  class="summary"
+  (pointerdown)="swipeStart($event)"
+  (pointermove)="swipeMove($event)"
+  (pointerup)="swipeEnd()"
+  (pointercancel)="swipeCancel()"
+>
   <button
     type="button"
     class="toggle"
     [attr.aria-expanded]="expanded()"
     [attr.aria-controls]="'details-' + line().first.id"
-    [attr.aria-label]="
-      renamable() && expanded() ? ('kitchen.collapse' | translate: { name: line().title }) : null
-    "
     (click)="toggle()"
+    (keydown.delete)="askRemove()"
+    (keydown.backspace)="askRemove()"
   >
-    @if (!(renamable() && expanded())) {
-      <span class="name" [id]="'line-' + line().first.id">{{ line().title }}</span>
-    }
+    <span class="name" [id]="'line-' + line().first.id">{{ line().title }}</span>
     @if (!expanded()) {
       <span class="when">{{ line().first.headline }}</span>
     }
@@ -31,6 +27,22 @@
     <span class="amount">{{ 'kitchen.packs' | translate: { amount: packsLabel() } }}</span>
   </button>
 </div>
+@if (confirmingRemove()) {
+  <!-- Not waste: a line that should never have been added. "Weg" is the one
+   that counts as wasted; this one deletes, so it asks first. -->
+  <div class="confirm-remove" role="group" [attr.aria-labelledby]="'remove-' + line().first.id">
+    <p [id]="'remove-' + line().first.id">
+      {{ 'kitchen.remove_confirm' | translate: { name: line().title } }}
+      <small>{{ 'kitchen.remove_not_waste' | translate }}</small>
+    </p>
+    <button type="button" class="danger" (click)="confirmRemove()">
+      {{ 'kitchen.remove_yes' | translate }}
+    </button>
+    <button type="button" class="ghost" (click)="confirmingRemove.set(false)">
+      {{ 'common.cancel' | translate }}
+    </button>
+  </div>
+}
 @if (line().first.check_due) {
   <!-- The one fact the model cannot know. Each answer fixes this pack and is
    kept as data: "still fine at day X" or "gone off at day X". -->

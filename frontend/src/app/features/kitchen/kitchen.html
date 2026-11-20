@@ -37,6 +37,11 @@
       </div>
     </div>
 
+    @if (showSwipeHint() && filtered().length > 0) {
+      <!-- Nothing on a card shows it can be swiped, so say it once, until used. -->
+      <p class="swipe-hint">{{ 'kitchen.swipe_hint' | translate }}</p>
+    }
+
     @if (filtered().length === 0 && query().trim()) {
       <p class="lede">{{ 'kitchen.no_match' | translate }}</p>
     } @else {
@@ -53,33 +58,13 @@
             <ul>
               @for (line of groups()[storage]; track line.key) {
                 <li animate.leave="leaving">
-                  @if (editingKey() === line.key) {
-                    <div class="edit">
-                      <input
-                        type="text"
-                        maxlength="120"
-                        [value]="draftName()"
-                        (input)="draftName.set($any($event.target).value)"
-                        (keyup.enter)="saveEdit(line)"
-                      />
-                      <button type="button" class="primary" (click)="saveEdit(line)">
-                        {{ 'common.save' | translate }}
-                      </button>
-                      <button type="button" class="ghost" (click)="editingKey.set(null)">
-                        {{ 'common.cancel' | translate }}
-                      </button>
-                      <button type="button" class="ghost danger" (click)="removeLine(line)">
-                        {{ 'kitchen.remove' | translate }}
-                      </button>
-                    </div>
-                  } @else {
-                    <app-item-line
-                      [line]="line"
-                      [renamable]="true"
-                      (rename)="startEdit(line)"
-                      (failed)="error.set($event)"
-                    />
-                  }
+                  <app-item-line
+                    [line]="line"
+                    [removable]="true"
+                    (remove)="removeLine(line)"
+                    (swiped)="swipeLearned()"
+                    (failed)="error.set($event)"
+                  />
                 </li>
               }
             </ul>

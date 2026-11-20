@@ -74,7 +74,12 @@ export const TAP_GRID: readonly { emoji: string; key: string }[] = [
   imports: [FormsModule, TranslatePipe, NotifyAsk],
   templateUrl: './capture.html',
   changeDetection: ChangeDetectionStrategy.Eager,
-  styleUrls: ['./capture.scss', './capture-detect.scss', './capture-voice.scss'],
+  styleUrls: [
+    './capture.scss',
+    './capture-detect.scss',
+    './capture-voice.scss',
+    './capture-rename.scss',
+  ],
 })
 export class Capture implements OnDestroy {
   private readonly captures = inject(CaptureService);
@@ -97,6 +102,9 @@ export class Capture implements OnDestroy {
   protected readonly picked = signal<string[]>([]);
   protected readonly removingId = signal<number | null>(null);
   protected readonly placingId = signal<number | null>(null);
+  /** The review row whose name is being corrected, and the name typed so far. */
+  protected readonly editingId = signal<number | null>(null);
+  protected readonly draftName = signal('');
   protected readonly storages: readonly Storage[] = ['fridge', 'freezer', 'pantry'];
   /** The photo being read, kept on screen so the wait does not look frozen. */
   protected readonly shot = signal<string | null>(null);
@@ -566,6 +574,55 @@ export class Capture implements OnDestroy {
 
   protected bareName(name: string): string {
     return name.replace(LEADING_EMOJI, '');
+  }
+
+  protected startRename(item: CapturedItem): void {
+    this.editingId.set(item.id);
+    // The server keeps the emoji (Items::Correct); the field is just the name.
+    this.draftName.set(this.bareName(item.display_name));
+  }
+
+  /**
+   * A misread fixed while the receipt is still in hand. Items::Correct
+   * re-reads what the food is (category, product, shelf life) and teaches the
+   * kitchen's dictionary, so the same line reads right next time.
+   */
+  protected saveName(item: CapturedItem): void {
+    const name = this.draftName().trim();
+    if (!name || name === this.bareName(item.display_name)) {
+      this.editingId.set(null);
+      return;
+    }
+
+    this.items
+      .correct(item.id, { display_name: name, canonical_name: name.toLowerCase() })
+      .subscribe({
+        next: (saved) => {
+          this.editingId.set(null);
+          const current = this.review();
+          if (!current) return;
+
+          const items = current.items.map((line) =>
+            line.id === item.id
+              ? {
+                  ...line,
+                  display_name: saved.display_name,
+                  category: saved.category,
+                  storage: saved.storage,
+                  window_end: saved.window_end,
+                  days_left: saved.days_left,
+                  // It is called what the person said now, not a merged variety.
+                  product_name: null,
+                  merged: false,
+                  joins: null,
+                }
+              : line,
+          );
+          this.review.set({ ...current, items });
+        },
+        error: (err: { message?: string }) =>
+          this.error.set(err.message ?? this.translate.instant('capture.unreadable')),
+      });
   }
 
   protected labelled(result: CaptureReview): boolean {
