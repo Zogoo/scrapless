@@ -25,6 +25,12 @@ import {
   trackBars,
 } from './line';
 
+/** Movement before a press counts as a swipe or a scroll, in px. */
+const SWIPE_SLOP = 10;
+/** A swipe past this share of the row, or this many px, asks to delete. */
+const SWIPE_TO_ASK = 0.35;
+const SWIPE_TO_ASK_PX = 120;
+
 /**
  * One food line. Collapsed it is the name, how long it has, and the pack
  * amount. Opened, it is the slider, Move, and Gone.
@@ -37,11 +43,13 @@ import {
   selector: 'app-item-line',
   imports: [TranslatePipe],
   templateUrl: './item-line.html',
-  styleUrl: './item-line.scss',
+  styleUrls: ['./item-line.scss', './item-line-swipe.scss'],
   changeDetection: ChangeDetectionStrategy.Eager,
   host: {
     class: 'card',
     '[class.high-risk]': 'line().first.high_risk',
+    '[class.swiping]': 'swipe() > 0',
+    '[style.--swipe.px]': 'swipe()',
   },
 })
 export class ItemLine {
@@ -49,9 +57,13 @@ export class ItemLine {
   /** The Kitchen can delete a line added by mistake. Home does not. */
   readonly removable = input(false);
   readonly remove = output<void>();
-  /** The first tap on "added by mistake" only asks; the second one deletes. */
+  /** Asking whether to delete, after a swipe (or Delete on the keyboard). */
   protected readonly confirmingRemove = signal(false);
-  private confirmTimer: ReturnType<typeof setTimeout> | null = null;
+  /** How far the card is pulled left, in px, while swiping. */
+  protected readonly swipe = signal(0);
+  private swipeFrom: { x: number; y: number; width: number; tracking: boolean } | null = null;
+  /** A swipe ends with a pointerup, which would also be a click on the row. */
+  private swipedAt = 0;
   readonly failed = output<string>();
 
   private readonly items = inject(ItemsService);
@@ -107,18 +119,60 @@ export class ItemLine {
   private lastCommit: number | null = null;
 
   protected askRemove(): void {
-    if (this.confirmTimer !== null) clearTimeout(this.confirmTimer);
-    if (this.confirmingRemove()) {
-      this.confirmingRemove.set(false);
-      this.remove.emit();
-      return;
+    if (this.removable()) this.confirmingRemove.set(true);
+  }
+
+  protected confirmRemove(): void {
+    this.confirmingRemove.set(false);
+    this.remove.emit();
+  }
+
+  /**
+   * Swipe the top row left to delete a line added by mistake (Kitchen only).
+   * Only the top row listens, so the slider, the radish and the buttons keep
+   * their own gestures; it is pan-y, so a vertical drag still scrolls. A
+   * horizontal pull that goes past SWIPE_TO_ASK asks; anything less snaps back.
+   */
+  protected swipeStart(event: PointerEvent): void {
+    if (!this.removable() || this.confirmingRemove()) return;
+    const row = event.currentTarget as HTMLElement | null;
+    this.swipeFrom = {
+      x: event.clientX,
+      y: event.clientY,
+      width: row?.getBoundingClientRect().width || 320,
+      tracking: false,
+    };
+  }
+
+  protected swipeMove(event: PointerEvent): void {
+    const from = this.swipeFrom;
+    if (!from) return;
+    const dx = from.x - event.clientX;
+    const dy = Math.abs(event.clientY - from.y);
+    if (!from.tracking) {
+      if (dy > SWIPE_SLOP && dy > Math.abs(dx)) return this.swipeCancel(); // a scroll
+      if (dx < SWIPE_SLOP) return;
+      from.tracking = true;
     }
-    this.confirmingRemove.set(true);
-    // A question that stays forever turns the next tap into a delete.
-    this.confirmTimer = setTimeout(() => this.confirmingRemove.set(false), 4000);
+    this.swipe.set(Math.max(0, Math.min(dx, from.width)));
+  }
+
+  protected swipeEnd(): void {
+    const from = this.swipeFrom;
+    if (from?.tracking) {
+      this.swipedAt = Date.now();
+      if (this.swipe() >= Math.min(SWIPE_TO_ASK_PX, from.width * SWIPE_TO_ASK)) this.askRemove();
+    }
+    this.swipeCancel();
+  }
+
+  protected swipeCancel(): void {
+    this.swipeFrom = null;
+    this.swipe.set(0);
   }
 
   protected toggle(): void {
+    if (Date.now() - this.swipedAt < 400) return;
     this.expanded.update((open) => !open);
   }
 

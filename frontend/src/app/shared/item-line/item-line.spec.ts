@@ -223,31 +223,95 @@ describe('Item line', () => {
     expect(root.querySelector('input[type=text]')).toBeNull();
   });
 
-  it('deletes a line added by mistake only on the second tap', () => {
-    const fixture = TestBed.createComponent(ItemLine);
-    fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
-    fixture.componentRef.setInput('removable', true);
-    let removed = 0;
-    fixture.componentInstance.remove.subscribe(() => removed++);
-    reveal(fixture);
-    const root = fixture.nativeElement as HTMLElement;
-    const mistake = () => root.querySelector('.mistake') as HTMLButtonElement;
+  describe('swiping a Kitchen card to delete it', () => {
+    function mount(removable = true) {
+      const fixture = TestBed.createComponent(ItemLine);
+      fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
+      fixture.componentRef.setInput('removable', removable);
+      let removed = 0;
+      fixture.componentInstance.remove.subscribe(() => removed++);
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+      const row = root.querySelector('.summary') as HTMLElement;
+      row.getBoundingClientRect = () => ({ width: 300 }) as DOMRect;
+      const drag = (toX: number, toY = 100) => {
+        row.dispatchEvent(
+          new PointerEvent('pointerdown', { clientX: 300, clientY: 100, bubbles: true }),
+        );
+        row.dispatchEvent(
+          new PointerEvent('pointermove', { clientX: 290, clientY: toY, bubbles: true }),
+        );
+        row.dispatchEvent(
+          new PointerEvent('pointermove', { clientX: toX, clientY: toY, bubbles: true }),
+        );
+        row.dispatchEvent(
+          new PointerEvent('pointerup', { clientX: toX, clientY: toY, bubbles: true }),
+        );
+        fixture.detectChanges();
+      };
+      return { fixture, root, drag, removed: () => removed };
+    }
 
-    mistake().click();
-    fixture.detectChanges();
-    expect(removed).toBe(0);
-    expect(mistake().classList).toContain('confirming');
+    it('asks first, deletes only on "Löschen", and does not count it as wasted', () => {
+      const { fixture, root, drag, removed } = mount();
 
-    mistake().click();
-    expect(removed).toBe(1);
-  });
+      drag(150);
+      expect(root.querySelector('.confirm-remove')).not.toBeNull();
+      expect(removed()).toBe(0);
 
-  it('offers no delete where the line is not removable (Today)', () => {
-    const fixture = TestBed.createComponent(ItemLine);
-    fixture.componentRef.setInput('line', toLines([pack(1)])[0]);
-    reveal(fixture);
+      (root.querySelector('.confirm-remove .danger') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(removed()).toBe(1);
+      expect(root.querySelector('.confirm-remove')).toBeNull();
+    });
 
-    expect((fixture.nativeElement as HTMLElement).querySelector('.mistake')).toBeNull();
+    it('lets "Abbrechen" keep the line', () => {
+      const { fixture, root, drag, removed } = mount();
+
+      drag(150);
+      (root.querySelector('.confirm-remove .ghost') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(root.querySelector('.confirm-remove')).toBeNull();
+      expect(removed()).toBe(0);
+    });
+
+    it('snaps back from a short swipe, and leaves a vertical drag to scrolling', () => {
+      const { root, drag } = mount();
+
+      drag(250);
+      expect(root.querySelector('.confirm-remove')).toBeNull();
+
+      drag(280, 220);
+      expect(root.querySelector('.confirm-remove')).toBeNull();
+    });
+
+    it('does not also open the card with the tap that ends a swipe', () => {
+      const { fixture, root, drag } = mount();
+
+      drag(150);
+      (root.querySelector('.toggle') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(root.querySelector('.toggle')?.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('asks from the keyboard too, with Delete', () => {
+      const { fixture, root } = mount();
+
+      root.querySelector('.toggle')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('.confirm-remove')).not.toBeNull();
+    });
+
+    it('does nothing on Today, where cards cannot be deleted', () => {
+      const { root, drag } = mount(false);
+
+      drag(100);
+
+      expect(root.querySelector('.confirm-remove')).toBeNull();
+    });
   });
 
   it('drags the slider from a pointer on the radish', () => {

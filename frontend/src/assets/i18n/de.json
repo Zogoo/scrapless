@@ -165,8 +165,9 @@
     "lock_closed": "Ungeöffnet",
     "lock_open": "Geöffnet",
     "collapse": "{{name}} zuklappen",
-    "mistake": "Versehentlich hinzugefügt",
-    "mistake_confirm": "Löschen? Nochmal tippen"
+    "remove_confirm": "{{name}} löschen?",
+    "remove_not_waste": "Versehentlich hinzugefügt. Zählt nicht als weggeworfen.",
+    "remove_yes": "Löschen"
   },
   "storage": {
     "fridge": "Kühlschrank",

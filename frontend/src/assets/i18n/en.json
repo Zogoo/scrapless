@@ -165,8 +165,9 @@
     "lock_closed": "Unopened",
     "lock_open": "Opened",
     "collapse": "Hide {{name}}",
-    "mistake": "Added by mistake",
-    "mistake_confirm": "Delete it? Tap again"
+    "remove_confirm": "Delete {{name}}?",
+    "remove_not_waste": "Added by mistake. It does not count as wasted.",
+    "remove_yes": "Delete"
   },
   "storage": {
     "fridge": "Fridge",
