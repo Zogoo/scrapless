@@ -7,6 +7,7 @@ import { SPEECH_TAGS } from '../speech-tags';
 import { LocaleService } from './locale.service';
 import {
   DEAF_AFTER_MS,
+  isAppleMobile,
   SPEECH_LANG_KEY,
   SpeechService,
   audioFilename,
@@ -181,6 +182,29 @@ describe('SpeechService', () => {
       vi.advanceTimersByTime(DEAF_AFTER_MS);
 
       expect(run.error()).toBe('');
+    });
+  });
+
+  // Observed on a real iPhone, in Safari and in Chrome: only the first
+  // session in a page hears anything. Every iOS browser is WebKit.
+  describe('on an iPhone or iPad', () => {
+    const iphone =
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/131.0 Mobile/15E148 Safari/604.1';
+    const mac =
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36';
+
+    it('is recognised in any browser, iPad included, and a Mac is not', () => {
+      expect(isAppleMobile(iphone, 'iPhone', 5)).toBe(true);
+      expect(isAppleMobile(mac, 'MacIntel', 5)).toBe(true); // iPadOS asks for the desktop site
+      expect(isAppleMobile(mac, 'MacIntel', 0)).toBe(false);
+    });
+
+    it('records instead of using the recogniser', () => {
+      const ua = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(iphone);
+
+      expect(speech.recognitionSupported).toBe(false);
+      ua.mockRestore();
+      expect(speech.recognitionSupported).toBe(true);
     });
   });
 
