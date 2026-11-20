@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { provideTranslateService } from '@ngx-translate/core';
+import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { environment } from '../../../environments/environment';
@@ -133,6 +133,44 @@ describe('Capture review', () => {
 
       expect(root.querySelector('.review-list .name')?.textContent?.trim()).toBe('🍚 Reis');
       expect(root.querySelector('.review-list .variety')?.textContent?.trim()).toBe('Basmatireis');
+    });
+
+    function notes(root: HTMLElement): string[] {
+      return [...root.querySelectorAll('.review-list small')].map((n) => n.textContent!.trim());
+    }
+
+    beforeEach(() => {
+      const translate = TestBed.inject(TranslateService);
+      translate.setTranslation('de', {
+        capture: {
+          in_kitchen: 'jetzt {{count}} in der Küche',
+          joins: 'kommt zu {{name}} · jetzt {{count}} in der Küche',
+        },
+      });
+      translate.use('de');
+    });
+
+    // Tilsiter given the product of the Käse already there: say which line.
+    it('names the line a pack joins in place of the count, not beside it', () => {
+      const root = render([
+        { display_name: '🧀 Tilsiter', merged: false, joins: 'Käse', in_kitchen: 2 },
+      ]);
+
+      expect(notes(root)).toEqual(['kommt zu Käse · jetzt 2 in der Küche']);
+    });
+
+    it('gives a merged variety its name and the count, and no "joins" line', () => {
+      const root = render([
+        {
+          display_name: '🍚 Basmatireis',
+          product_name: 'Reis',
+          merged: true,
+          joins: null,
+          in_kitchen: 2,
+        },
+      ]);
+
+      expect(notes(root)).toEqual(['Basmatireis', 'jetzt 2 in der Küche']);
     });
 
     it('shows a plain item as itself, with no second line', () => {

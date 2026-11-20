@@ -105,7 +105,8 @@
       "too_slow": "Umrisse aus — zu langsam auf diesem Handy ({{ms}} ms)",
       "failed": "Umrisse konnten nicht geladen werden"
     },
-    "place_label": "Wohin {{name}} kommt"
+    "place_label": "Wohin {{name}} kommt",
+    "joins": "kommt zu {{name}} · jetzt {{count}} in der Küche"
   },
   "memo": {
     "title": "Einkauf",

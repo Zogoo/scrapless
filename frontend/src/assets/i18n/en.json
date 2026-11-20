@@ -105,7 +105,8 @@
       "too_slow": "Outlines off — too slow on this phone ({{ms}} ms)",
       "failed": "Outlines could not load"
     },
-    "place_label": "Where {{name}} goes"
+    "place_label": "Where {{name}} goes",
+    "joins": "joins {{name}} · now {{count}} in your kitchen"
   },
   "memo": {
     "title": "Shopping",
