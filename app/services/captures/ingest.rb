@@ -142,7 +142,8 @@ module Captures
 
       ProductAlias.learn!(household: @household, raw_text: item.raw_text || line["name"],
                           canonical_name: item.canonical_name, category: item.category,
-                          storage: item.storage, product: resolved.product, emoji: resolved.emoji)
+                          storage: item.storage, product: resolved.product, emoji: resolved.emoji,
+                          source_product_key: resolved.source_product_key)
     end
 
     def log_capture_event(item)

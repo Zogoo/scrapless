@@ -80,6 +80,10 @@ export interface CapturedItem {
   needs_review: boolean;
   /** Active packs of this food in the same place, counting this one. */
   in_kitchen: number;
+  /** The merged product's title in the UI's language ("Reis"), or null. */
+  product_name?: string | null;
+  /** True when this variety joined another product (basmati -> rice). */
+  merged?: boolean;
   /** Where a food photo showed it, as fractions of the photo. Null for receipts and text. */
   box: { x: number; y: number; w: number; h: number } | null;
   added_by_name: string | null;

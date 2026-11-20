@@ -49,6 +49,41 @@ RSpec.describe "Api::V1::Captures", type: :request do
       expect(response.parsed_body["items"].first["in_kitchen"]).to eq(2)
     end
 
+    it "names a merged variety by its product on the review, and a plain item as itself" do
+      allow(Ai::TextReader).to receive(:call).and_return("items" => [
+        { "raw_text" => "basmatireis", "name" => "Basmatireis", "product" => "basmati rice",
+          "quantity" => nil, "unit" => nil, "category" => "pantry", "storage" => "pantry" }
+      ])
+
+      post "/api/v1/captures", params: { source: "text", text: "basmatireis" },
+                               headers: headers.merge("X-Locale" => "de")
+      rice = response.parsed_body["items"].first
+      expect(rice).to include("product_name" => "Reis", "merged" => true, "display_name" => include("Basmatireis"))
+
+      post "/api/v1/captures", params: { source: "text", text: "milch" }, headers: headers.merge("X-Locale" => "de")
+      expect(response.parsed_body["items"].first["merged"]).to be(false)
+    end
+
+    # The model reads "basmati reis" once; the dictionary keeps its answer,
+    # with the variety it was, and the next time costs nothing.
+    it "remembers the variety a dictionary entry was, and gives it to the next item" do
+      allow(Ai::Config).to receive(:live?).and_return(true)
+      allow(Ai::ShelfLifeReader).to receive(:call).and_return({})
+      allow(Ai::TextReader).to receive(:call).and_return("items" => [
+        { "raw_text" => "basmati reis", "name" => "Basmati-Reis", "product" => "basmati rice",
+          "quantity" => nil, "unit" => nil, "category" => "pantry", "storage" => "pantry" }
+      ])
+
+      post "/api/v1/captures", params: { source: "text", text: "basmati reis" }, headers: headers
+      post "/api/v1/captures", params: { source: "text", text: "basmati reis" }, headers: headers
+
+      expect(Ai::TextReader).to have_received(:call).once
+      expect(ProductAlias.find_by(household: household, raw_text: "basmati reis"))
+        .to have_attributes(source_product_key: "basmati rice")
+      expect(household.items.map { |i| [ i.product.key, i.source_product_key ] })
+        .to eq([ [ "rice", "basmati rice" ], [ "rice", "basmati rice" ] ])
+    end
+
     it "keeps the receipt image so a bad parse can be audited" do
       post "/api/v1/captures", params: { source: "receipt", image: receipt_upload }, headers: headers
 

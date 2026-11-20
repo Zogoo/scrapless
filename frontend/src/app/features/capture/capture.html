@@ -166,6 +166,21 @@
         />
       </label>
 
+      <!-- Right under the field: with the keyboard open, a button below the
+       chip grid was out of sight. The chips stay optional, underneath. -->
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+
+      <button
+        type="button"
+        class="primary wide"
+        [disabled]="busy() || (!manualText().trim() && picked().length === 0)"
+        (click)="submitManual()"
+      >
+        {{ 'capture.add_these' | translate: { count: picked().length } }}
+      </button>
+
       <p class="grid-head">{{ 'capture.grid_head' | translate }}</p>
       <div class="grid">
         @for (cell of tapGrid; track cell.key) {
@@ -181,19 +196,6 @@
           </button>
         }
       </div>
-
-      @if (error()) {
-        <p class="error">{{ error() }}</p>
-      }
-
-      <button
-        type="button"
-        class="primary wide"
-        [disabled]="busy() || (!manualText().trim() && picked().length === 0)"
-        (click)="submitManual()"
-      >
-        {{ 'capture.add_these' | translate: { count: picked().length } }}
-      </button>
     }
 
     @case ('review') {
@@ -258,7 +260,7 @@
             <!-- Uncertainty floats to the top; everything else is pre-accepted. -->
             @for (item of result.items; track item.id) {
               <li [class.uncertain]="item.needs_review">
-                <span class="name">{{ item.display_name }}</span>
+                <span class="name">{{ rowTitle(item) }}</span>
                 <span class="days">
                   {{ 'capture.about_days' | translate: { count: item.days_left } }}
                 </span>
@@ -287,6 +289,10 @@
                     }
                   </select>
                 </label>
+                @if (rowTitle(item) !== item.display_name) {
+                  <!-- The variety, under the product it joined: "Reis" / "Basmatireis". -->
+                  <small class="stacked variety">{{ bareName(item.display_name) }}</small>
+                }
                 @if (item.in_kitchen > 1) {
                   <!-- Not a silent duplicate: it joined the line that was already there. -->
                   <small class="stacked">{{

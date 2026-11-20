@@ -87,7 +87,8 @@ RSpec.describe "Api::V1::MemoItems", type: :request do
 
   # A correction is how a kitchen teaches the mic its own words.
   it "learns from renaming a line the mic wrote" do
-    post "/api/v1/memo/dictate", params: { transcript: "ich hätt gern Milch" }, headers: headers, as: :json
+    # Unknown words with no item after them are a line of their own.
+    post "/api/v1/memo/dictate", params: { transcript: "Milch ich hätt gern" }, headers: headers, as: :json
     line = household.memo_items.find_by!(canonical_name: "ich hätt gern")
 
     patch "/api/v1/memo/#{line.id}", params: { memo_item: { name: "Hafermilch" } }, headers: headers, as: :json

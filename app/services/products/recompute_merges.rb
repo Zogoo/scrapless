@@ -2,11 +2,11 @@ module Products
   # Puts every item, and every dictionary entry, on the product the merge list
   # says it belongs to now (`rake products:recompute_merges`).
   #
-  # Items keep the key the model first gave them (source_product_key), so this
-  # works both ways: adding "rice" to config/product_merge.yml moves basmati and
-  # jasmine onto "rice"; taking it out splits them back. Dictionary entries
-  # follow the items read from the same text, so the next receipt line lands on
-  # the same product; an entry no item explains is merged by its own key.
+  # Items and dictionary entries both keep the key the model first gave them
+  # (source_product_key), so this works both ways: adding "rice" to
+  # config/product_merge.yml moves basmati and jasmine onto "rice"; taking it
+  # out splits them back, and the next receipt line follows its entry. An
+  # empty source key is filled from the current product first.
   #
   # A dry run (the default) only reports. Idempotent: a second run moves nothing.
   class RecomputeMerges < ApplicationService
@@ -21,7 +21,8 @@ module Products
     def call
       item_moves = plan_items
       alias_moves = plan_aliases
-      unfilled = Item.where(source_product_key: nil).where.not(product_id: nil).count
+      unfilled = Item.where(source_product_key: nil).where.not(product_id: nil).count +
+                 ProductAlias.where(source_product_key: nil).where.not(product_id: nil).count
 
       report(item_moves, alias_moves, unfilled)
       return { items: item_moves, aliases: alias_moves } if @dry_run
@@ -51,8 +52,8 @@ module Products
     def plan_aliases
       moves = Hash.new { |hash, key| hash[key] = [] }
       ProductAlias.includes(:product).where.not(product_id: nil).find_each do |entry|
-        target = text_targets[entry.raw_text] ||
-                 MergeKey.call(key: entry.product.key, category: entry.category, rules: @rules)
+        source = entry.source_product_key.presence || entry.product.key
+        target = MergeKey.call(key: source, category: entry.category, rules: @rules)
         moves[[ entry.product.key, target ]] << entry.id if target != entry.product.key
       end
       moves.map { |(from, to), ids| Move.new(from: from, to: to, ids: ids) }
@@ -63,21 +64,11 @@ module Products
       source && MergeKey.call(key: source, category: item.category, rules: @rules)
     end
 
-    # Receipt or typed text -> the product its items belong on now, so a
-    # dictionary entry splits back with the items it was learned from.
-    def text_targets
-      @text_targets ||= Item.includes(:product).where.not(raw_text: nil).each_with_object({}) do |item, map|
-        target = target_for(item)
-        next unless target
-
-        exact = ProductAlias.normalize_key(item.raw_text)
-        [ exact, ProductAlias.without_quantities(exact) ].compact_blank.each { |key| map[key] ||= target }
-      end
-    end
-
     def fill_source_keys
-      Item.where(source_product_key: nil).where.not(product_id: nil).includes(:product).find_each do |item|
-        item.update_columns(source_product_key: item.product.key)
+      [ Item, ProductAlias ].each do |model|
+        model.where(source_product_key: nil).where.not(product_id: nil).includes(:product).find_each do |record|
+          record.update_columns(source_product_key: record.product.key)
+        end
       end
     end
 
@@ -111,7 +102,7 @@ module Products
 
     def report(item_moves, alias_moves, unfilled)
       @io.puts(@dry_run ? "DRY RUN — nothing is written. DRY_RUN=0 applies it." : "Applying.")
-      @io.puts("#{unfilled} items get their original key recorded.") if unfilled.positive?
+      @io.puts("#{unfilled} items and dictionary entries get their original key recorded.") if unfilled.positive?
       @io.puts("Nothing to move.") if item_moves.empty? && alias_moves.empty?
       item_moves.sort_by { |m| [ m.to, m.from.to_s ] }.each do |move|
         @io.puts("#{move.from || '(no product)'} (#{move.ids.size} items) -> #{move.to}")

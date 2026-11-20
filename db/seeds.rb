@@ -146,7 +146,7 @@ aliases = [
 aliases.each do |raw, canonical, category, emoji, product|
   entry = ProductAlias.shared.find_or_initialize_by(raw_text: ProductAlias.normalize_key(raw), merchant: nil)
   entry.update!(canonical_name: canonical, category: category, emoji: emoji, seeded: true, source: "seed",
-                product: Product.for(product, category: category))
+                product: Product.for(product, category: category), source_product_key: Product.normalize_key(product))
 end
 
 puts "seeded #{ShelfLifeRule.count} shelf-life rules and #{ProductAlias.count} dictionary entries"

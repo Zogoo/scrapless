@@ -64,4 +64,21 @@ RSpec.describe Products::RecomputeMerges do
     expect(ProductAlias.find_by(raw_text: "basmati reis").product.key).to eq("basmati rice")
     expect(run(dry_run: false, rules: without_rice)).to eq(items: [], aliases: [])
   end
+
+  it "splits a dictionary entry back with its item, by the key it was learned under" do
+    rice = Product.create!(key: "rice")
+    Item.update_all(product_id: rice.id)
+    Item.where(display_name: "Basmati-Reis").update_all(source_product_key: "basmati rice")
+    Item.where(display_name: "Jasmin-Reis").update_all(source_product_key: "jasmine rice")
+    ProductAlias.update_all(product_id: rice.id, source_product_key: "basmati rice")
+    config = YAML.safe_load_file(Products::MergeKey::CONFIG_PATH)
+    config["merge_heads"].delete("rice")
+    without_rice = Products::MergeKey.load_rules(config)
+
+    run(dry_run: false, rules: without_rice)
+
+    expect(ProductAlias.find_by(raw_text: "basmati reis").product.key).to eq("basmati rice")
+    expect(Item.where(display_name: "Basmati-Reis").map { |i| i.product.key }.uniq).to eq([ "basmati rice" ])
+    expect(run(dry_run: false, rules: without_rice)).to eq(items: [], aliases: [])
+  end
 end
