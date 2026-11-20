@@ -84,6 +84,8 @@ export interface CapturedItem {
   product_name?: string | null;
   /** True when this variety joined another product (basmati -> rice). */
   merged?: boolean;
+  /** The Kitchen line it joins when that line has another name ("Käse"); null otherwise. */
+  joins?: string | null;
   /** Where a food photo showed it, as fractions of the photo. Null for receipts and text. */
   box: { x: number; y: number; w: number; h: number } | null;
   added_by_name: string | null;

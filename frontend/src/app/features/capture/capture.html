@@ -294,9 +294,11 @@
                   </select>
                 </label>
                 @if (item.in_kitchen > 1) {
-                  <!-- Not a silent duplicate: it joined the line that was already there. -->
-                  <small class="stacked">{{
-                    'capture.in_kitchen' | translate: { count: item.in_kitchen }
+                  <!-- Not a silent duplicate: it joined the line that was already there,
+                   named when that line is called something else ("kommt zu Käse"). -->
+                  <small class="stacked joins">{{
+                    (item.joins ? 'capture.joins' : 'capture.in_kitchen')
+                      | translate: { count: item.in_kitchen, name: item.joins }
                   }}</small>
                 }
                 @if (item.needs_review && item.raw_text) {

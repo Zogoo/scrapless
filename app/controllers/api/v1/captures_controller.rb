@@ -159,8 +159,8 @@ module Api
               # The merged product, as the Kitchen will show it ("Reis" over
               # "Basmatireis"); merged only when the variety became another product.
               product_name: item.product&.names&.dig(I18n.locale.to_s),
-              merged: item.product.present? && item.source_product_key.present? &&
-                      item.source_product_key != item.product.key,
+              merged: merged?(item),
+              joins: joins(item),
               box: result[:boxes]&.at(index),
               added_by_name: item.added_by_name
             }
@@ -173,12 +173,31 @@ module Api
       # than silently becoming an unrelated second row; the review says so.
       # Counted the way the Kitchen groups lines (line.ts): the same product,
       # or the same name for packs that have no product.
-      def in_kitchen(item)
-        packs = current_household.items.active.where(storage: item.storage)
-        same_name = packs.where(canonical_name: item.canonical_name, product_id: nil)
-        return packs.where(canonical_name: item.canonical_name).count if item.product_id.nil?
+      def in_kitchen(item) = same_line(item).count
 
-        packs.where(product_id: item.product_id).or(same_name).count
+      # Every active pack on the Kitchen line this item lands on (line.ts): the
+      # same product, or the same name for packs that have no product.
+      def same_line(item)
+        packs = current_household.items.active.where(storage: item.storage)
+        return packs.where(canonical_name: item.canonical_name) if item.product_id.nil?
+
+        packs.where(product_id: item.product_id).or(packs.where(canonical_name: item.canonical_name, product_id: nil))
+      end
+
+      def merged?(item)
+        item.product.present? && item.source_product_key.present? && item.source_product_key != item.product.key
+      end
+
+      # The line a pack joins when it is called something else there: Tilsiter
+      # on a "Käse" line. Named the way the Kitchen titles it, by the pack that
+      # goes off first. Not for a merged variety: its title already is the line
+      # ("Reis"). nil when it joins nothing or a line of its own name.
+      def joins(item)
+        return nil if merged?(item)
+
+        other = same_line(item).where.not(id: item.id).order(:window_end, :id).first
+        name = other && Copy.bare_name(other)
+        name unless name.nil? || name.casecmp?(Copy.bare_name(item))
       end
     end
   end

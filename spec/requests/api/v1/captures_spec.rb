@@ -84,6 +84,33 @@ RSpec.describe "Api::V1::Captures", type: :request do
         .to eq([ [ "rice", "basmati rice" ], [ "rice", "basmati rice" ] ])
     end
 
+    describe "naming the line a pack joins" do
+      let(:cheese) { Product.for("cheese") }
+
+      before do
+        create(:item, household: household, display_name: "🧀 Käse", canonical_name: "käse", category: "dairy",
+                      storage: "fridge", product: cheese, source_product_key: "cheese")
+      end
+
+      def read_as(name, product)
+        allow(Ai::TextReader).to receive(:call).and_return("items" => [
+          { "raw_text" => name.downcase, "name" => name, "product" => product, "quantity" => nil, "unit" => nil,
+            "category" => "dairy", "storage" => "fridge" }
+        ])
+        post "/api/v1/captures", params: { source: "text", text: name.downcase }, headers: headers
+        response.parsed_body["items"].first
+      end
+
+      it "names the line when the pack is called something else there" do
+        expect(read_as("Tilsiter", "cheese")).to include("joins" => "Käse", "in_kitchen" => 2, "merged" => false)
+      end
+
+      it "says nothing more when it joins a line of its own name, or its own line" do
+        expect(read_as("Käse", "cheese")["joins"]).to be_nil
+        expect(read_as("Gouda", "gouda")).to include("joins" => nil, "in_kitchen" => 1)
+      end
+    end
+
     it "keeps the receipt image so a bad parse can be audited" do
       post "/api/v1/captures", params: { source: "receipt", image: receipt_upload }, headers: headers
 
