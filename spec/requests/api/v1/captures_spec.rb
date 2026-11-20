@@ -49,6 +49,21 @@ RSpec.describe "Api::V1::Captures", type: :request do
       expect(response.parsed_body["items"].first["in_kitchen"]).to eq(2)
     end
 
+    it "names a merged variety by its product on the review, and a plain item as itself" do
+      allow(Ai::TextReader).to receive(:call).and_return("items" => [
+        { "raw_text" => "basmatireis", "name" => "Basmatireis", "product" => "basmati rice",
+          "quantity" => nil, "unit" => nil, "category" => "pantry", "storage" => "pantry" }
+      ])
+
+      post "/api/v1/captures", params: { source: "text", text: "basmatireis" },
+                               headers: headers.merge("X-Locale" => "de")
+      rice = response.parsed_body["items"].first
+      expect(rice).to include("product_name" => "Reis", "merged" => true, "display_name" => include("Basmatireis"))
+
+      post "/api/v1/captures", params: { source: "text", text: "milch" }, headers: headers.merge("X-Locale" => "de")
+      expect(response.parsed_body["items"].first["merged"]).to be(false)
+    end
+
     it "keeps the receipt image so a bad parse can be audited" do
       post "/api/v1/captures", params: { source: "receipt", image: receipt_upload }, headers: headers
 

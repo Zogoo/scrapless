@@ -26,6 +26,8 @@ import {
   detectionEnabled,
 } from '../../core/vision/object-outlines';
 
+const LEADING_EMOJI = /^\p{Extended_Pictographic}\uFE0F?\s*/u;
+
 type Mode = 'choose' | 'camera' | 'reading' | 'voice' | 'manual' | 'review';
 
 /**
@@ -494,6 +496,22 @@ export class Capture implements OnDestroy {
         this.placingId.set(null);
       },
     });
+  }
+
+  /**
+   * A variety that joined another product is shown as that product, the way
+   * the Kitchen will show it ("🍚 Reis"), with its own name underneath.
+   * Everything else is its own name, as before.
+   */
+  protected rowTitle(item: CapturedItem): string {
+    if (!item.merged || !item.product_name) return item.display_name;
+
+    const emoji = item.display_name.match(LEADING_EMOJI)?.[0].trim();
+    return emoji ? `${emoji} ${item.product_name}` : item.product_name;
+  }
+
+  protected bareName(name: string): string {
+    return name.replace(LEADING_EMOJI, '');
   }
 
   protected labelled(result: CaptureReview): boolean {

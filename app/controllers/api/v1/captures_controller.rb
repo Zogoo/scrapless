@@ -156,6 +156,11 @@ module Api
               days_left: item.days_left, confidence: item.confidence,
               needs_review: item.confidence < 0.5,
               in_kitchen: in_kitchen(item),
+              # The merged product, as the Kitchen will show it ("Reis" over
+              # "Basmatireis"); merged only when the variety became another product.
+              product_name: item.product&.names&.dig(I18n.locale.to_s),
+              merged: item.product.present? && item.source_product_key.present? &&
+                      item.source_product_key != item.product.key,
               box: result[:boxes]&.at(index),
               added_by_name: item.added_by_name
             }

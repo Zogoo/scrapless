@@ -86,6 +86,44 @@ describe('Capture review', () => {
     expect(sheet.review()?.items.map((item) => item.id)).toEqual([1, 2]);
   });
 
+  describe('a variety merged into a product', () => {
+    function render(items: Partial<CaptureReview['items'][number]>[]): HTMLElement {
+      const fixture = TestBed.createComponent(Capture);
+      const screen = fixture.componentInstance as unknown as ReviewSheet & {
+        mode: { set(value: string): void };
+      };
+      screen.review.set({
+        capture: { id: 1, source: 'text', kind: 'receipt', notes: null },
+        items: items.map((item, i) => ({
+          id: i + 1,
+          days_left: 5,
+          needs_review: false,
+          storage: 'pantry',
+          in_kitchen: 1,
+          ...item,
+        })),
+        suppressed: [],
+      } as unknown as CaptureReview);
+      screen.mode.set('review');
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('shows the product as the title and the variety underneath', () => {
+      const root = render([{ display_name: '🍚 Basmatireis', product_name: 'Reis', merged: true }]);
+
+      expect(root.querySelector('.review-list .name')?.textContent?.trim()).toBe('🍚 Reis');
+      expect(root.querySelector('.review-list .variety')?.textContent?.trim()).toBe('Basmatireis');
+    });
+
+    it('shows a plain item as itself, with no second line', () => {
+      const root = render([{ display_name: '🥛 Milch', product_name: null, merged: false }]);
+
+      expect(root.querySelector('.review-list .name')?.textContent?.trim()).toBe('🥛 Milch');
+      expect(root.querySelector('.review-list .variety')).toBeNull();
+    });
+  });
+
   it('fixes where a line goes as a correction, and shows its new days', () => {
     sheet.review.set(reviewOf(1, 2));
 

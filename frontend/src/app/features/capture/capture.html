@@ -258,7 +258,7 @@
             <!-- Uncertainty floats to the top; everything else is pre-accepted. -->
             @for (item of result.items; track item.id) {
               <li [class.uncertain]="item.needs_review">
-                <span class="name">{{ item.display_name }}</span>
+                <span class="name">{{ rowTitle(item) }}</span>
                 <span class="days">
                   {{ 'capture.about_days' | translate: { count: item.days_left } }}
                 </span>
@@ -287,6 +287,10 @@
                     }
                   </select>
                 </label>
+                @if (rowTitle(item) !== item.display_name) {
+                  <!-- The variety, under the product it joined: "Reis" / "Basmatireis". -->
+                  <small class="stacked variety">{{ bareName(item.display_name) }}</small>
+                }
                 @if (item.in_kitchen > 1) {
                   <!-- Not a silent duplicate: it joined the line that was already there. -->
                   <small class="stacked">{{
