@@ -273,6 +273,10 @@
                 >
                   ✕
                 </button>
+                @if (rowTitle(item) !== item.display_name) {
+                  <!-- The variety, under the product it joined: "Reis" / "Basmatireis". -->
+                  <small class="stacked variety">{{ bareName(item.display_name) }}</small>
+                }
                 <!-- Where it goes, fixable while the bags are still out. -->
                 <label class="place">
                   <span class="visually-hidden">{{
@@ -289,10 +293,6 @@
                     }
                   </select>
                 </label>
-                @if (rowTitle(item) !== item.display_name) {
-                  <!-- The variety, under the product it joined: "Reis" / "Basmatireis". -->
-                  <small class="stacked variety">{{ bareName(item.display_name) }}</small>
-                }
                 @if (item.in_kitchen > 1) {
                   <!-- Not a silent duplicate: it joined the line that was already there. -->
                   <small class="stacked">{{
