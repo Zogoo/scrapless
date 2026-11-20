@@ -62,6 +62,14 @@ export interface Recording {
 const QUIET_ERRORS = new Set(['no-speech', 'aborted']);
 
 /**
+ * How long a session may show no sign of hearing (no audio capture, no
+ * words) before it is treated as deaf. Observed on iOS: the first session in
+ * a page works, later ones hear nothing and report nothing until a reload
+ * (WebKit bug 225298, web-speech-api #96).
+ */
+export const DEAF_AFTER_MS = 4000;
+
+/**
  * Voice input, cheapest path first.
  *
  * Chrome, Android, Safari (with Siri on) and Firefox desktop all have
@@ -90,6 +98,8 @@ export class SpeechService {
   /** The open recognition session; `cancelled` is per session, so a late end event of one cannot leak into the next. */
   private session: { recognition: SpeechRecognitionLike; cancelled: boolean } | null = null;
   private recognitionRefused = false;
+  /** The last recogniser started, released before the next one starts. */
+  private previous: SpeechRecognitionLike | null = null;
   private recorder: MediaRecorder | null = null;
   private startedAt = 0;
   private chunks: Blob[] = [];
@@ -133,7 +143,12 @@ export class SpeechService {
         return;
       }
 
+      // iOS can keep the microphone with a recogniser that has ended; a new
+      // one then hears nothing. abort() on an ended recogniser is a no-op
+      // everywhere else.
+      this.previous?.abort();
       const recognition = new Ctor();
+      this.previous = recognition;
       const session = { recognition, cancelled: false };
       this.session = session;
       recognition.lang = lang;
@@ -148,11 +163,30 @@ export class SpeechService {
       this.listening.set(true);
       this.capturing.set(false);
 
-      recognition.onaudiostart = () => this.capturing.set(true);
+      // No sign of hearing at all: say so as an error, and record from now on
+      // (the same fallback as a refused service), rather than sit there deaf.
+      let deaf: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+        deaf = null;
+        this.recognitionRefused = true;
+        session.cancelled = true;
+        recognition.abort();
+        this.endSession(session);
+        subscriber.error(new Error('deaf'));
+      }, DEAF_AFTER_MS);
+      const heardSomething = () => {
+        if (deaf !== null) clearTimeout(deaf);
+        deaf = null;
+      };
+
+      recognition.onaudiostart = () => {
+        heardSomething();
+        this.capturing.set(true);
+      };
 
       // Rebuilt from the whole list every time rather than appended to, so a
       // result reported twice cannot be counted twice.
       recognition.onresult = (event) => {
+        heardSomething();
         let done = '';
         let pending = '';
         for (let i = 0; i < event.results.length; i++) {
@@ -166,6 +200,7 @@ export class SpeechService {
 
       recognition.onerror = (event) => {
         if (QUIET_ERRORS.has(event.error)) return;
+        heardSomething();
         // The API exists but may not be used here (reported for iOS home-screen
         // apps, doc 15 §15.2.4): from now on, record instead.
         if (event.error === 'service-not-allowed') this.recognitionRefused = true;
@@ -174,6 +209,7 @@ export class SpeechService {
       };
 
       recognition.onend = () => {
+        heardSomething();
         this.endSession(session);
         if (!session.cancelled) subscriber.next(heard);
         subscriber.complete();
@@ -182,6 +218,7 @@ export class SpeechService {
       recognition.start();
 
       return () => {
+        heardSomething();
         if (this.session === session) {
           session.cancelled = true;
           recognition.abort();

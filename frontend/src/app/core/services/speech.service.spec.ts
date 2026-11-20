@@ -1,11 +1,17 @@
 import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { environment } from '../../../environments/environment';
 import { SPEECH_TAGS } from '../speech-tags';
 import { LocaleService } from './locale.service';
-import { SPEECH_LANG_KEY, SpeechService, audioFilename, speechTag } from './speech.service';
+import {
+  DEAF_AFTER_MS,
+  SPEECH_LANG_KEY,
+  SpeechService,
+  audioFilename,
+  speechTag,
+} from './speech.service';
 
 type Result = { 0: { transcript: string }; length: 1; isFinal: boolean };
 
@@ -123,6 +129,59 @@ describe('SpeechService', () => {
     FakeRecognition.last?.onend?.();
 
     expect(run.got).toEqual(['Milch Brot']);
+  });
+
+  // Observed on iOS: the first session works, the second hears nothing until
+  // a reload. Reported as the old recogniser keeping the microphone.
+  describe('a second session in the same page', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('releases the previous recogniser before starting the next', () => {
+      listen();
+      const first = FakeRecognition.last!;
+      first.hear(['Milch', true]);
+      speech.finish();
+      first.onend?.();
+
+      listen();
+
+      expect(first.aborted).toBe(true);
+      expect(FakeRecognition.last).not.toBe(first);
+    });
+
+    it('records instead when a session shows no sign of hearing', () => {
+      vi.useFakeTimers();
+      const run = listen();
+
+      vi.advanceTimersByTime(DEAF_AFTER_MS);
+
+      expect(run.error()).toBe('deaf');
+      expect(FakeRecognition.last?.aborted).toBe(true);
+      expect(speech.listening()).toBe(false);
+      expect(speech.recognitionSupported).toBe(false);
+    });
+
+    it('never gives up on a session that is hearing', () => {
+      vi.useFakeTimers();
+      const run = listen();
+      FakeRecognition.last?.onaudiostart?.();
+
+      vi.advanceTimersByTime(DEAF_AFTER_MS * 3);
+
+      expect(run.error()).toBe('');
+      expect(speech.recognitionSupported).toBe(true);
+    });
+
+    it('does not count a slow start as deaf once words arrive', () => {
+      vi.useFakeTimers();
+      const run = listen();
+      vi.advanceTimersByTime(DEAF_AFTER_MS - 1);
+      FakeRecognition.last?.hear(['Milch', false]);
+
+      vi.advanceTimersByTime(DEAF_AFTER_MS);
+
+      expect(run.error()).toBe('');
+    });
   });
 
   it('emits nothing for a cancelled session', () => {
