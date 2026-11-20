@@ -67,6 +67,15 @@ export class Memo implements OnInit, OnDestroy {
   protected readonly error = signal('');
   /** idle; held down; or listening hands-free after a tap. */
   protected readonly micMode = signal<'idle' | 'hold' | 'toggle'>('idle');
+  /**
+   * The recording path (iPhone, Firefox on Android): no words appear while
+   * speaking, so the status bar says it is recording, for how long, and then
+   * that the recording is being sent, until the lines appear.
+   */
+  protected readonly recording = signal(false);
+  protected readonly sending = signal(false);
+  protected readonly elapsed = signal(0);
+  private recordTimer: ReturnType<typeof setInterval> | null = null;
   /** The lines the last dictation added, shown with an undo. */
   protected readonly justAdded = signal<MemoItem[]>([]);
   protected readonly micUses = signal(this.readMicUses());
@@ -109,7 +118,19 @@ export class Memo implements OnInit, OnDestroy {
     this.destroyed.next();
     this.destroyed.complete();
     this.listening?.unsubscribe();
+    this.stopRecordTimer();
     this.speech.cancel();
+  }
+
+  /** 0:05, 1:12: how long it has been recording. */
+  protected elapsedLabel(): string {
+    const seconds = this.elapsed();
+    return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  }
+
+  private stopRecordTimer(): void {
+    if (this.recordTimer !== null) clearInterval(this.recordTimer);
+    this.recordTimer = null;
   }
 
   protected onType(value: string): void {
@@ -237,6 +258,8 @@ export class Memo implements OnInit, OnDestroy {
   }
 
   protected cancelDictation(): void {
+    this.stopRecordTimer();
+    this.recording.set(false);
     this.micMode.set('idle');
     this.speech.cancel();
   }
@@ -293,10 +316,20 @@ export class Memo implements OnInit, OnDestroy {
       return;
     }
 
-    void this.speech.startRecording().catch(() => {
-      this.micMode.set('idle');
-      this.error.set(this.translate.instant('capture.no_mic'));
-    });
+    this.recording.set(true);
+    this.elapsed.set(0);
+    this.speech
+      .startRecording()
+      .then(() => {
+        this.stopRecordTimer();
+        this.recordTimer = setInterval(() => this.elapsed.update((s) => s + 1), 1000);
+      })
+      .catch(() => {
+        this.stopRecordTimer();
+        this.recording.set(false);
+        this.micMode.set('idle');
+        this.error.set(this.translate.instant('capture.no_mic'));
+      });
   }
 
   private finishDictation(): void {
@@ -309,6 +342,9 @@ export class Memo implements OnInit, OnDestroy {
     }
 
     this.busy.set(true);
+    this.stopRecordTimer();
+    this.recording.set(false);
+    this.sending.set(true);
     void this.speech
       .stopRecording()
       .then((recording) => {
@@ -326,7 +362,10 @@ export class Memo implements OnInit, OnDestroy {
             error: (err) => this.failDictation(err),
           });
       })
-      .catch(() => this.busy.set(false));
+      .catch(() => {
+        this.sending.set(false);
+        this.busy.set(false);
+      });
   }
 
   private sendDictation(text: string): void {
@@ -338,12 +377,14 @@ export class Memo implements OnInit, OnDestroy {
   }
 
   private dictated(items: MemoItem[]): void {
+    this.sending.set(false);
     this.justAdded.set(items);
     this.countMicUse();
     this.refresh();
   }
 
   private failDictation(err: { message?: string }): void {
+    this.sending.set(false);
     this.error.set(err.message ?? '');
     this.busy.set(false);
   }

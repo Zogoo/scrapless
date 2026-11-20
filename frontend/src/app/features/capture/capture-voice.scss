@@ -21,28 +21,3 @@
   font-weight: 600;
   font-size: 1.1rem;
 }
-
-.rec-dot {
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: 50%;
-  background: var(--danger);
-  animation: rec-blink 1s steps(2, start) infinite;
-}
-
-.rec-time {
-  font-variant-numeric: tabular-nums;
-  color: var(--muted);
-}
-
-@keyframes rec-blink {
-  to {
-    visibility: hidden;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .rec-dot {
-    animation: none;
-  }
-}
