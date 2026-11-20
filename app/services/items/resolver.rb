@@ -52,7 +52,7 @@ module Items
       build(display: display, canonical: display.downcase,
             category: entry.category, emoji: entry.emoji, source: "dictionary", storage: entry.storage,
             taught_place: taught_place(entry),
-            product_key: entry.product&.key || @product)
+            product_key: entry.source_product_key.presence || entry.product&.key || @product)
     end
 
     def from_hints

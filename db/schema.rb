@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_20_080918) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_20_084936) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -200,11 +200,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_20_080918) do
     t.integer "product_id"
     t.string "source", default: "correction", null: false
     t.string "storage"
+    t.string "source_product_key"
     t.index ["canonical_name"], name: "index_product_aliases_on_canonical_name"
     t.index ["household_id", "raw_text", "merchant"], name: "index_product_aliases_on_household_raw_text_merchant", unique: true
     t.index ["household_id"], name: "index_product_aliases_on_household_id"
     t.index ["product_id"], name: "index_product_aliases_on_product_id"
     t.index ["raw_text", "merchant"], name: "index_product_aliases_on_raw_text_and_merchant"
+    t.index ["source_product_key"], name: "index_product_aliases_on_source_product_key"
   end
 
   create_table "products", force: :cascade do |t|

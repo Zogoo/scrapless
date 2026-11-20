@@ -131,13 +131,13 @@ class ProductAlias < ApplicationRecord
   # changed by a seed or a promotion, never directly by a request. A correction
   # always wins over what the model said, and it is a vote like any other.
   def self.record_correction!(household:, raw_text:, canonical_name:, category:, merchant: nil, emoji: nil,
-                              product: nil)
+                              product: nil, source_product_key: nil)
     key = normalize_key(raw_text)
     return if key.blank? || household.nil?
 
     entry = find_or_initialize_by(household: household, raw_text: key, merchant: merchant)
     entry.assign_attributes(canonical_name: canonical_name, category: category, product: product,
-                            source: "correction")
+                            source_product_key: source_key(source_product_key, product), source: "correction")
     entry.emoji ||= emoji
     entry.votes = entry.persisted? ? entry.votes + 1 : 1
     promote!(key) if entry.save
@@ -149,13 +149,15 @@ class ProductAlias < ApplicationRecord
   # the thing that decides (doc 5 §5.3: dictionary first, model for the rest).
   #
   # Keyed without quantities, so "2 hähnchenbrust" teaches "hähnchenbrust".
-  def self.learn!(household:, raw_text:, canonical_name:, category:, product:, storage: nil, emoji: nil)
+  def self.learn!(household:, raw_text:, canonical_name:, category:, product:, storage: nil, emoji: nil,
+                  source_product_key: nil)
     key = without_quantities(normalize_key(raw_text)).presence || normalize_key(raw_text)
     return if key.blank? || household.nil? || product.nil?
     return if exists?(household: household, raw_text: key)
 
     create!(household: household, raw_text: key, canonical_name: canonical_name, category: category,
-            product: product, storage: storage, emoji: emoji, source: "ai")
+            product: product, source_product_key: source_key(source_product_key, product), storage: storage,
+            emoji: emoji, source: "ai")
     promote!(key)
   rescue ActiveRecord::RecordNotUnique
     nil # the same kitchen sent the same line twice at once; the first one won
@@ -179,7 +181,8 @@ class ProductAlias < ApplicationRecord
       entries.update_all(storage: item.storage, source: "correction", updated_at: Time.current)
     else
       create!(household: household, raw_text: key, canonical_name: item.canonical_name, category: item.category,
-              product: item.product, storage: item.storage, emoji: item.display_name[Copy::LEADING_EMOJI]&.strip,
+              product: item.product, source_product_key: source_key(item.source_product_key, item.product),
+              storage: item.storage, emoji: item.display_name[Copy::LEADING_EMOJI]&.strip,
               source: "correction")
     end
   rescue ActiveRecord::RecordNotUnique
@@ -194,6 +197,10 @@ class ProductAlias < ApplicationRecord
 
     where(household: household, raw_text: key, source: "ai").delete_all
   end
+
+  # The key the model gave before merging ("basmati rice" on a "rice" entry),
+  # so Products::RecomputeMerges can move the entry if the merge list changes.
+  def self.source_key(key, product) = Product.normalize_key(key).presence || product&.key
 
   # Shares a spelling with every kitchen once PROMOTE_AT of them, each on its
   # own, have said it is the same product. Runs on the write that cast the
@@ -216,6 +223,8 @@ class ProductAlias < ApplicationRecord
     return if entry.source == "seed" || lowers_risk?(entry, category)
 
     entry.update!(canonical_name: canonical_name, category: category, storage: storage, product_id: product_id,
+                  source_product_key: agreeing.where.not(source_product_key: nil).group(:source_product_key)
+                                              .count.max_by { |_, count| count }&.first,
                   emoji: agreeing.where.not(emoji: nil).pick(:emoji), votes: kitchens, source: "promoted")
   end
 
