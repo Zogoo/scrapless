@@ -86,6 +86,25 @@ describe('Capture review', () => {
     expect(sheet.review()?.items.map((item) => item.id)).toEqual([1, 2]);
   });
 
+  // With the keyboard open, a button below the twenty chips was out of sight.
+  it('puts the add button right under the field, above the chips', () => {
+    const fixture = TestBed.createComponent(Capture);
+    (fixture.componentInstance as unknown as { mode: { set(m: string): void } }).mode.set('manual');
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+
+    const field = root.querySelector('.field')!;
+    const add = root.querySelector('button.primary.wide')!;
+    const grid = root.querySelector('.grid')!;
+    expect(field.compareDocumentPosition(add) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(add.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect((add as HTMLButtonElement).disabled).toBe(true);
+
+    (root.querySelector('.grid .chip') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect((add as HTMLButtonElement).disabled).toBe(false);
+  });
+
   describe('a variety merged into a product', () => {
     function render(items: Partial<CaptureReview['items'][number]>[]): HTMLElement {
       const fixture = TestBed.createComponent(Capture);
