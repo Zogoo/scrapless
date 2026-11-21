@@ -115,3 +115,18 @@ ol {
   color: var(--muted);
   font-size: 0.85rem;
 }
+
+.for-day {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.refine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  button {
+    flex: 1 1 auto;
+  }
+}

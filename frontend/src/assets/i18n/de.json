@@ -138,8 +138,8 @@
     "title": "Essen",
     "lede": "Eine Mahlzeit aus dem, was schon in der Küche ist. Jede einmal am Tag.",
     "breakfast": "Frühstück",
-    "lunch": "Mittagessen",
-    "dinner": "Abendessen",
+    "lunch": "Mittag",
+    "dinner": "Abend",
     "thinking": "Schau in die Küche…",
     "empty_title": "Noch nichts zum Kochen.",
     "empty_body": "Sobald Essen hier liegt, wähl eine Mahlzeit.",
@@ -150,7 +150,15 @@
     "no_idea_title": "Dazu fällt uns gerade nichts ein.",
     "no_idea_body": "Essen ist da, nur kam diesmal nichts Gutes dabei heraus.",
     "try_again": "Nochmal versuchen",
-    "check_ingredients": "Zutaten bitte selbst prüfen."
+    "check_ingredients": "Zutaten bitte selbst prüfen.",
+    "brotbox": "Brotbox",
+    "brotbox_for": "Brotbox für {{when}} · {{count}}",
+    "day_today": "heute",
+    "day_tomorrow": "morgen",
+    "refine_label": "Anders vorschlagen",
+    "refine_quicker": "Schneller",
+    "refine_no_cooking": "Ohne Kochen",
+    "refine_different": "Andere Zutaten"
   },
   "kitchen": {
     "title": "Küche",

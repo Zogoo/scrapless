@@ -150,7 +150,15 @@
     "no_idea_title": "No idea for this one yet.",
     "no_idea_body": "There is food here; this time nothing good came of it.",
     "try_again": "Try again",
-    "check_ingredients": "Please check the ingredients yourself."
+    "check_ingredients": "Please check the ingredients yourself.",
+    "brotbox": "Lunchbox",
+    "brotbox_for": "Lunchbox for {{when}} · {{count}}",
+    "day_today": "today",
+    "day_tomorrow": "tomorrow",
+    "refine_label": "Suggest differently",
+    "refine_quicker": "Quicker",
+    "refine_no_cooking": "No cooking",
+    "refine_different": "Other ingredients"
   },
   "kitchen": {
     "title": "Kitchen",
