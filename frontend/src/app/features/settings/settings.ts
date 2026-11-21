@@ -18,6 +18,14 @@ import { InstallService } from '../../core/services/install.service';
 import { LocaleService } from '../../core/services/locale.service';
 import { PushService } from '../../core/services/push.service';
 import { qrImageSrc } from '../../core/qr-image';
+import {
+  BROTBOX_CHOICES,
+  COMMON_EXCLUSIONS,
+  DIETS,
+  Diet,
+  brotboxChip,
+  sameFood,
+} from '../../core/food-settings';
 import { CostReport } from '../../core/models';
 
 @Component({
@@ -43,6 +51,21 @@ export class Settings implements OnInit {
   protected readonly copied = signal(false);
   protected readonly costs = signal<CostReport | null>(null);
   protected readonly confirmingForget = signal(false);
+  protected readonly brotboxChoices = BROTBOX_CHOICES;
+  protected readonly diets = DIETS;
+  protected readonly commonExclusions = COMMON_EXCLUSIONS;
+  protected readonly exclusionDraft = signal('');
+  protected readonly foodSaved = signal(false);
+  private foodSavedTimer: ReturnType<typeof setTimeout> | null = null;
+
+  protected readonly brotboxChosen = computed(() =>
+    brotboxChip(this.fridge.fridge()?.brotbox_count),
+  );
+  private readonly excluded = computed(() => this.fridge.fridge()?.excluded_foods ?? []);
+  /** What the household typed itself, shown as removable chips after the quick ones. */
+  protected readonly ownExclusions = computed(() =>
+    this.excluded().filter((food) => !COMMON_EXCLUSIONS.some((c) => sameFood(c.value, food))),
+  );
 
   protected readonly shareLink = computed(() => {
     const code = this.fridge.fridge()?.join_code;
@@ -106,6 +129,44 @@ export class Settings implements OnInit {
   protected toggleNotifications(): void {
     // Straight from the tap: Safari only shows the prompt inside one.
     void (this.push.state() === 'on' ? this.push.disable() : this.push.enable());
+  }
+
+  /** Tapping the chosen count again clears it back to "not answered". */
+  protected chooseBrotbox(count: number): void {
+    this.saveFood({ brotbox_count: this.brotboxChosen() === count ? null : count });
+  }
+
+  protected chooseDiet(diet: Diet): void {
+    this.saveFood({ diet });
+  }
+
+  protected isExcluded(food: string): boolean {
+    return this.excluded().some((entry) => sameFood(entry, food));
+  }
+
+  protected toggleExclusion(food: string): void {
+    const list = this.excluded();
+    const next = this.isExcluded(food)
+      ? list.filter((entry) => !sameFood(entry, food))
+      : [...list, food];
+    this.saveFood({ excluded_foods: next });
+  }
+
+  protected addExclusion(): void {
+    const food = this.exclusionDraft().trim();
+    if (!food) return;
+    this.exclusionDraft.set('');
+    if (!this.isExcluded(food)) this.saveFood({ excluded_foods: [...this.excluded(), food] });
+  }
+
+  private saveFood(changes: Parameters<FridgeService['setFoodSettings']>[0]): void {
+    this.fridge.setFoodSettings(changes).subscribe({
+      next: () => {
+        this.foodSaved.set(true);
+        if (this.foodSavedTimer !== null) clearTimeout(this.foodSavedTimer);
+        this.foodSavedTimer = setTimeout(() => this.foodSaved.set(false), 2000);
+      },
+    });
   }
 
   protected chooseBudget(count: number): void {

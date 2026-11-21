@@ -117,4 +117,28 @@
   button {
     flex: 1;
   }
+
+  /* Foods to leave out: as many as there are, wrapping, each its own width. */
+  &.wrap {
+    flex-wrap: wrap;
+
+    button {
+      flex: 0 1 auto;
+    }
+  }
+}
+
+/* Space between the three questions, so each label reads as its group's. */
+.food > .meta {
+  margin-top: 0.75rem;
+}
+
+.add-exclusion {
+  display: flex;
+  gap: 0.5rem;
+
+  input {
+    flex: 1;
+    min-width: 0;
+  }
 }

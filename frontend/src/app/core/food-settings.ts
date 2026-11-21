@@ -18,13 +18,18 @@ export const DIETS: readonly Diet[] = ['all', 'vegetarian', 'vegan'];
  * a kitchen shared by an English and a German phone means the same thing.
  * The server maps them to recipe rules (Recipes::FoodRules).
  */
-export const COMMON_EXCLUSIONS: readonly string[] = [
-  'Schwein',
-  'Nüsse',
-  'Fisch',
-  'Laktose',
-  'Gluten',
+export const COMMON_EXCLUSIONS: readonly { value: string; key: string }[] = [
+  { value: 'Schwein', key: 'pork' },
+  { value: 'Nüsse', key: 'nuts' },
+  { value: 'Fisch', key: 'fish' },
+  { value: 'Laktose', key: 'lactose' },
+  { value: 'Gluten', key: 'gluten' },
 ];
+
+/** The same food, whatever the case it was typed in. */
+export function sameFood(a: string, b: string): boolean {
+  return a.trim().toLocaleLowerCase() === b.trim().toLocaleLowerCase();
+}
 
 /** The chip a stored count belongs to: 5 or 6 show as 4+. */
 export function brotboxChip(count: number | null | undefined): number | null {

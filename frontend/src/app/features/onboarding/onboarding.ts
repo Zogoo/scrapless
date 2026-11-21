@@ -77,7 +77,7 @@ import { FridgeService } from '../../core/services/fridge.service';
 
       <div class="actions">
         <button type="button" class="primary" [disabled]="busy()" (click)="start()">
-          {{ (name.trim() ? 'onboarding.name_it' : 'onboarding.skip') | translate }}
+          {{ (answered() ? 'onboarding.name_it' : 'onboarding.skip') | translate }}
         </button>
       </div>
 
@@ -96,6 +96,11 @@ export class Onboarding {
   protected readonly brotboxCount = signal<number | null>(null);
   protected readonly busy = signal(false);
   protected readonly error = signal('');
+
+  /** "Skip" only while nothing was given; a count alone is an answer too. */
+  protected answered(): boolean {
+    return this.name.trim() !== '' || this.brotboxCount() !== null;
+  }
 
   protected pickBrotbox(count: number): void {
     this.brotboxCount.set(this.brotboxCount() === count ? null : count);

@@ -311,6 +311,21 @@
     "brotbox_1": "1",
     "brotbox_2": "2",
     "brotbox_3": "3",
-    "brotbox_4": "4+"
+    "brotbox_4": "4+",
+    "title": "Essen",
+    "brotbox_label": "Brotboxen an Schultagen",
+    "diet_label": "Wie esst ihr?",
+    "diet_all": "Alles",
+    "diet_vegetarian": "Vegetarisch",
+    "diet_vegan": "Vegan",
+    "excluded_label": "Lieber ohne",
+    "exclude_pork": "Schwein",
+    "exclude_nuts": "Nüsse",
+    "exclude_fish": "Fisch",
+    "exclude_lactose": "Laktose",
+    "exclude_gluten": "Gluten",
+    "exclude_other": "Sonst noch etwas?",
+    "exclude_add": "Hinzufügen",
+    "exclude_remove": "{{name}} entfernen"
   }
 }

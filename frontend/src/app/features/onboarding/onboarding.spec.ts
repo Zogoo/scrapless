@@ -79,6 +79,19 @@ describe('Onboarding', () => {
     req.flush({ id: 'x', name: 'Quiet Kitchen', token: 't', join_code: 'j' });
   });
 
+  it('says "skip" until something is given, a count alone included', () => {
+    const { fixture, chips } = render();
+    const label = () =>
+      (fixture.nativeElement as HTMLElement)
+        .querySelector('.actions .primary')!
+        .textContent!.trim();
+
+    expect(label()).toBe('onboarding.skip');
+    chips()[1].click();
+    fixture.detectChanges();
+    expect(label()).toBe('onboarding.name_it');
+  });
+
   it('unchooses a chip tapped twice', () => {
     const { fixture, chips, start } = render();
 
