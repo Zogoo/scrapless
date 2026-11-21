@@ -1,6 +1,14 @@
 <section class="memo">
   <header class="head">
-    <h1>{{ 'memo.title' | translate }}</h1>
+    <div class="title">
+      <h1>{{ 'memo.title' | translate }}</h1>
+      <p class="count">
+        {{
+          (openCount() === 1 ? 'memo.open_one' : 'memo.open_other')
+            | translate: { count: openCount() }
+        }}
+      </p>
+    </div>
     @if (speech.supported) {
       <div class="voice">
         <div class="lang" role="group" [attr.aria-label]="'memo.speech_lang' | translate">
@@ -107,8 +115,6 @@
     </ul>
   }
 
-  <p class="lede">{{ 'memo.shared' | translate }}</p>
-
   <div class="composer">
     <input
       type="text"
@@ -146,63 +152,101 @@
   @if (error()) {
     <p class="error">{{ error() }}</p>
   }
+  @if (status()) {
+    <p class="status" role="status">{{ status() }}</p>
+  }
 
-  @if (items().length === 0) {
+  <!-- Open lines in store order, section by section; done ones fold away below. -->
+  @if (sections().length === 0) {
     <p class="lede">{{ 'memo.empty' | translate }}</p>
-  } @else {
+  }
+  @for (section of sections(); track section.key) {
+    <h2 class="section">{{ 'memo.section_' + section.key | translate }}</h2>
     <ul class="list">
-      @for (item of items(); track item.id) {
-        <li [class.done]="item.done">
-          <label class="tick">
-            <input type="checkbox" [checked]="item.done" (change)="toggle(item.id, !item.done)" />
-            <span class="line">
-              <span>{{ item.name }}</span>
-              @if (item.added_by_name) {
-                <small class="by">{{
-                  'common.by' | translate: { name: item.added_by_name }
-                }}</small>
-              }
-            </span>
-          </label>
-          <button
-            type="button"
-            class="ghost"
-            (click)="remove(item.id)"
-            [attr.aria-label]="'common.delete_named' | translate: { name: item.name }"
-          >
-            ✕
-          </button>
-        </li>
-      }
-    </ul>
-  }
-
-  @if (doneCount() > 0) {
-    <button type="button" class="ghost clear-done" (click)="clearDone()">
-      {{ 'memo.clear_done' | translate: { count: doneCount() } }}
-    </button>
-  }
-
-  <!-- Not a blank list: what this household buys on a rhythm and is now out of. -->
-  @if (suggestions().length > 0 && !typed().trim()) {
-    <h2 class="section-head">{{ 'memo.suggested' | translate }}</h2>
-    <ul class="suggestions">
-      @for (suggestion of suggestions(); track suggestion.name) {
+      @for (item of section.items; track item.id) {
         <li>
-          <button type="button" (click)="add(suggestion.name, 'suggestion')">
-            <span class="name">+ {{ suggestion.name }}</span>
-            <small>{{ suggestion.reason }}</small>
-          </button>
-          <button
-            type="button"
-            class="ghost dismiss"
-            [attr.aria-label]="'memo.dismiss' | translate: { name: suggestion.name }"
-            (click)="dismiss(suggestion.name)"
-          >
-            ✕
+          <button type="button" class="row" (click)="toggle(item.id, true)">
+            <span class="check" aria-hidden="true"></span>
+            <span class="what">{{ prefix(item) }}{{ item.name }}</span>
+            @if (item.added_by_name) {
+              <small class="by">{{ item.added_by_name }}</small>
+            }
           </button>
         </li>
       }
     </ul>
+  }
+
+  <!-- What this household buys on a rhythm and is now out of: one tap each. -->
+  @if (showLow()) {
+    <div class="low-head">
+      <h2 class="section">{{ 'memo.running_low' | translate }}</h2>
+      <button
+        type="button"
+        class="ghost hide-low"
+        [attr.aria-label]="'memo.hide_low' | translate"
+        (click)="hideLowForToday()"
+      >
+        ×
+      </button>
+    </div>
+    <div class="chips">
+      @for (suggestion of lowChips(); track suggestion.name) {
+        <button
+          type="button"
+          class="chip"
+          [attr.title]="suggestion.reason"
+          [attr.aria-description]="suggestion.reason"
+          (pointerdown)="pressChip(suggestion.name)"
+          (pointerup)="releaseChip()"
+          (pointerleave)="releaseChip()"
+          (contextmenu)="$event.preventDefault(); confirmDismiss.set(suggestion.name)"
+          (click)="tapChip(suggestion.name)"
+        >
+          + {{ suggestion.name }}
+        </button>
+      }
+    </div>
+    @if (confirmDismiss(); as name) {
+      <!-- "Stop suggesting this", from a long press: asked once. -->
+      <p class="confirm" role="group" aria-live="polite">
+        {{ 'memo.dismiss_confirm' | translate: { name } }}
+        <button type="button" class="ghost" (click)="dismiss(name)">
+          {{ 'memo.dismiss_yes' | translate }}
+        </button>
+        <button type="button" class="ghost" (click)="confirmDismiss.set(null)">
+          {{ 'common.cancel' | translate }}
+        </button>
+      </p>
+    }
+  }
+
+  @if (doneItems().length > 0) {
+    <div class="done-head">
+      <button
+        type="button"
+        class="ghost done-toggle"
+        [attr.aria-expanded]="showDone()"
+        aria-controls="done-lines"
+        (click)="showDone.set(!showDone())"
+      >
+        {{ showDone() ? '⌄' : '›' }} {{ 'memo.done' | translate: { count: doneItems().length } }}
+      </button>
+      <button type="button" class="ghost" (click)="clearDone()">
+        {{ 'memo.clear' | translate }}
+      </button>
+    </div>
+    @if (showDone()) {
+      <ul class="list done-lines" id="done-lines">
+        @for (item of doneItems(); track item.id) {
+          <li class="done">
+            <button type="button" class="row" (click)="toggle(item.id, false)">
+              <span class="check" aria-hidden="true">✓</span>
+              <span class="what">{{ prefix(item) }}{{ item.name }}</span>
+            </button>
+          </li>
+        }
+      </ul>
+    }
   }
 </section>

@@ -27,6 +27,7 @@ import {
   speechTag,
 } from '../../core/services/speech.service';
 import { MemoItem, Suggestion } from '../../core/models';
+import { countPrefix, openSections } from './sections';
 
 /**
  * Shorter than this is a tap, longer is a hold. A heuristic, not a verified
@@ -36,6 +37,12 @@ import { MemoItem, Suggestion } from '../../core/models';
  */
 export const HOLD_MS = 350;
 const MIC_USES_KEY = 'scrapless_mic_uses';
+/** The day "Bald leer" was hidden with its ×; it comes back the next day. */
+export const LOW_HIDDEN_KEY = 'scrapless_low_hidden_on';
+/** One row of chips, not a second list: the strongest few. */
+export const MAX_LOW_CHIPS = 6;
+/** Held this long, a "Bald leer" chip asks whether to stop suggesting it. */
+const LONG_PRESS_MS = 550;
 const HINT_UNTIL_USES = 3;
 
 /**
@@ -60,7 +67,23 @@ export class Memo implements OnInit, OnDestroy {
 
   protected readonly items = this.memo.items;
   protected readonly suggestions = this.memo.suggestions;
-  protected readonly doneCount = computed(() => this.items().filter((item) => item.done).length);
+  protected readonly sections = computed(() => openSections(this.items()));
+  protected readonly openCount = computed(() => this.items().filter((item) => !item.done).length);
+  protected readonly doneItems = computed(() => this.items().filter((item) => item.done));
+  /** "Erledigt" is folded away until opened. */
+  protected readonly showDone = signal(false);
+  /** A short note after an add landed on a line that was already there. */
+  protected readonly status = signal('');
+  private statusTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly lowHiddenOn = signal(readLowHidden());
+  protected readonly showLow = computed(
+    () => this.suggestions().length > 0 && !this.typed().trim() && this.lowHiddenOn() !== today(),
+  );
+  protected readonly lowChips = computed(() => this.suggestions().slice(0, MAX_LOW_CHIPS));
+  /** The chip a long press asked about. */
+  protected readonly confirmDismiss = signal<string | null>(null);
+  private pressTimer: ReturnType<typeof setTimeout> | null = null;
+  private pressed = false;
   protected readonly typed = signal('');
   protected readonly matches = signal<Suggestion[]>([]);
   protected readonly busy = signal(false);
@@ -144,7 +167,8 @@ export class Memo implements OnInit, OnDestroy {
 
     this.busy.set(true);
     this.memo.add(cleaned, source).subscribe({
-      next: () => {
+      next: (line) => {
+        if (line.merged) this.showStatus(line);
         this.typed.set('');
         this.matches.set([]);
         this.refresh();
@@ -154,6 +178,50 @@ export class Memo implements OnInit, OnDestroy {
         this.busy.set(false);
       },
     });
+  }
+
+  protected prefix(item: MemoItem): string {
+    return countPrefix(item);
+  }
+
+  /** "Äpfel war schon drauf → 3×", or without the count when it did not change. */
+  private showStatus(line: MemoItem): void {
+    const key = (line.quantity ?? 1) > 1 ? 'memo.merged_count' : 'memo.merged';
+    this.status.set(this.translate.instant(key, { name: line.name, count: line.quantity }));
+    if (this.statusTimer !== null) clearTimeout(this.statusTimer);
+    this.statusTimer = setTimeout(() => this.status.set(''), 3000);
+  }
+
+  protected hideLowForToday(): void {
+    this.lowHiddenOn.set(today());
+    try {
+      localStorage.setItem(LOW_HIDDEN_KEY, today());
+    } catch {
+      /* private mode: hidden for this visit only */
+    }
+  }
+
+  /** A long press asks to stop suggesting it; a tap adds it. */
+  protected pressChip(name: string): void {
+    this.releaseChip();
+    this.pressed = false;
+    this.pressTimer = setTimeout(() => {
+      this.pressed = true;
+      this.confirmDismiss.set(name);
+    }, LONG_PRESS_MS);
+  }
+
+  protected releaseChip(): void {
+    if (this.pressTimer !== null) clearTimeout(this.pressTimer);
+    this.pressTimer = null;
+  }
+
+  protected tapChip(name: string): void {
+    if (this.pressed) {
+      this.pressed = false; // the click that ends a long press is not an add
+      return;
+    }
+    this.add(name, 'suggestion');
   }
 
   protected toggle(id: number, done: boolean): void {
@@ -167,6 +235,7 @@ export class Memo implements OnInit, OnDestroy {
   }
 
   protected dismiss(name: string): void {
+    this.confirmDismiss.set(null);
     this.memo.dismiss(name).subscribe({ error: (err) => this.fail(err) });
   }
 
@@ -425,5 +494,19 @@ export class Memo implements OnInit, OnDestroy {
       next: () => this.busy.set(false),
       error: () => this.busy.set(false),
     });
+  }
+}
+
+/** This phone's date, YYYY-MM-DD: "until tomorrow" is the person's own day. */
+function today(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function readLowHidden(): string | null {
+  try {
+    return localStorage.getItem(LOW_HIDDEN_KEY);
+  } catch {
+    return null;
   }
 }

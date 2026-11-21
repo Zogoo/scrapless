@@ -139,7 +139,6 @@
 }
 
 .autosuggest,
-.suggestions,
 .list {
   list-style: none;
   margin: 0;
@@ -149,8 +148,7 @@
   gap: 0.4rem;
 }
 
-.autosuggest button,
-.suggestions button {
+.autosuggest button {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -159,43 +157,6 @@
 
   small {
     color: var(--muted);
-  }
-}
-
-.list li {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.5rem;
-  border-radius: var(--radius);
-  background: var(--surface);
-  border: 1px solid var(--border);
-
-  &.done .tick span {
-    text-decoration: line-through;
-    color: var(--muted);
-  }
-}
-
-.tick {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex: 1;
-  min-height: var(--tap);
-  cursor: pointer;
-
-  .line {
-    display: flex;
-    flex-direction: column;
-    gap: 0.1rem;
-  }
-
-  input {
-    width: 1.4rem;
-    height: 1.4rem;
-    min-height: 0;
-    flex: none;
   }
 }
 
@@ -211,23 +172,105 @@
   color: var(--muted);
 }
 
-.suggestions li {
-  display: flex;
-  gap: 0.25rem;
+.title {
+  h1 {
+    margin: 0;
+  }
 
-  > button:first-child {
-    flex: 1;
+  .count {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
   }
 }
 
-.suggestions .dismiss {
-  flex: none;
-  width: auto;
-  min-width: var(--tap);
-  align-items: center;
-  justify-content: center;
+/* Store sections: small, uppercase, muted, like the Settings headings. */
+.section {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.clear-done {
-  margin-top: 0.5rem;
+/* The whole line is one target that ticks it off. */
+.list .row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: var(--tap);
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-align: left;
+
+  .check {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 1.35rem;
+    height: 1.35rem;
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    font-size: 0.8rem;
+  }
+
+  .what {
+    flex: 1;
+  }
+
+  .by {
+    color: var(--muted);
+  }
+}
+
+.done .row {
+  color: var(--muted);
+
+  .check {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  .what {
+    text-decoration: line-through;
+  }
+}
+
+.status {
+  margin: 0;
+  color: var(--muted);
+}
+
+.low-head,
+.done-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hide-low {
+  min-width: var(--tap);
+  font-size: 1.25rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+
+  .chip {
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+}
+
+.confirm {
+  margin: 0;
+}
+
+.done-toggle {
+  font-weight: 600;
 }
