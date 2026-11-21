@@ -54,6 +54,83 @@
     <p class="meta" role="status">{{ switchNote() | translate }}</p>
   }
 
+  <!-- Said once for the kitchen; recipes follow it right away. Each tap saves.
+       A list of foods to leave out, never health or allergy wording. -->
+  <section class="block food">
+    <h2>{{ 'food.title' | translate }}</h2>
+
+    <p class="meta" id="brotbox-setting">{{ 'food.brotbox_label' | translate }}</p>
+    <div class="choices" role="group" aria-labelledby="brotbox-setting">
+      @for (count of brotboxChoices; track count) {
+        <button
+          type="button"
+          [class.primary]="brotboxChosen() === count"
+          [attr.aria-pressed]="brotboxChosen() === count"
+          (click)="chooseBrotbox(count)"
+        >
+          {{ 'food.brotbox_' + count | translate }}
+        </button>
+      }
+    </div>
+
+    <p class="meta" id="diet-setting">{{ 'food.diet_label' | translate }}</p>
+    <div class="choices" role="group" aria-labelledby="diet-setting">
+      @for (diet of diets; track diet) {
+        <button
+          type="button"
+          [class.primary]="fridge.fridge()?.diet === diet"
+          [attr.aria-pressed]="fridge.fridge()?.diet === diet"
+          (click)="chooseDiet(diet)"
+        >
+          {{ 'food.diet_' + diet | translate }}
+        </button>
+      }
+    </div>
+
+    <p class="meta" id="excluded-setting">{{ 'food.excluded_label' | translate }}</p>
+    <div class="choices wrap" role="group" aria-labelledby="excluded-setting">
+      @for (food of commonExclusions; track food.value) {
+        <button
+          type="button"
+          [class.primary]="isExcluded(food.value)"
+          [attr.aria-pressed]="isExcluded(food.value)"
+          (click)="toggleExclusion(food.value)"
+        >
+          {{ 'food.exclude_' + food.key | translate }}
+        </button>
+      }
+      @for (food of ownExclusions(); track food) {
+        <button
+          type="button"
+          class="primary own"
+          [attr.aria-label]="'food.exclude_remove' | translate: { name: food }"
+          (click)="toggleExclusion(food)"
+        >
+          {{ food }} <span aria-hidden="true">✕</span>
+        </button>
+      }
+    </div>
+    <div class="add-exclusion">
+      <input
+        type="text"
+        maxlength="40"
+        autocomplete="off"
+        enterkeyhint="done"
+        [attr.aria-label]="'food.exclude_other' | translate"
+        [placeholder]="'food.exclude_other' | translate"
+        [ngModel]="exclusionDraft()"
+        (ngModelChange)="exclusionDraft.set($event)"
+        (keyup.enter)="addExclusion()"
+      />
+      <button type="button" [disabled]="!exclusionDraft().trim()" (click)="addExclusion()">
+        {{ 'food.exclude_add' | translate }}
+      </button>
+    </div>
+    @if (foodSaved()) {
+      <p class="meta" role="status">{{ 'settings.saved' | translate }}</p>
+    }
+  </section>
+
   <!-- The budget is the kitchen's and holds for the bell too; push is only
        whether this phone also gets them on the lock screen. -->
   <section class="block">

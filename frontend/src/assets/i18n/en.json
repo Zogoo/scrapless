@@ -149,7 +149,8 @@
     "pick": "Pick a meal and we'll suggest something from what's in the kitchen.",
     "no_idea_title": "No idea for this one yet.",
     "no_idea_body": "There is food here; this time nothing good came of it.",
-    "try_again": "Try again"
+    "try_again": "Try again",
+    "check_ingredients": "Please check the ingredients yourself."
   },
   "kitchen": {
     "title": "Kitchen",
@@ -304,5 +305,28 @@
     "yes": "Yes, still good",
     "gone": "Gone off",
     "used": "Used it"
+  },
+  "food": {
+    "brotbox_question": "How many lunchboxes do you pack on school days?",
+    "brotbox_0": "None",
+    "brotbox_1": "1",
+    "brotbox_2": "2",
+    "brotbox_3": "3",
+    "brotbox_4": "4+",
+    "title": "Food",
+    "brotbox_label": "Lunchboxes on school days",
+    "diet_label": "How do you eat?",
+    "diet_all": "Everything",
+    "diet_vegetarian": "Vegetarian",
+    "diet_vegan": "Vegan",
+    "excluded_label": "Rather without",
+    "exclude_pork": "Pork",
+    "exclude_nuts": "Nuts",
+    "exclude_fish": "Fish",
+    "exclude_lactose": "Lactose",
+    "exclude_gluten": "Gluten",
+    "exclude_other": "Anything else?",
+    "exclude_add": "Add",
+    "exclude_remove": "Remove {{name}}"
   }
 }

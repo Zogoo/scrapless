@@ -29,4 +29,34 @@ RSpec.describe Household do
     expect(household.join_code).to be_present
     expect(household.join_code).not_to eq(household.token)
   end
+
+  describe "food settings" do
+    it "allows every setting to be unanswered" do
+      expect(described_class.new(brotbox_count: nil, diet: nil, excluded_foods: [])).to be_valid
+    end
+
+    it "takes a Brotbox count from 0 to 6, and nothing outside it" do
+      expect(described_class.new(brotbox_count: 0)).to be_valid
+      expect(described_class.new(brotbox_count: 6)).to be_valid
+      expect(described_class.new(brotbox_count: 7)).not_to be_valid
+      expect(described_class.new(brotbox_count: -1)).not_to be_valid
+    end
+
+    it "knows three ways of eating" do
+      expect(described_class::DIETS.map { |diet| described_class.new(diet: diet) }).to all(be_valid)
+      expect(described_class.new(diet: "keto")).not_to be_valid
+    end
+
+    it "keeps foods to leave out stripped and once each, whatever the case" do
+      household = described_class.new(excluded_foods: [ " Nüsse ", "nüsse", "", "Schwein" ])
+
+      expect(household.excluded_foods).to eq(%w[Nüsse Schwein])
+    end
+
+    it "keeps the list short and each entry short" do
+      expect(described_class.new(excluded_foods: (1..21).map { |n| "Essen #{n}" })).not_to be_valid
+      expect(described_class.new(excluded_foods: [ "x" * 41 ])).not_to be_valid
+      expect(described_class.new(excluded_foods: [ "x" * 40 ])).to be_valid
+    end
+  end
 end

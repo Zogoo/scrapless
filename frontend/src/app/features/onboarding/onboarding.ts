@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
+import { BROTBOX_CHOICES } from '../../core/food-settings';
 import { FridgeService } from '../../core/services/fridge.service';
 
 /**
@@ -52,13 +53,31 @@ import { FridgeService } from '../../core/services/fridge.service';
         />
       </label>
 
+      <!-- Optional, like the name: nothing is preselected, tapping the chosen
+           chip again unchooses it, and the one button below is still the way on. -->
+      <div class="brotbox">
+        <p id="brotbox-head">{{ 'food.brotbox_question' | translate }}</p>
+        <div class="choices" role="group" aria-labelledby="brotbox-head">
+          @for (count of brotboxChoices; track count) {
+            <button
+              type="button"
+              [class.primary]="brotboxCount() === count"
+              [attr.aria-pressed]="brotboxCount() === count"
+              (click)="pickBrotbox(count)"
+            >
+              {{ 'food.brotbox_' + count | translate }}
+            </button>
+          }
+        </div>
+      </div>
+
       @if (error()) {
         <p class="error">{{ error() }}</p>
       }
 
       <div class="actions">
         <button type="button" class="primary" [disabled]="busy()" (click)="start()">
-          {{ (name.trim() ? 'onboarding.name_it' : 'onboarding.skip') | translate }}
+          {{ (answered() ? 'onboarding.name_it' : 'onboarding.skip') | translate }}
         </button>
       </div>
 
@@ -72,8 +91,20 @@ export class Onboarding {
   private readonly translate = inject(TranslateService);
 
   protected name = '';
+  protected readonly brotboxChoices = BROTBOX_CHOICES;
+  /** null: not answered, which is what skipping means. */
+  protected readonly brotboxCount = signal<number | null>(null);
   protected readonly busy = signal(false);
   protected readonly error = signal('');
+
+  /** "Skip" only while nothing was given; a count alone is an answer too. */
+  protected answered(): boolean {
+    return this.name.trim() !== '' || this.brotboxCount() !== null;
+  }
+
+  protected pickBrotbox(count: number): void {
+    this.brotboxCount.set(this.brotboxCount() === count ? null : count);
+  }
 
   protected start(): void {
     if (this.busy()) return;
@@ -81,7 +112,7 @@ export class Onboarding {
     this.busy.set(true);
     this.error.set('');
 
-    this.fridge.create(this.name).subscribe({
+    this.fridge.create(this.name, this.brotboxCount()).subscribe({
       next: () => void this.router.navigate(['/today']),
       error: (err: { message?: string }) => {
         this.error.set(err.message ?? this.translate.instant('errors.generic'));

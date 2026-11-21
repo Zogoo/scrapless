@@ -9,6 +9,15 @@ RSpec.describe "Api::V1::Fridges", type: :request do
       expect(response.parsed_body).to include("id", "name" => "Küche", "token" => be_present)
     end
 
+    it "keeps the Brotbox count from onboarding, and leaves it unasked when skipped" do
+      post "/api/v1/fridge", params: { name: "Küche", brotbox_count: 2 }, as: :json
+      expect(response.parsed_body).to include("brotbox_count" => 2, "diet" => nil, "excluded_foods" => [])
+
+      reset!
+      post "/api/v1/fridge", params: {}, as: :json
+      expect(response.parsed_body["brotbox_count"]).to be_nil
+    end
+
     it "names an unnamed fridge itself, because 'skip' has to lead somewhere" do
       post "/api/v1/fridge", params: {}, as: :json
 
@@ -97,6 +106,34 @@ RSpec.describe "Api::V1::Fridges", type: :request do
       get "/api/v1/fridge", headers: { "Authorization" => "Bearer nonsense" }
 
       expect(response).to have_http_status(:unauthorized)
+    end
+  end
+
+  describe "food settings" do
+    let(:household) { create(:household) }
+
+    it "stores how the kitchen eats and what to leave out, one change at a time" do
+      patch "/api/v1/fridge", params: { diet: "vegan" }, as: :json, headers: fridge_headers(household)
+      patch "/api/v1/fridge", params: { excluded_foods: [ "Schwein" ] }, as: :json, headers: fridge_headers(household)
+
+      expect(household.reload).to have_attributes(diet: "vegan", excluded_foods: [ "Schwein" ])
+      get "/api/v1/fridge", headers: fridge_headers(household)
+      expect(response.parsed_body).to include("diet" => "vegan", "excluded_foods" => [ "Schwein" ])
+    end
+
+    it "leaves a setting alone when it is not sent, and clears it with null" do
+      household.update!(diet: "vegetarian", brotbox_count: 2)
+
+      patch "/api/v1/fridge", params: { brotbox_count: nil }, as: :json, headers: fridge_headers(household)
+
+      expect(household.reload).to have_attributes(diet: "vegetarian", brotbox_count: nil)
+    end
+
+    it "refuses a way of eating it does not know" do
+      patch "/api/v1/fridge", params: { diet: "keto" }, as: :json, headers: fridge_headers(household)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(household.reload.diet).to be_nil
     end
   end
 

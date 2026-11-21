@@ -26,6 +26,9 @@ class ApplicationController < ActionController::API
       join_code: household.join_code,
       locale: household.locale,
       alerts_per_week: household.alerts_per_week,
+      brotbox_count: household.brotbox_count,
+      diet: household.diet,
+      excluded_foods: household.excluded_foods,
       created_at: household.created_at
     }
   end

@@ -222,4 +222,59 @@ RSpec.describe Recipes::Suggest do
       expect(suggest.cached).to be(true)
     end
   end
+
+  describe "the household's food settings" do
+    let!(:eggs) { create(:item, household: household, display_name: "Eier", canonical_name: "eier") }
+    let(:router) { instance_double(Ai::Router, json_completion: { "recipes" => [ recipe("Rührei", eggs) ] }) }
+
+    before do
+      allow(Ai::Config).to receive(:live?).and_return(true)
+      allow(Ai::Router).to receive(:new).and_return(router)
+    end
+
+    def system_prompt
+      suggest(meal: "breakfast")
+      prompt = nil
+      expect(router).to have_received(:json_completion) { |messages:, **| prompt = messages.first[:content] }
+      prompt
+    end
+
+    it "makes vegan a hard rule" do
+      household.update!(diet: "vegan")
+
+      expect(system_prompt).to include("hard: never break them", "Vegan: never use meat", "eggs, milk")
+    end
+
+    it "spells out what leaving out pork means" do
+      household.update!(excluded_foods: [ "Schwein" ])
+
+      expect(system_prompt).to include("Never use pork or pork products (bacon, ham")
+    end
+
+    it "adds no rule for a kitchen that eats everything" do
+      household.update!(diet: "all")
+
+      expect(system_prompt).not_to include("This household's rules")
+    end
+
+    # Typed by the household: it names a food and must not read as an instruction.
+    it "quotes a food the household typed" do
+      household.update!(excluded_foods: [ "Koriander" ])
+
+      expect(system_prompt).to include('Never use this food or anything made from it: "Koriander".')
+    end
+
+    it "does not show today's recipes again after the diet or the list changed" do
+      model_answers(recipe("Rührei", eggs))
+      allow(Ai::Router).to receive(:new).and_call_original
+      expect(suggest(meal: "breakfast").cached).to be(false)
+      expect(suggest(meal: "breakfast").cached).to be(true)
+
+      household.update!(diet: "vegan")
+      expect(suggest(meal: "breakfast").cached).to be(false)
+
+      household.update!(excluded_foods: [ "Fisch" ])
+      expect(suggest(meal: "breakfast").cached).to be(false)
+    end
+  end
 end

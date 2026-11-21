@@ -149,7 +149,8 @@
     "pick": "Wähle eine Mahlzeit, dann schlagen wir etwas aus deiner Küche vor.",
     "no_idea_title": "Dazu fällt uns gerade nichts ein.",
     "no_idea_body": "Essen ist da, nur kam diesmal nichts Gutes dabei heraus.",
-    "try_again": "Nochmal versuchen"
+    "try_again": "Nochmal versuchen",
+    "check_ingredients": "Zutaten bitte selbst prüfen."
   },
   "kitchen": {
     "title": "Küche",
@@ -304,5 +305,28 @@
     "yes": "Ja, noch gut",
     "gone": "Schlecht geworden",
     "used": "Schon verbraucht"
+  },
+  "food": {
+    "brotbox_question": "Wie viele Brotboxen packt ihr an Schultagen?",
+    "brotbox_0": "Keine",
+    "brotbox_1": "1",
+    "brotbox_2": "2",
+    "brotbox_3": "3",
+    "brotbox_4": "4+",
+    "title": "Essen",
+    "brotbox_label": "Brotboxen an Schultagen",
+    "diet_label": "Wie esst ihr?",
+    "diet_all": "Alles",
+    "diet_vegetarian": "Vegetarisch",
+    "diet_vegan": "Vegan",
+    "excluded_label": "Lieber ohne",
+    "exclude_pork": "Schwein",
+    "exclude_nuts": "Nüsse",
+    "exclude_fish": "Fisch",
+    "exclude_lactose": "Laktose",
+    "exclude_gluten": "Gluten",
+    "exclude_other": "Sonst noch etwas?",
+    "exclude_add": "Hinzufügen",
+    "exclude_remove": "{{name}} entfernen"
   }
 }
