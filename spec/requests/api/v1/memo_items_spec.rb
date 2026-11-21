@@ -141,6 +141,67 @@ RSpec.describe "Api::V1::MemoItems", type: :request do
     expect(Rails.logger).to have_received(:info).with(/gesture=unknown /)
   end
 
+  describe "sections and quantities" do
+    it "files a line under its store section and reads a count off the front" do
+      post "/api/v1/memo", params: { name: "2 Gurken" }, headers: headers, as: :json
+
+      expect(response.parsed_body).to include("name" => "Gurken", "quantity" => 2,
+                                              "category" => Categories.guess("Gurken"))
+    end
+
+    it "keeps a second add without a number as the one line, unchanged" do
+      create(:memo_item, household: household, name: "Milch", quantity: 2)
+
+      post "/api/v1/memo", params: { name: "Milch" }, headers: headers, as: :json
+
+      expect(response.parsed_body).to include("quantity" => 2, "merged" => true)
+      expect(household.memo_items.count).to eq(1)
+    end
+
+    it "adds a counted second add to the line that is there" do
+      create(:memo_item, household: household, name: "Äpfel", quantity: 2)
+
+      post "/api/v1/memo", params: { name: "1 Äpfel" }, headers: headers, as: :json
+      expect(response.parsed_body).to include("quantity" => 3, "merged" => true)
+
+      post "/api/v1/memo", params: { name: "Äpfel", quantity: 2 }, headers: headers, as: :json
+      expect(response.parsed_body["quantity"]).to eq(5)
+      expect(household.memo_items.count).to eq(1)
+    end
+
+    it "keeps the quantities a model read off a sentence, and a measure in the name" do
+      reading = Memo::ListReader::Result.new(lines: [ "2 Gurken", "500 g Mehl" ], path: "model", reason: "unsure",
+                                             model_ms: 10, unresolved: [])
+      allow(Memo::ListReader).to receive(:call).and_return(reading)
+
+      post "/api/v1/memo/dictate", params: { transcript: "zwei Gurken und 500 Gramm Mehl" }, headers: headers,
+                                   as: :json
+
+      expect(household.memo_items.order(:id).pluck(:name, :quantity)).to eq([ [ "Gurken", 2 ], [ "500 g Mehl", 1 ] ])
+    end
+
+    it "sums a dictated count into a line that is already open" do
+      create(:memo_item, household: household, name: "Gurken", quantity: 1)
+      reading = Memo::ListReader::Result.new(lines: [ "2 Gurken" ], path: "model", reason: "unsure",
+                                             model_ms: 10, unresolved: [])
+      allow(Memo::ListReader).to receive(:call).and_return(reading)
+
+      post "/api/v1/memo/dictate", params: { transcript: "zwei Gurken" }, headers: headers, as: :json
+
+      expect(household.memo_items.sole.quantity).to eq(3)
+    end
+
+    it "lets a quantity be changed, between 1 and 99" do
+      line = create(:memo_item, household: household, name: "Eier")
+
+      patch "/api/v1/memo/#{line.id}", params: { memo_item: { quantity: 6 } }, headers: headers, as: :json
+      expect(line.reload.quantity).to eq(6)
+
+      patch "/api/v1/memo/#{line.id}", params: { memo_item: { quantity: 100 } }, headers: headers, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+  end
+
   describe "recorded audio" do
     def audio = Rack::Test::UploadedFile.new(StringIO.new("not-really-audio"), "audio/mp4", original_filename: "memo.mp4")
 

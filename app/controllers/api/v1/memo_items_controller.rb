@@ -14,13 +14,16 @@ module Api
         }
       end
 
-      # Two people adding "milk" to one shared list get one line, not two.
+      # Two people adding "milk" to one shared list get one line, not two. A
+      # number ("2 Äpfel", or quantity) adds to the line that is already there.
       def create
-        existing = current_household.memo_items.open_line_for(params[:name])
-        return render json: memo_json(existing) if existing
+        count, name = Memo::Quantity.parse(params[:name])
+        count = quantity_param || count
+        existing = current_household.memo_items.open_line_for(name)
+        return render json: memo_json(add_to(existing, count)).merge(merged: true) if existing
 
         item = current_household.memo_items.create!(
-          name: params[:name], note: params[:note].presence, source: source_param,
+          name: name, quantity: count || 1, note: params[:note].presence, source: source_param,
           added_by_name: actor_name
         )
         render json: memo_json(item), status: :created
@@ -36,10 +39,13 @@ module Api
         return render_error(I18n.t("capture.rejected.too_long")) if transcript.length > MAX_TEXT_CHARS
 
         reading = Memo::ListReader.call(text: transcript, household: current_household, lang: speech_language)
-        created = reading.lines.filter_map do |name|
-          next if current_household.memo_items.open_line_for(name)
+        created = reading.lines.filter_map do |line|
+          count, name = Memo::Quantity.parse(line)
+          existing = current_household.memo_items.open_line_for(name)
+          next(count ? add_to(existing, count) : nil) if existing
 
-          current_household.memo_items.create!(name: name, source: "voice", added_by_name: actor_name)
+          current_household.memo_items.create!(name: name, quantity: count || 1, source: "voice",
+                                               added_by_name: actor_name)
         end
         log_dictation(created.size, reading)
 
@@ -85,7 +91,19 @@ module Api
       end
 
       def memo_params
-        params.require(:memo_item).permit(:name, :note, :done, :position)
+        params.require(:memo_item).permit(:name, :note, :done, :position, :quantity)
+      end
+
+      # An explicit count adds to the line ("2 Äpfel" + "1 Apfel" is 3); none
+      # leaves it alone, as before.
+      def add_to(line, count)
+        line.update!(quantity: [ line.quantity + count, Memo::Quantity::MAX ].min) if count
+        line
+      end
+
+      def quantity_param
+        value = Integer(params[:quantity], exception: false) if params[:quantity].present?
+        value&.clamp(1, Memo::Quantity::MAX)
       end
 
       def source_param
@@ -144,7 +162,7 @@ module Api
         {
           id: item.id, name: item.name, note: item.note, done: item.done,
           source: item.source, position: item.position, created_at: item.created_at,
-          added_by_name: item.added_by_name
+          added_by_name: item.added_by_name, category: item.category, quantity: item.quantity
         }
       end
     end

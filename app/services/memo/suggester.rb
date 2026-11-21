@@ -149,8 +149,7 @@ module Memo
     end
 
     def category_for(name)
-      @categories ||= @household.items.pluck(:canonical_name, :category).to_h
-      @categories[name].presence || Categories.guess(name)
+      (@category_for ||= CategoryFor.new(household: @household)).call(name)
     end
 
     def median(values)
