@@ -127,7 +127,6 @@
     "cancel": "Cancel",
     "added": "Just added",
     "undo_named": "Take back {{name}}",
-    "speech_lang": "Language you speak",
     "try_again": "Voice works differently here. Press the mic again.",
     "fix_named": "Fix {{name}}",
     "open_one": "{{count}} item open",
@@ -253,7 +252,9 @@
     "other_kitchen": "Your other kitchen",
     "switch_back": "Back to {{name}}",
     "switch_gone": "That kitchen no longer exists — it was forgotten on another phone. You're still in this one.",
-    "switch_failed": "Couldn't switch kitchens. Check your connection and try again."
+    "switch_failed": "Couldn't switch kitchens. Check your connection and try again.",
+    "mic_language": "Microphone language",
+    "mic_like_app": "Like the app"
   },
   "common": {
     "loading": "One moment…",

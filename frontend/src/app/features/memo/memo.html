@@ -11,20 +11,6 @@
     </div>
     @if (speech.supported) {
       <div class="voice">
-        <div class="lang" role="group" [attr.aria-label]="'memo.speech_lang' | translate">
-          @for (lang of speechLangs; track lang) {
-            <button
-              type="button"
-              class="lang-option"
-              [class.on]="speech.speechLang() === lang"
-              [attr.aria-pressed]="speech.speechLang() === lang"
-              [disabled]="speech.listening()"
-              (click)="setSpeechLang(lang)"
-            >
-              {{ lang.toUpperCase() }}
-            </button>
-          }
-        </div>
         <button
           type="button"
           class="mic"

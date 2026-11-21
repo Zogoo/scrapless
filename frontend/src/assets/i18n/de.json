@@ -127,7 +127,6 @@
     "cancel": "Abbrechen",
     "added": "Gerade hinzugefügt",
     "undo_named": "{{name}} zurücknehmen",
-    "speech_lang": "Sprache beim Sprechen",
     "try_again": "Sprache funktioniert hier anders. Drück das Mikro noch einmal.",
     "fix_named": "{{name}} korrigieren",
     "open_one": "{{count}} Eintrag offen",
@@ -253,7 +252,9 @@
     "other_kitchen": "Deine andere Küche",
     "switch_back": "Zurück zu {{name}}",
     "switch_gone": "Diese Küche gibt es nicht mehr – sie wurde auf einem anderen Handy gelöscht. Du bist weiter in dieser.",
-    "switch_failed": "Wechseln hat nicht geklappt. Prüf deine Verbindung und versuch es noch einmal."
+    "switch_failed": "Wechseln hat nicht geklappt. Prüf deine Verbindung und versuch es noch einmal.",
+    "mic_language": "Sprache fürs Mikrofon",
+    "mic_like_app": "Wie die App"
   },
   "common": {
     "loading": "Einen Moment…",

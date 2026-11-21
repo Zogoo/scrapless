@@ -20,29 +20,6 @@
   gap: 0.5rem;
 }
 
-.lang {
-  display: flex;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-  overflow: hidden;
-}
-
-.lang-option {
-  min-width: 2.75rem;
-  min-height: var(--tap);
-  padding: 0 0.5rem;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--muted);
-  font-weight: 700;
-
-  &.on {
-    background: var(--accent-container);
-    color: var(--ink);
-  }
-}
-
 // Held, not tapped: no iOS callout, no text selection, no scroll stealing the
 // gesture (doc 15 §15.8.4).
 .mic {

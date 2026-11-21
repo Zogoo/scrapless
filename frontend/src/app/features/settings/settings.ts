@@ -17,6 +17,7 @@ import { CaptureService } from '../../core/services/capture.service';
 import { InstallService } from '../../core/services/install.service';
 import { LocaleService } from '../../core/services/locale.service';
 import { PushService } from '../../core/services/push.service';
+import { SpeechService } from '../../core/services/speech.service';
 import { qrImageSrc } from '../../core/qr-image';
 import {
   BROTBOX_CHOICES,
@@ -41,6 +42,7 @@ export class Settings implements OnInit {
   protected readonly install = inject(InstallService);
   protected readonly locale = inject(LocaleService);
   protected readonly push = inject(PushService);
+  protected readonly speech = inject(SpeechService);
   private readonly captures = inject(CaptureService);
   private readonly router = inject(Router);
 

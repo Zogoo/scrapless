@@ -18,14 +18,8 @@ import {
   takeUntil,
 } from 'rxjs';
 
-import { environment } from '../../../environments/environment';
 import { DictationGesture, MemoService } from '../../core/services/memo.service';
-import {
-  SpeechLang,
-  SpeechService,
-  audioFilename,
-  speechTag,
-} from '../../core/services/speech.service';
+import { SpeechService, audioFilename, speechTag } from '../../core/services/speech.service';
 import { MemoItem, Suggestion } from '../../core/models';
 import { countPrefix, openSections } from './sections';
 
@@ -102,8 +96,6 @@ export class Memo implements OnInit, OnDestroy {
   /** The lines the last dictation added, shown with an undo. */
   protected readonly justAdded = signal<MemoItem[]>([]);
   protected readonly micUses = signal(this.readMicUses());
-  /** Every language the app speaks; the list is environment.availableLocales. */
-  protected readonly speechLangs: readonly SpeechLang[] = environment.availableLocales;
   protected readonly showMicHint = computed(() => this.micUses() < HINT_UNTIL_USES);
 
   /** The just-added line being corrected, if any. */
@@ -331,10 +323,6 @@ export class Memo implements OnInit, OnDestroy {
     this.recording.set(false);
     this.micMode.set('idle');
     this.speech.cancel();
-  }
-
-  protected setSpeechLang(lang: SpeechLang): void {
-    this.speech.setSpeechLang(lang);
   }
 
   /** Fix a line the mic got wrong; the server learns from the correction. */

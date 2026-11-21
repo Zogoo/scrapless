@@ -8,6 +8,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { environment } from '../../../environments/environment';
 import { Fridge } from '../../core/models';
 import { FridgeService } from '../../core/services/fridge.service';
+import { LocaleService } from '../../core/services/locale.service';
+import { SPEECH_LANG_KEY, SpeechService } from '../../core/services/speech.service';
 import { Settings } from './settings';
 
 const kitchen: Fridge = {
@@ -138,5 +140,66 @@ describe('Settings, the food section', () => {
     (root.querySelector('.add-exclusion button') as HTMLButtonElement).click();
 
     http.expectNone(`${environment.apiUrl}/fridge`);
+  });
+});
+
+describe('Settings, the microphone language', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    window.matchMedia ??= ((query: string) =>
+      ({
+        matches: false,
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }) as unknown as MediaQueryList) as typeof window.matchMedia;
+    // A recogniser, so this phone counts as able to dictate.
+    (window as unknown as { webkitSpeechRecognition: unknown }).webkitSpeechRecognition = class {};
+    TestBed.configureTestingModule({
+      imports: [Settings],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        provideTranslateService(),
+      ],
+    });
+  });
+
+  afterEach(() => {
+    delete (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition;
+    TestBed.resetTestingModule();
+  });
+
+  function chips() {
+    const fixture = TestBed.createComponent(Settings);
+    fixture.detectChanges();
+    TestBed.inject(HttpTestingController)
+      .match(`${environment.apiUrl}/costs`)
+      .forEach((req) => req.flush(noCosts));
+    const root = fixture.nativeElement as HTMLElement;
+    return {
+      fixture,
+      buttons: () => [
+        ...root.querySelectorAll<HTMLButtonElement>('[aria-labelledby="mic-language-head"] button'),
+      ],
+    };
+  }
+
+  it('follows the app until a language is chosen, and "Wie die App" forgets the choice', () => {
+    const { fixture, buttons } = chips();
+    expect(buttons()[0].getAttribute('aria-pressed')).toBe('true'); // "Wie die App"
+
+    buttons()[1].click();
+    fixture.detectChanges();
+    expect(localStorage.getItem(SPEECH_LANG_KEY)).toBe(buttons()[1].getAttribute('lang'));
+    expect(buttons()[0].getAttribute('aria-pressed')).toBe('false');
+
+    buttons()[0].click();
+    fixture.detectChanges();
+    expect(localStorage.getItem(SPEECH_LANG_KEY)).toBeNull();
+    expect(TestBed.inject(SpeechService).speechLang()).toBe(
+      TestBed.inject(LocaleService).current(),
+    );
   });
 });
