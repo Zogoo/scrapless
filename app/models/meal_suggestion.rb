@@ -1,6 +1,7 @@
 # The recipes already written for one meal, in one kitchen, on one day.
 class MealSuggestion < ApplicationRecord
-  MEALS = %w[breakfast lunch dinner].freeze
+  # "brotbox" is the next school day's lunchbox, stored under that day.
+  MEALS = %w[breakfast lunch dinner brotbox].freeze
 
   belongs_to :household
 

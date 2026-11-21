@@ -27,6 +27,28 @@ RSpec.describe "Api::V1::Recipes", type: :request do
       expect(ingredients.find { |i| i["item_id"] == urgent.id }["use_first"]).to be(true)
     end
 
+    describe "the Brotbox" do
+      it "is not offered to a kitchen that packs none, or never said" do
+        create(:item, household: household)
+
+        [ 0, nil ].each do |count|
+          household.update!(brotbox_count: count)
+          post "/api/v1/recipes/suggest", params: { meal: "brotbox" }, headers: headers
+          expect(response).to have_http_status(:unprocessable_content)
+        end
+      end
+
+      it "says which school day it is for" do
+        household.update!(brotbox_count: 2)
+        create(:item, household: household)
+
+        post "/api/v1/recipes/suggest", params: { meal: "brotbox" }, headers: headers
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body["for_date"]).to eq(Recipes::Suggest.school_day(household).iso8601)
+      end
+    end
+
     it "answers an empty kitchen with no recipes rather than an error" do
       post "/api/v1/recipes/suggest", params: { meal: "lunch" }, headers: headers
 

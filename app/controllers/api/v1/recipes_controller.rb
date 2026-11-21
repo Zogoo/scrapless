@@ -12,8 +12,11 @@ module Api
 
       def suggest
         result = Recipes::Suggest.call(household: current_household, meal: params.require(:meal))
-        render json: { meal: result.meal, recipes: result.recipes, cached: result.cached,
-                       kitchen_empty: result.kitchen_empty, mode: Ai::Config.mode }
+        body = { meal: result.meal, recipes: result.recipes, cached: result.cached,
+                 kitchen_empty: result.kitchen_empty, mode: Ai::Config.mode }
+        # Which school day the Brotbox is for, so the screen can say "für morgen".
+        body[:for_date] = result.for_date.iso8601 if result.meal == "brotbox"
+        render json: body
       end
 
       private

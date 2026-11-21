@@ -20,8 +20,26 @@ module Recipes
     MAX_ITEMS = 30
     MAX_CALLS_PER_HOUR = 6
 
+    # After this hour on a school day, the Brotbox to plan is tomorrow's.
+    BROTBOX_CUTOFF_HOUR = 16
+
     # kitchen_empty tells "there is no food" apart from "nothing came of it".
-    Result = Struct.new(:recipes, :cached, :meal, :kitchen_empty, keyword_init: true)
+    # for_date is the day the answer is for: today, except a Brotbox, which is
+    # for the next school day.
+    Result = Struct.new(:recipes, :cached, :meal, :kitchen_empty, :for_date, keyword_init: true)
+
+    # The next school day, in the kitchen's own time zone: today if it is a
+    # weekday before 16:00, otherwise the next Monday to Friday. Holidays and
+    # Schulferien are not known yet.
+    def self.school_day(household, now = Time.current)
+      local = household.local_now(now)
+      day = local.to_date
+      return day if day.on_weekday? && local.hour < BROTBOX_CUTOFF_HOUR
+
+      day += 1
+      day += 1 until day.on_weekday?
+      day
+    end
 
     def initialize(household:, meal:, locale: I18n.locale, on: Date.current)
       @household = household
@@ -32,7 +50,20 @@ module Recipes
 
     def call
       raise UnknownMeal, @meal unless MEALS.include?(@meal)
+      # No Brotboxen, or never said: there is no Brotbox to plan.
+      raise UnknownMeal, @meal if brotbox? && @household.brotbox_count.to_i.zero?
 
+      @on = self.class.school_day(@household) if brotbox?
+      result = answer
+      result.for_date = @on
+      result
+    end
+
+    private
+
+    def brotbox? = @meal == "brotbox"
+
+    def answer
       stored = remembered
       return Result.new(recipes: stored.payload, cached: true, meal: @meal, kitchen_empty: false) if stored
       return Result.new(recipes: [], cached: false, meal: @meal, kitchen_empty: true) if pantry.empty?
@@ -43,8 +74,6 @@ module Recipes
       record = save(recipes)
       Result.new(recipes: record.payload, cached: !record.previously_new_record?, meal: @meal, kitchen_empty: false)
     end
-
-    private
 
     def remembered
       @household.meal_suggestions.find_by(meal: @meal, served_on: @on, locale: @locale.to_s)
@@ -63,7 +92,8 @@ module Recipes
       raise TooMany if Ai::Config.live? && calls_this_hour >= MAX_CALLS_PER_HOUR
 
       raw = Ai::RecipeWriter.call(pantry: pantry, meal: @meal, household: @household, locale: @locale,
-                                  rules: FoodRules.call(household: @household))
+                                  rules: FoodRules.call(household: @household),
+                                  boxes: (@household.brotbox_count if brotbox?))
       written = Array(raw["recipes"])
       grounded(written).tap do |kept|
         # Which of the two it was, without what is in anyone's kitchen.

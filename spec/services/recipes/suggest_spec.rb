@@ -277,4 +277,71 @@ RSpec.describe Recipes::Suggest do
       expect(suggest(meal: "breakfast").cached).to be(false)
     end
   end
+
+  describe "the Brotbox" do
+    include ActiveSupport::Testing::TimeHelpers
+
+    let!(:cheese) { create(:item, household: household, display_name: "Käse", canonical_name: "käse") }
+
+    before { household.update!(brotbox_count: 2, timezone: "Europe/Berlin") }
+
+    def berlin(text) = ActiveSupport::TimeZone["Europe/Berlin"].parse(text)
+
+    {
+      "2026-11-18 09:00" => "2026-11-18", # Wednesday morning: today's
+      "2026-11-18 17:00" => "2026-11-19", # Wednesday evening: Thursday's
+      "2026-11-20 17:00" => "2026-11-23", # Friday evening: Monday's
+      "2026-11-21 10:00" => "2026-11-23"  # Saturday: Monday's
+    }.each do |now, school_day|
+      it "plans #{now} (Berlin) for #{school_day}" do
+        expect(described_class.school_day(household, berlin(now))).to eq(Date.parse(school_day))
+      end
+    end
+
+    it "is stored under the school day it is for" do
+      model_answers(recipe("Käsebrot-Häppchen", cheese))
+
+      travel_to(berlin("2026-11-18 17:00")) { expect(suggest(meal: "brotbox").for_date).to eq(Date.new(2026, 11, 19)) }
+      travel_to(berlin("2026-11-19 08:00")) do
+        result = suggest(meal: "brotbox")
+        expect(result.cached).to be(true)
+        expect(result.for_date).to eq(Date.new(2026, 11, 19))
+      end
+    end
+
+    it "is not a meal for a kitchen that packs none, or never said" do
+      [ 0, nil ].each do |count|
+        household.update!(brotbox_count: count)
+        expect { suggest(meal: "brotbox") }.to raise_error(described_class::UnknownMeal)
+      end
+    end
+
+    describe "the prompt" do
+      let(:router) { instance_double(Ai::Router, json_completion: { "recipes" => [ recipe("Häppchen", cheese) ] }) }
+
+      before do
+        allow(Ai::Config).to receive(:live?).and_return(true)
+        allow(Ai::Router).to receive(:new).and_return(router)
+      end
+
+      def system_prompt
+        suggest(meal: "brotbox")
+        prompt = nil
+        expect(router).to have_received(:json_completion) { |messages:, **| prompt = messages.first[:content] }
+        prompt
+      end
+
+      it "asks for a cold, quick, nut-free lunchbox for the household's number of boxes" do
+        expect(system_prompt).to include("school lunchbox", "for 2 box(es)", "eaten cold", "No reheating",
+                                         "at most 10 minutes", "Finger food", "Never use nuts",
+                                         "mayonnaise salads")
+      end
+
+      it "still follows the household's diet" do
+        household.update!(diet: "vegan")
+
+        expect(system_prompt).to include("Never use nuts", "Vegan: never use meat")
+      end
+    end
+  end
 end

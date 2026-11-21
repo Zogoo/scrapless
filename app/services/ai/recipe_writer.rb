@@ -72,8 +72,27 @@ module Ai
       %<rules>s
     PROMPT
 
-    def initialize(pantry:, meal:, household: nil, locale: I18n.locale, rules: [])
+    # The Brotbox: a child's school lunchbox for the next school day. Always
+    # nut-free, because many schools and Kitas are, whatever the household said.
+    BROTBOX = <<~PROMPT.freeze
+
+      This meal is a Brotbox: a child's school lunchbox, for %<boxes>s box(es).
+      - It is packed in the morning or the evening before and eaten cold
+        several hours later. No reheating; at most 10 minutes of preparation.
+      - Finger food where possible: things a child eats by hand from a box.
+      - Never use nuts or anything made from them: many schools and Kitas are
+        nut-free.
+      - Nothing that is unsafe hours later without cooling: no raw fish, raw
+        egg, mayonnaise salads, raw minced meat.
+      - Give amounts for %<boxes>s box(es) together.
+    PROMPT
+
+    # What the model is asked for, per meal.
+    MEAL_WORDS = { "brotbox" => "school lunchbox" }.freeze
+
+    def initialize(pantry:, meal:, household: nil, locale: I18n.locale, rules: [], boxes: nil)
       @rules = Array(rules)
+      @boxes = boxes
       @pantry = pantry
       @meal = meal.to_s
       @household = household
@@ -94,7 +113,8 @@ module Ai
     end
 
     def system_prompt
-      prompt = format(SYSTEM, meal: @meal, language: Language.name(@locale))
+      prompt = format(SYSTEM, meal: MEAL_WORDS.fetch(@meal, @meal), language: Language.name(@locale))
+      prompt += format(BROTBOX, boxes: @boxes) if @meal == "brotbox"
       return prompt if @rules.empty?
 
       prompt + format(HOUSEHOLD_RULES, rules: @rules.map { |rule| "- #{rule}" }.join("\n"))
