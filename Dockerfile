@@ -1,4 +1,4 @@
-ARG RUBY_VERSION=3.4.10
+ARG RUBY_VERSION=3.4.13
 
 # Stage 1: Build the Angular frontend
 FROM node:22-slim AS frontend-build
