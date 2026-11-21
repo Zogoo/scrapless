@@ -25,6 +25,7 @@ class ApplicationController < ActionController::API
       token: household.token,
       join_code: household.join_code,
       locale: household.locale,
+      timezone: household.timezone,
       alerts_per_week: household.alerts_per_week,
       brotbox_count: household.brotbox_count,
       diet: household.diet,

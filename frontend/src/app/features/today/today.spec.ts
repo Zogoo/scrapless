@@ -25,6 +25,10 @@ describe('Today', () => {
   const query = new BehaviorSubject(convertToParamMap({}));
 
   beforeEach(() => {
+    // Before anything is created: PushService reads "already asked" from
+    // storage when it is made, and another spec file's "Nicht jetzt" could
+    // still be there (CI shares a test worker between files).
+    localStorage.clear();
     query.next(convertToParamMap({}));
     TestBed.configureTestingModule({
       imports: [Today],

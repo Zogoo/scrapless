@@ -2,8 +2,42 @@
   <h1>{{ 'recipes.title' | translate }}</h1>
   <p class="lede">{{ 'recipes.lede' | translate }}</p>
 
+  <!-- Asked once, for kitchens that skipped it: only what is still unanswered.
+   Each tap saves; the card goes once both are answered, or until reload. -->
+  @if (showQuestions()) {
+    <aside class="card ask">
+      @if (askBrotbox()) {
+        <p id="ask-brotbox">{{ 'recipes.ask_brotbox' | translate }}</p>
+        <div class="choices" role="group" aria-labelledby="ask-brotbox">
+          @for (count of brotboxChoices; track count) {
+            <button type="button" (click)="answerBrotbox(count)">
+              {{ 'food.brotbox_' + count | translate }}
+            </button>
+          }
+        </div>
+      }
+      @if (askDiet()) {
+        <p id="ask-diet">{{ 'food.diet_label' | translate }}</p>
+        <div class="choices" role="group" aria-labelledby="ask-diet">
+          @for (diet of diets; track diet) {
+            <button type="button" (click)="answerDiet(diet)">
+              {{ 'food.diet_' + diet | translate }}
+            </button>
+          }
+        </div>
+      }
+      <p class="meta">
+        {{ 'recipes.ask_exclude' | translate }}
+        <a routerLink="/settings">{{ 'recipes.ask_exclude_link' | translate }}</a>
+      </p>
+      <button type="button" class="ghost later" (click)="askLater()">
+        {{ 'recipes.ask_later' | translate }}
+      </button>
+    </aside>
+  }
+
   <div class="meals" role="group" [attr.aria-label]="'recipes.title' | translate">
-    @for (meal of meals; track meal) {
+    @for (meal of meals(); track meal) {
       <button
         type="button"
         [class.primary]="selected() === meal"
@@ -50,6 +84,9 @@
       }
     </div>
   } @else if (recipes().length > 0) {
+    @if (brotboxHeader()) {
+      <h2 class="for-day">{{ brotboxHeader() }}</h2>
+    }
     @for (recipe of recipes(); track recipe.title) {
       <article class="card">
         <div class="line">
@@ -88,6 +125,18 @@
          safety promise: people check packets themselves. -->
         <p class="check">{{ 'recipes.check_ingredients' | translate }}</p>
       </article>
+    }
+
+    <!-- One more answer for the same meal, with one more rule. It replaces the
+     day's stored answer and counts against the hourly limit. -->
+    @if (selected(); as meal) {
+      <div class="refine" role="group" [attr.aria-label]="'recipes.refine_label' | translate">
+        @for (refine of refinements(); track refine) {
+          <button type="button" [disabled]="loading()" (click)="ask(meal, refine)">
+            {{ 'recipes.refine_' + refine | translate }}
+          </button>
+        }
+      </div>
     }
   }
 </section>

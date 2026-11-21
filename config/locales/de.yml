@@ -51,6 +51,7 @@ de:
     unusable: "Daraus ist nichts Kochbares geworden. Nochmal versuchen?"
     too_many: "Das waren viele Rezeptideen in einer Stunde. Probier es etwas später nochmal."
     unknown_meal: "Das ist keine Mahlzeit, die wir kochen."
+    unknown_refinement: "So können wir die Vorschläge nicht ändern."
   # "abgelaufen" ist genauso verboten wie "EXPIRED" (Doc 4 §4.13). MHD und
   # Verbrauchsdatum werden nie vermischt.
   freshness:

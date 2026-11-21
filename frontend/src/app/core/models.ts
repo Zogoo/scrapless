@@ -4,6 +4,8 @@ export interface Fridge {
   token: string;
   join_code: string;
   locale: string;
+  /** The kitchen's own time zone, e.g. Europe/Berlin. */
+  timezone?: string;
   /** Notifications a week this kitchen accepts, 0–3 (doc 3 R5). */
   alerts_per_week: number;
   /** Brotboxen packed on school days; null when never answered. */
@@ -153,7 +155,10 @@ export interface Recipe {
   use_first_count: number;
 }
 
-export type Meal = 'breakfast' | 'lunch' | 'dinner';
+export type Meal = 'breakfast' | 'brotbox' | 'lunch' | 'dinner';
+
+/** One new answer for the same meal, with one more rule. */
+export type Refinement = 'quicker' | 'no_cooking' | 'different';
 
 export interface RecipeSuggestions {
   meal: Meal;
@@ -161,6 +166,8 @@ export interface RecipeSuggestions {
   cached: boolean;
   /** True only when there was no food to cook from; false when nothing came of it. */
   kitchen_empty?: boolean;
+  /** The school day a Brotbox is for (YYYY-MM-DD); only for meal "brotbox". */
+  for_date?: string;
   mode: 'live' | 'stub';
 }
 

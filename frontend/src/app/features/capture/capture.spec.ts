@@ -41,6 +41,9 @@ describe('Capture review', () => {
   let sheet: ReviewSheet;
 
   beforeEach(() => {
+    // Before anything is created: PushService reads "already asked" from
+    // storage when it is made (see today.spec.ts).
+    localStorage.clear();
     TestBed.configureTestingModule({
       imports: [Capture],
       providers: [
