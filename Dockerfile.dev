@@ -1,4 +1,4 @@
-FROM ruby:3.4.10-slim
+FROM ruby:3.4.13-slim
 
 # libssl-dev: web-push needs the openssl gem, and Bundler compiles it.
 RUN apt-get update -qq && \
