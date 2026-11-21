@@ -12,7 +12,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { FridgeService } from '../../core/services/fridge.service';
 import { LocaleService } from '../../core/services/locale.service';
 import { RecipesService } from '../../core/services/recipes.service';
-import { Meal, Recipe, Refinement } from '../../core/models';
+import { Meal, Recipe } from '../../core/models';
 import { BROTBOX_CHOICES, DIETS, Diet } from '../../core/food-settings';
 import { dayWord, todayIn } from './school-day';
 
@@ -107,20 +107,13 @@ export class Recipes {
     });
   });
 
-  /** Under a result. "Ohne Kochen" is already the rule for a Brotbox. */
-  protected readonly refinements = computed<readonly Refinement[]>(() =>
-    this.selected() === 'brotbox'
-      ? ['quicker', 'different']
-      : ['quicker', 'no_cooking', 'different'],
-  );
-
-  protected ask(meal: Meal, refine?: Refinement): void {
+  protected ask(meal: Meal): void {
     this.selected.set(meal);
     this.loading.set(true);
     this.error.set('');
     this.retryable.set(false);
 
-    this.recipesApi.suggest(meal, refine).subscribe({
+    this.recipesApi.suggest(meal).subscribe({
       next: (page) => {
         if (this.selected() !== meal) return;
 

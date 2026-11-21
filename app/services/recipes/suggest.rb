@@ -12,15 +12,6 @@ module Recipes
   class Suggest < ApplicationService
     class TooMany < StandardError; end
     class UnknownMeal < StandardError; end
-    class UnknownRefinement < StandardError; end
-
-    # "Schneller", "Ohne Kochen", "Andere Zutaten" under a result: one new
-    # answer with that extra rule, replacing the day's stored one.
-    REFINEMENTS = {
-      "quicker" => "Every recipe takes at most 15 minutes in total, preparation included.",
-      "no_cooking" => "Nothing is cooked or heated: no stove, oven, microwave or toaster.",
-      "different" => "Build the recipes around different items from the list than the last suggestions did."
-    }.freeze
 
     MEALS = MealSuggestion::MEALS
     MAX_RECIPES = 3
@@ -50,19 +41,17 @@ module Recipes
       day
     end
 
-    def initialize(household:, meal:, locale: I18n.locale, on: Date.current, refine: nil)
+    def initialize(household:, meal:, locale: I18n.locale, on: Date.current)
       @household = household
       @meal = meal.to_s.downcase
       @locale = locale
       @on = on
-      @refine = refine.presence&.to_s
     end
 
     def call
       raise UnknownMeal, @meal unless MEALS.include?(@meal)
       # No Brotboxen, or never said: there is no Brotbox to plan.
       raise UnknownMeal, @meal if brotbox? && @household.brotbox_count.to_i.zero?
-      raise UnknownRefinement, @refine if @refine && !REFINEMENTS.key?(@refine)
 
       @on = self.class.school_day(@household) if brotbox?
       result = answer
@@ -76,25 +65,14 @@ module Recipes
 
     def answer
       stored = remembered
-      if stored && !@refine
-        return Result.new(recipes: stored.payload, cached: true, meal: @meal, kitchen_empty: false)
-      end
+      return Result.new(recipes: stored.payload, cached: true, meal: @meal, kitchen_empty: false) if stored
       return Result.new(recipes: [], cached: false, meal: @meal, kitchen_empty: true) if pantry.empty?
 
       recipes = write_recipes
       return Result.new(recipes: [], cached: false, meal: @meal, kitchen_empty: false) if recipes.empty?
 
-      record = @refine ? replace(stored, recipes) : save(recipes)
+      record = save(recipes)
       Result.new(recipes: record.payload, cached: !record.previously_new_record?, meal: @meal, kitchen_empty: false)
-    end
-
-    # A refined answer takes the place of the day's stored one; an empty one
-    # (returned above) leaves what was there.
-    def replace(stored, recipes)
-      MealSuggestion.transaction do
-        stored&.destroy!
-        save(recipes)
-      end
     end
 
     def remembered
@@ -114,7 +92,7 @@ module Recipes
       raise TooMany if Ai::Config.live? && calls_this_hour >= MAX_CALLS_PER_HOUR
 
       raw = Ai::RecipeWriter.call(pantry: pantry, meal: @meal, household: @household, locale: @locale,
-                                  rules: FoodRules.call(household: @household) + refinement_rules,
+                                  rules: FoodRules.call(household: @household),
                                   boxes: (@household.brotbox_count if brotbox?))
       written = Array(raw["recipes"])
       grounded(written).tap do |kept|
@@ -132,19 +110,6 @@ module Recipes
         .uniq { |recipe| recipe[:title].downcase }
         .sort_by.with_index { |recipe, index| [ -recipe[:use_first_count], index ] }
         .first(MAX_RECIPES)
-    end
-
-    # The extra rule, and for "different" what the last answer was built on,
-    # by name, so the model can avoid it.
-    def refinement_rules
-      return [] unless @refine
-
-      rules = [ REFINEMENTS.fetch(@refine) ]
-      used = Array(remembered&.payload).flat_map { |recipe| Array(recipe[:ingredients]) }
-                                       .reject { |ingredient| ingredient[:optional] }
-                                       .map { |ingredient| ingredient[:name] }.compact.uniq
-      rules << "Already suggested, so leave these out where you can: #{used.to_json}." if @refine == "different" && used.any?
-      rules
     end
 
     # "3 Stück", not "3 piece": the unit is a code from the readers' schema, and

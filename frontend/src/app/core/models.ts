@@ -163,9 +163,6 @@ export interface Recipe {
 
 export type Meal = 'breakfast' | 'brotbox' | 'lunch' | 'dinner';
 
-/** One new answer for the same meal, with one more rule. */
-export type Refinement = 'quicker' | 'no_cooking' | 'different';
-
 export interface RecipeSuggestions {
   meal: Meal;
   recipes: Recipe[];

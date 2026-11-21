@@ -49,25 +49,17 @@ RSpec.describe "Api::V1::Recipes", type: :request do
       end
     end
 
-    describe "refining" do
-      before { create(:item, household: household, display_name: "Eier", canonical_name: "eier") }
+    # Once a day per meal: nothing a phone sends asks the model again, an old
+    # app's "refine" included.
+    it "answers a second ask the same day from the stored recipes, refine or not" do
+      create(:item, household: household)
+      post "/api/v1/recipes/suggest", params: { meal: "dinner" }, headers: headers
+      first = response.parsed_body["recipes"]
+      expect(Ai::RecipeWriter).not_to receive(:call)
 
-      it "returns a new answer and keeps it as the day's" do
-        post "/api/v1/recipes/suggest", params: { meal: "dinner" }, headers: headers
-        first = household.meal_suggestions.sole.id
+      post "/api/v1/recipes/suggest", params: { meal: "dinner", refine: "quicker" }, headers: headers
 
-        post "/api/v1/recipes/suggest", params: { meal: "dinner", refine: "quicker" }, headers: headers
-
-        expect(response).to have_http_status(:ok)
-        expect(response.parsed_body["cached"]).to be(false)
-        expect(household.meal_suggestions.sole.id).not_to eq(first)
-      end
-
-      it "refuses a refinement it does not know" do
-        post "/api/v1/recipes/suggest", params: { meal: "dinner", refine: "spicier" }, headers: headers
-
-        expect(response).to have_http_status(:unprocessable_content)
-      end
+      expect(response.parsed_body).to include("cached" => true, "recipes" => first)
     end
 
     it "answers an empty kitchen with no recipes rather than an error" do

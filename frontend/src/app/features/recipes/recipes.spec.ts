@@ -6,13 +6,13 @@ import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { environment } from '../../../environments/environment';
-import { Fridge, Meal, Refinement } from '../../core/models';
+import { Fridge, Meal } from '../../core/models';
 import { FridgeService } from '../../core/services/fridge.service';
 import { Recipes } from './recipes';
 
 /** The surface the test drives; these members are protected on the component. */
 interface RecipesScreen {
-  ask(meal: Meal, refine?: Refinement): void;
+  ask(meal: Meal): void;
 }
 
 function kitchen(brotboxCount: number | null): Fridge {
@@ -148,7 +148,7 @@ describe('Recipes', () => {
     ).toBe(true);
   });
 
-  describe('the Brotbox and refinements', () => {
+  describe('the Brotbox', () => {
     const recipe = {
       title: 'Käsehäppchen',
       minutes: 5,
@@ -231,41 +231,25 @@ describe('Recipes', () => {
 
       expect(root.querySelector('.for-day')?.textContent?.trim()).toBe('Brotbox für morgen · 2');
     });
+  });
 
-    it('sends the refinement, and has no "Ohne Kochen" for a Brotbox', () => {
-      const { fixture, root, screen } = render(2);
-      const refineChips = () => [...root.querySelectorAll<HTMLButtonElement>('.refine button')];
+  // Once a day: no buttons under a result ask the model again.
+  it('offers no way to ask again under a result', () => {
+    const fixture = TestBed.createComponent(Recipes);
+    (fixture.componentInstance as unknown as RecipesScreen).ask('dinner');
+    const recipe = {
+      title: 'Pfanne',
+      minutes: 10,
+      ingredients: [],
+      steps: ['Braten.'],
+      use_first_count: 0,
+    };
+    http
+      .expectOne(`${environment.apiUrl}/recipes/suggest`)
+      .flush({ meal: 'dinner', recipes: [recipe], cached: false, mode: 'live' });
+    fixture.detectChanges();
 
-      screen.ask('dinner');
-      http
-        .expectOne(`${environment.apiUrl}/recipes/suggest`)
-        .flush({ meal: 'dinner', recipes: [recipe], cached: false, mode: 'live' });
-      fixture.detectChanges();
-      expect(refineChips().map((c) => c.textContent!.trim())).toEqual([
-        'recipes.refine_quicker',
-        'recipes.refine_no_cooking',
-        'recipes.refine_different',
-      ]);
-
-      refineChips()[1].click();
-      const refined = http.expectOne(`${environment.apiUrl}/recipes/suggest`);
-      expect(refined.request.body).toEqual({ meal: 'dinner', refine: 'no_cooking' });
-      refined.flush({ meal: 'dinner', recipes: [recipe], cached: false, mode: 'live' });
-
-      screen.ask('brotbox');
-      http.expectOne(`${environment.apiUrl}/recipes/suggest`).flush({
-        meal: 'brotbox',
-        recipes: [recipe],
-        cached: true,
-        for_date: '2026-11-23',
-        mode: 'live',
-      });
-      fixture.detectChanges();
-      expect(refineChips().map((c) => c.textContent!.trim())).toEqual([
-        'recipes.refine_quicker',
-        'recipes.refine_different',
-      ]);
-    });
+    expect((fixture.nativeElement as HTMLElement).querySelector('.refine')).toBeNull();
   });
 
   describe('the one-time question card', () => {
