@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { provideTranslateService } from '@ngx-translate/core';
+import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { environment } from '../../../environments/environment';
@@ -33,6 +33,18 @@ describe('Recipes', () => {
   afterEach(() => {
     http.verify();
     TestBed.resetTestingModule();
+  });
+
+  it('is called "Essen" in German', () => {
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('de', { recipes: { title: 'Essen' } });
+    translate.use('de');
+    const fixture = TestBed.createComponent(Recipes);
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('h1')?.textContent?.trim()).toBe(
+      'Essen',
+    );
   });
 
   it('does not ask for a recipe just because the tab opened', () => {

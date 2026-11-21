@@ -5,7 +5,7 @@
   "nav": {
     "main": "Hauptmenü",
     "today": "Heute",
-    "recipes": "Rezepte",
+    "recipes": "Essen",
     "memo": "Einkauf",
     "kitchen": "Küche",
     "settings": "Du"
@@ -135,7 +135,7 @@
     "fix_named": "{{name}} korrigieren"
   },
   "recipes": {
-    "title": "Rezepte",
+    "title": "Essen",
     "lede": "Eine Mahlzeit aus dem, was schon in der Küche ist. Jede einmal am Tag.",
     "breakfast": "Frühstück",
     "lunch": "Mittagessen",

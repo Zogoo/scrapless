@@ -5,7 +5,7 @@
   "nav": {
     "main": "Main",
     "today": "Today",
-    "recipes": "Recipes",
+    "recipes": "Meals",
     "memo": "Shop",
     "kitchen": "Kitchen",
     "settings": "You"
@@ -135,7 +135,7 @@
     "fix_named": "Fix {{name}}"
   },
   "recipes": {
-    "title": "Recipes",
+    "title": "Meals",
     "lede": "One meal from what's already in the kitchen. Each one, once a day.",
     "breakfast": "Breakfast",
     "lunch": "Lunch",
