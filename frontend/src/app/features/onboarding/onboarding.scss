@@ -32,6 +32,21 @@
   margin-bottom: 0.5rem;
 }
 
+.brotbox p {
+  margin: 0 0 0.5rem;
+}
+
+.choices {
+  display: flex;
+  gap: 0.5rem;
+
+  button {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 0.25rem;
+  }
+}
+
 .actions button {
   width: 100%;
   min-height: 3.25rem;

@@ -85,9 +85,21 @@ export class FridgeService {
   }
 
   /** `name` empty means the user skipped the question; the server names it. */
-  create(name: string): Observable<Fridge> {
+  /** A Brotbox count only when one was picked: skipping leaves it unasked. */
+  create(name: string, brotboxCount: number | null = null): Observable<Fridge> {
+    const body: Record<string, unknown> = { name: name.trim() || null };
+    if (brotboxCount !== null) body['brotbox_count'] = brotboxCount;
     return this.http
-      .post<Fridge>(`${environment.apiUrl}/fridge`, { name: name.trim() || null })
+      .post<Fridge>(`${environment.apiUrl}/fridge`, body)
+      .pipe(tap((fridge) => this.accept(fridge)));
+  }
+
+  /** One food setting at a time, as Settings changes it; the rest stay. */
+  setFoodSettings(
+    changes: Partial<Pick<Fridge, 'brotbox_count' | 'diet' | 'excluded_foods'>>,
+  ): Observable<Fridge> {
+    return this.http
+      .patch<Fridge>(`${environment.apiUrl}/fridge`, changes)
       .pipe(tap((fridge) => this.accept(fridge)));
   }
 

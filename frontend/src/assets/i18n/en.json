@@ -304,5 +304,13 @@
     "yes": "Yes, still good",
     "gone": "Gone off",
     "used": "Used it"
+  },
+  "food": {
+    "brotbox_question": "How many lunchboxes do you pack on school days?",
+    "brotbox_0": "None",
+    "brotbox_1": "1",
+    "brotbox_2": "2",
+    "brotbox_3": "3",
+    "brotbox_4": "4+"
   }
 }

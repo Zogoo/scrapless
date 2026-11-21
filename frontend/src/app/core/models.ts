@@ -6,6 +6,12 @@ export interface Fridge {
   locale: string;
   /** Notifications a week this kitchen accepts, 0–3 (doc 3 R5). */
   alerts_per_week: number;
+  /** Brotboxen packed on school days; null when never answered. */
+  brotbox_count?: number | null;
+  /** How the kitchen eats; null when never answered. */
+  diet?: 'all' | 'vegetarian' | 'vegan' | null;
+  /** Foods to leave out of suggestions. */
+  excluded_foods?: string[];
   created_at: string;
   stats?: { items: number; captures: number; memo_open: number };
 }

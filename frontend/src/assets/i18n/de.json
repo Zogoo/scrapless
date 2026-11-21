@@ -304,5 +304,13 @@
     "yes": "Ja, noch gut",
     "gone": "Schlecht geworden",
     "used": "Schon verbraucht"
+  },
+  "food": {
+    "brotbox_question": "Wie viele Brotboxen packt ihr an Schultagen?",
+    "brotbox_0": "Keine",
+    "brotbox_1": "1",
+    "brotbox_2": "2",
+    "brotbox_3": "3",
+    "brotbox_4": "4+"
   }
 }
