@@ -142,6 +142,19 @@ export class SpeechService {
     return this.recognitionSupported || this.recordingSupported;
   }
 
+  /** The language chosen for the mic, or null for "Wie die App". */
+  readonly chosenSpeechLang = computed<SpeechLang | null>(() => this.chosenLang());
+
+  /** "Wie die App": no stored choice, so the mic follows the app's language. */
+  clearSpeechLang(): void {
+    this.chosenLang.set(null);
+    try {
+      localStorage.removeItem(SPEECH_LANG_KEY);
+    } catch {
+      /* private mode: nothing was stored */
+    }
+  }
+
   setSpeechLang(lang: SpeechLang): void {
     if (!environment.availableLocales.includes(lang)) return;
     this.chosenLang.set(lang);

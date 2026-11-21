@@ -198,6 +198,35 @@
     </div>
   </section>
 
+  <!-- The language the mic listens for. Often not the app's: an English app
+       in a German supermarket is the common Berlin case. On this phone only. -->
+  @if (speech.supported) {
+    <section class="block">
+      <h2 id="mic-language-head">{{ 'settings.mic_language' | translate }}</h2>
+      <div class="choices" role="group" aria-labelledby="mic-language-head">
+        <button
+          type="button"
+          [class.primary]="speech.chosenSpeechLang() === null"
+          [attr.aria-pressed]="speech.chosenSpeechLang() === null"
+          (click)="speech.clearSpeechLang()"
+        >
+          {{ 'settings.mic_like_app' | translate }}
+        </button>
+        @for (code of locale.available; track code) {
+          <button
+            type="button"
+            [class.primary]="speech.chosenSpeechLang() === code"
+            [attr.aria-pressed]="speech.chosenSpeechLang() === code"
+            [attr.lang]="code"
+            (click)="speech.setSpeechLang(code)"
+          >
+            {{ languageNames[code] }}
+          </button>
+        }
+      </div>
+    </section>
+  }
+
   @if (shareLink(); as link) {
     <section class="block share">
       <h2>{{ 'settings.share_title' | translate }}</h2>

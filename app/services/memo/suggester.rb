@@ -42,6 +42,9 @@ module Memo
       candidates = (due_to_run_out.reject { |s| hidden?(s) } +
                     (previously_bought + staples).reject { |s| hidden?(s) || home?(s) })
                    .uniq { |s| s.product_id || s.name.downcase }
+                   # A food bought before it had a product, and the staple
+                   # with one, were both suggested as "Butter".
+                   .uniq { |s| s.name.downcase }
 
       candidates = matching(candidates) if @query.present?
       candidates.sort_by { |s| -s.score }.first(@limit)
@@ -149,8 +152,7 @@ module Memo
     end
 
     def category_for(name)
-      @categories ||= @household.items.pluck(:canonical_name, :category).to_h
-      @categories[name].presence || Categories.guess(name)
+      (@category_for ||= CategoryFor.new(household: @household)).call(name)
     end
 
     def median(values)

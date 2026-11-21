@@ -309,3 +309,143 @@ describe('Memo mic, recording', () => {
     expect(root.textContent).not.toContain('Aufnahme wird übertragen…');
   });
 });
+
+describe('Memo list', () => {
+  let http: HttpTestingController;
+
+  const lines: MemoItem[] = [
+    { ...milch, id: 1, name: 'Äpfel', category: 'produce', quantity: 2, added_by_name: 'Papa' },
+    { ...milch, id: 2, name: 'Milch', category: 'dairy', quantity: 1 },
+    { ...milch, id: 3, name: 'Brot', category: 'bakery', quantity: 1, done: true },
+  ];
+  const suggestions = [
+    { name: 'Butter', category: 'dairy', reason: 'usually every 7 days' },
+    { name: 'Eier', category: 'dairy', reason: 'bought 3 times' },
+  ];
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.configureTestingModule({
+      imports: [Memo],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideTranslateService(),
+        { provide: SpeechService, useValue: new FakeSpeech() },
+      ],
+    });
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    TestBed.resetTestingModule();
+  });
+
+  function render(items = lines, suggested = suggestions) {
+    const fixture = TestBed.createComponent(Memo);
+    fixture.detectChanges();
+    http.expectOne(`${environment.apiUrl}/memo`).flush({ items, suggestions: suggested });
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const text = (selector: string) =>
+      [...root.querySelectorAll(selector)].map((n) => n.textContent!.trim());
+    return { fixture, root, text };
+  }
+
+  function reload(items: MemoItem[], suggested = suggestions) {
+    http.expectOne(`${environment.apiUrl}/memo`).flush({ items, suggestions: suggested });
+  }
+
+  it('lists open lines by section, with "2×" only when there is more than one', () => {
+    const { text } = render();
+
+    expect(text('h2.section')).toContain('memo.section_produce');
+    expect(text('.list:not(.done-lines) .what')).toEqual(['2× Äpfel', 'Milch']);
+    expect(text('.list .by')).toEqual(['Papa']);
+  });
+
+  it('folds Erledigt away, opens it, reopens a line, and clears it', () => {
+    const { fixture, root, text } = render();
+    const toggleDone = () => root.querySelector('.done-toggle') as HTMLButtonElement;
+
+    expect(toggleDone().getAttribute('aria-expanded')).toBe('false');
+    expect(root.querySelector('.done-lines')).toBeNull();
+
+    toggleDone().click();
+    fixture.detectChanges();
+    expect(toggleDone().getAttribute('aria-expanded')).toBe('true');
+    expect(text('.done-lines .what')).toEqual(['Brot']);
+
+    (root.querySelector('.done-lines .row') as HTMLButtonElement).click();
+    const reopen = http.expectOne(`${environment.apiUrl}/memo/3`);
+    expect(reopen.request.body).toEqual({ memo_item: { done: false } });
+    reopen.flush({ ...lines[2], done: false });
+    reload(lines.map((l) => ({ ...l, done: false })));
+    fixture.detectChanges();
+    expect(root.querySelector('.done-head')).toBeNull();
+  });
+
+  it('clears the done lines with Leeren', () => {
+    const { root } = render();
+
+    (root.querySelector('.done-head button:last-child') as HTMLButtonElement).click();
+
+    http.expectOne(`${environment.apiUrl}/memo/clear_done`).flush(null);
+    reload(lines.filter((l) => !l.done));
+  });
+
+  it('adds a "Bald leer" chip as a suggestion, and the chip goes', () => {
+    const { fixture, root, text } = render();
+    expect(text('.chips .chip')).toEqual(['+ Butter', '+ Eier']);
+    expect(root.querySelector('.chips .chip')?.getAttribute('title')).toBe('usually every 7 days');
+
+    (root.querySelector('.chips .chip') as HTMLButtonElement).click();
+    const add = http.expectOne(`${environment.apiUrl}/memo`);
+    expect(add.request.body).toEqual({ name: 'Butter', source: 'suggestion' });
+    add.flush({ ...milch, id: 9, name: 'Butter' });
+    reload([...lines, { ...milch, id: 9, name: 'Butter', category: 'dairy' }], [suggestions[1]]);
+    fixture.detectChanges();
+
+    expect(text('.chips .chip')).toEqual(['+ Eier']);
+  });
+
+  it('shows "Bald leer" as one short row, at most six chips', () => {
+    const many = Array.from({ length: 9 }, (_, i) => ({
+      name: `Ding ${i}`,
+      category: 'other',
+      reason: '',
+    }));
+
+    expect(render(lines, many).root.querySelectorAll('.chips .chip')).toHaveLength(6);
+  });
+
+  it('hides "Bald leer" with its × until tomorrow', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 21, 18, 0));
+    const first = render();
+    (first.root.querySelector('.hide-low') as HTMLButtonElement).click();
+    first.fixture.detectChanges();
+    expect(first.root.querySelector('.chips')).toBeNull();
+
+    expect(render().root.querySelector('.chips')).toBeNull(); // the same day
+
+    vi.setSystemTime(new Date(2026, 10, 22, 8, 0));
+    expect(render().root.querySelector('.chips')).not.toBeNull(); // the next day
+  });
+
+  it('says when an add landed on a line already there', () => {
+    const { fixture, root } = render();
+    const input = root.querySelector('.composer input') as HTMLInputElement;
+    input.value = '1 Äpfel';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    (root.querySelector('.composer button') as HTMLButtonElement).click();
+    http.expectOne(`${environment.apiUrl}/memo`).flush({ ...lines[0], quantity: 3, merged: true });
+    reload(lines);
+    fixture.detectChanges();
+
+    expect(root.querySelector('.status')?.textContent?.trim()).toBe('memo.merged_count');
+  });
+});

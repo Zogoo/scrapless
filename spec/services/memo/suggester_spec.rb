@@ -92,4 +92,16 @@ RSpec.describe Memo::Suggester do
 
     expect(described_class.call(household: household).map(&:name)).not_to include("Milk")
   end
+
+  # Observed: "Butter" twice, once from history (no product yet) and once as
+  # a staple (with one).
+  it "never suggests the same name twice" do
+    create(:item, household: household, display_name: "Butter", canonical_name: "butter", category: "dairy",
+                  acquired_on: Date.current - 20, window_start: Date.current - 15, window_end: Date.current - 10,
+                  state: "rescued")
+
+    names = described_class.call(household: household).map { |s| s.name.downcase }
+
+    expect(names).to eq(names.uniq)
+  end
 end

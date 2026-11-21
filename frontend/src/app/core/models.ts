@@ -125,6 +125,12 @@ export interface MemoItem {
   position: number;
   created_at: string;
   added_by_name: string | null;
+  /** The store section's category (Categories::NAMES); "other" when unknown. */
+  category?: string;
+  /** How many; 1 unless a number was given. */
+  quantity?: number;
+  /** Set on an add that landed on a line already open. */
+  merged?: boolean;
 }
 
 export interface Suggestion {
