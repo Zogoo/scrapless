@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_20_084936) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_21_101138) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -88,6 +88,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_20_084936) do
     t.datetime "updated_at", null: false
     t.string "join_code", null: false
     t.integer "alerts_per_week", default: 1, null: false
+    t.integer "brotbox_count"
+    t.string "diet"
+    t.json "excluded_foods", default: [], null: false
     t.index ["join_code"], name: "index_households_on_join_code", unique: true
     t.index ["token"], name: "index_households_on_token", unique: true
     t.index ["uuid"], name: "index_households_on_uuid", unique: true

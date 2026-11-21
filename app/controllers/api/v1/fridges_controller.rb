@@ -39,7 +39,7 @@ module Api
         end
 
         household = Household.create!(
-          { name: params[:name].presence, locale: locale_param }.compact
+          { name: params[:name].presence, locale: locale_param }.compact.merge(food_settings)
         )
         refresh_cookie(household)
         render json: household_json(household), status: :created
@@ -77,9 +77,11 @@ module Api
 
       def update
         current_household.update!(
-          name: params[:name].presence || current_household.name,
-          locale: locale_param || current_household.locale,
-          alerts_per_week: params.fetch(:alerts_per_week, current_household.alerts_per_week)
+          {
+            name: params[:name].presence || current_household.name,
+            locale: locale_param || current_household.locale,
+            alerts_per_week: params.fetch(:alerts_per_week, current_household.alerts_per_week)
+          }.merge(food_settings)
         )
         render json: household_json(current_household)
       end
@@ -101,6 +103,16 @@ module Api
 
       def render_unknown_kitchen
         render json: { error: I18n.t("auth.unknown_kitchen") }, status: :not_found
+      end
+
+      # Only what was sent: Settings saves one field at a time, so a missing key
+      # leaves that setting alone. An explicit null clears it back to "not asked".
+      def food_settings
+        settings = {}
+        settings[:brotbox_count] = params[:brotbox_count] if params.key?(:brotbox_count)
+        settings[:diet] = params[:diet].presence if params.key?(:diet)
+        settings[:excluded_foods] = Array(params[:excluded_foods]).map(&:to_s) if params.key?(:excluded_foods)
+        settings
       end
 
       def locale_param
