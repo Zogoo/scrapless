@@ -9,9 +9,11 @@ module Api
       rescue_from Ai::Client::Unavailable, with: :render_ideas_unavailable
       rescue_from Recipes::Suggest::TooMany, with: :render_too_many
       rescue_from Recipes::Suggest::UnknownMeal, with: :render_unknown_meal
+      rescue_from Recipes::Suggest::UnknownRefinement, with: :render_unknown_refinement
 
       def suggest
-        result = Recipes::Suggest.call(household: current_household, meal: params.require(:meal))
+        result = Recipes::Suggest.call(household: current_household, meal: params.require(:meal),
+                                       refine: params[:refine])
         body = { meal: result.meal, recipes: result.recipes, cached: result.cached,
                  kitchen_empty: result.kitchen_empty, mode: Ai::Config.mode }
         # Which school day the Brotbox is for, so the screen can say "für morgen".
@@ -33,6 +35,10 @@ module Api
 
       def render_too_many
         render json: { error: I18n.t("recipes.too_many"), retryable: true }, status: :too_many_requests
+      end
+
+      def render_unknown_refinement
+        render json: { error: I18n.t("recipes.unknown_refinement") }, status: :unprocessable_content
       end
 
       def render_unknown_meal

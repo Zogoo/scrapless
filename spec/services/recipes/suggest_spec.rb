@@ -344,4 +344,60 @@ RSpec.describe Recipes::Suggest do
       end
     end
   end
+
+  describe "refining an answer" do
+    let!(:eggs) { create(:item, household: household, display_name: "Eier", canonical_name: "eier") }
+    let!(:bread) { create(:item, household: household, display_name: "Brot", canonical_name: "brot") }
+
+    it "asks again with the extra rule and replaces the day's stored answer" do
+      model_answers(recipe("Rührei", eggs))
+      suggest(meal: "breakfast")
+
+      model_answers(recipe("Eierbrot", eggs, bread))
+      refined = suggest(meal: "breakfast", refine: "quicker")
+
+      expect(refined.recipes.map { |r| r[:title] }).to eq([ "Eierbrot" ])
+      expect(refined.cached).to be(false)
+      expect(suggest(meal: "breakfast").recipes.map { |r| r[:title] }).to eq([ "Eierbrot" ])
+      expect(household.meal_suggestions.count).to eq(1)
+    end
+
+    it "keeps the stored answer when the refined one comes back empty" do
+      model_answers(recipe("Rührei", eggs))
+      suggest(meal: "breakfast")
+      model_answers
+
+      expect(suggest(meal: "breakfast", refine: "no_cooking").recipes).to eq([])
+      expect(suggest(meal: "breakfast").recipes.map { |r| r[:title] }).to eq([ "Rührei" ])
+    end
+
+    it "refuses a refinement it does not know" do
+      expect { suggest(meal: "breakfast", refine: "spicier") }.to raise_error(described_class::UnknownRefinement)
+    end
+
+    describe "the prompt" do
+      let(:router) { instance_double(Ai::Router, json_completion: { "recipes" => [ recipe("Eierbrot", eggs, bread) ] }) }
+
+      def prompt_for(refine)
+        allow(Ai::Config).to receive(:live?).and_return(true)
+        allow(Ai::Router).to receive(:new).and_return(router)
+        allow(Ai::RecipeWriter).to receive(:call).and_call_original # past any earlier stubbed answer
+        suggest(meal: "breakfast", refine: refine)
+        prompt = nil
+        expect(router).to have_received(:json_completion) { |messages:, **| prompt = messages.first[:content] }
+        prompt
+      end
+
+      it "says what each refinement means" do
+        expect(prompt_for("quicker")).to include("at most 15 minutes in total")
+      end
+
+      it "names what the last answer used, for different ingredients" do
+        model_answers(recipe("Rührei", eggs))
+        suggest(meal: "breakfast")
+
+        expect(prompt_for("different")).to include("different items", 'leave these out where you can: ["Eier"]')
+      end
+    end
+  end
 end

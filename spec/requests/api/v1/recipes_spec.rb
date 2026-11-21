@@ -49,6 +49,27 @@ RSpec.describe "Api::V1::Recipes", type: :request do
       end
     end
 
+    describe "refining" do
+      before { create(:item, household: household, display_name: "Eier", canonical_name: "eier") }
+
+      it "returns a new answer and keeps it as the day's" do
+        post "/api/v1/recipes/suggest", params: { meal: "dinner" }, headers: headers
+        first = household.meal_suggestions.sole.id
+
+        post "/api/v1/recipes/suggest", params: { meal: "dinner", refine: "quicker" }, headers: headers
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body["cached"]).to be(false)
+        expect(household.meal_suggestions.sole.id).not_to eq(first)
+      end
+
+      it "refuses a refinement it does not know" do
+        post "/api/v1/recipes/suggest", params: { meal: "dinner", refine: "spicier" }, headers: headers
+
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+    end
+
     it "answers an empty kitchen with no recipes rather than an error" do
       post "/api/v1/recipes/suggest", params: { meal: "lunch" }, headers: headers
 
