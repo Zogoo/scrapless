@@ -19,7 +19,8 @@ describe('Onboarding', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideRouter([]),
+        // Starting navigates to /today; any route will do here.
+        provideRouter([{ path: '**', children: [] }]),
         provideTranslateService(),
       ],
     });
