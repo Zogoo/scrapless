@@ -91,4 +91,31 @@ describe('Recipes', () => {
       expect(root.querySelector('.calm button')).toBeNull();
     });
   });
+
+  it('asks people to check the ingredients under every recipe', () => {
+    const fixture = TestBed.createComponent(Recipes);
+    (fixture.componentInstance as unknown as RecipesScreen).ask('dinner');
+    const recipe = {
+      title: 'Pfanne',
+      minutes: 10,
+      ingredients: [],
+      steps: ['Braten.'],
+      use_first_count: 0,
+    };
+    http.expectOne(`${environment.apiUrl}/recipes/suggest`).flush({
+      meal: 'dinner',
+      recipes: [recipe, { ...recipe, title: 'Suppe' }],
+      cached: false,
+      mode: 'live',
+    });
+    fixture.detectChanges();
+
+    const cards = [...(fixture.nativeElement as HTMLElement).querySelectorAll('article.card')];
+    expect(cards).toHaveLength(2);
+    expect(
+      cards.every((card) =>
+        card.querySelector('.check')?.textContent?.includes('recipes.check_ingredients'),
+      ),
+    ).toBe(true);
+  });
 });

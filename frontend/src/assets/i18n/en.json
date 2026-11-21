@@ -149,7 +149,8 @@
     "pick": "Pick a meal and we'll suggest something from what's in the kitchen.",
     "no_idea_title": "No idea for this one yet.",
     "no_idea_body": "There is food here; this time nothing good came of it.",
-    "try_again": "Try again"
+    "try_again": "Try again",
+    "check_ingredients": "Please check the ingredients yourself."
   },
   "kitchen": {
     "title": "Kitchen",

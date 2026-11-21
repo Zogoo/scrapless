@@ -62,7 +62,8 @@ module Recipes
     def write_recipes
       raise TooMany if Ai::Config.live? && calls_this_hour >= MAX_CALLS_PER_HOUR
 
-      raw = Ai::RecipeWriter.call(pantry: pantry, meal: @meal, household: @household, locale: @locale)
+      raw = Ai::RecipeWriter.call(pantry: pantry, meal: @meal, household: @household, locale: @locale,
+                                  rules: FoodRules.call(household: @household))
       written = Array(raw["recipes"])
       grounded(written).tap do |kept|
         # Which of the two it was, without what is in anyone's kitchen.

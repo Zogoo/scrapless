@@ -149,7 +149,8 @@
     "pick": "Wähle eine Mahlzeit, dann schlagen wir etwas aus deiner Küche vor.",
     "no_idea_title": "Dazu fällt uns gerade nichts ein.",
     "no_idea_body": "Essen ist da, nur kam diesmal nichts Gutes dabei heraus.",
-    "try_again": "Nochmal versuchen"
+    "try_again": "Nochmal versuchen",
+    "check_ingredients": "Zutaten bitte selbst prüfen."
   },
   "kitchen": {
     "title": "Küche",

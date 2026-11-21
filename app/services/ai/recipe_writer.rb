@@ -63,7 +63,17 @@ module Ai
          meal at all.
     PROMPT
 
-    def initialize(pantry:, meal:, household: nil, locale: I18n.locale)
+    # What the household said about how it eats (Recipes::FoodRules), above the
+    # list rules: a recipe that breaks one is worse than no recipe.
+    HOUSEHOLD_RULES = <<~PROMPT.freeze
+
+      This household's rules. They are hard: never break them, not even as an
+      optional ingredient, and leave out any listed item they forbid.
+      %<rules>s
+    PROMPT
+
+    def initialize(pantry:, meal:, household: nil, locale: I18n.locale, rules: [])
+      @rules = Array(rules)
       @pantry = pantry
       @meal = meal.to_s
       @household = household
@@ -77,11 +87,17 @@ module Ai
       Router.new(household: @household).json_completion(
         purpose: :recipe_suggest, schema: SCHEMA, max_output_tokens: 1500,
         messages: [
-          { role: "system", content: format(SYSTEM, meal: @meal,
-                                            language: Language.name(@locale)) },
+          { role: "system", content: system_prompt },
           { role: "user", content: @pantry.to_json }
         ]
       )
+    end
+
+    def system_prompt
+      prompt = format(SYSTEM, meal: @meal, language: Language.name(@locale))
+      return prompt if @rules.empty?
+
+      prompt + format(HOUSEHOLD_RULES, rules: @rules.map { |rule| "- #{rule}" }.join("\n"))
     end
   end
 end

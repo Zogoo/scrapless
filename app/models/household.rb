@@ -41,6 +41,9 @@ class Household < ApplicationRecord
   validate :excluded_foods_fit
 
   before_validation :assign_identity, on: :create
+  # Today's recipes were written for the old diet or list: they must not be
+  # shown again after it changed (Recipes::Suggest stores one answer a day).
+  after_update_commit :forget_todays_meals, if: -> { saved_change_to_diet? || saved_change_to_excluded_foods? }
 
   normalizes :name, with: ->(n) { n.to_s.strip.presence }
   # Stripped, blanks dropped, and "Nüsse" and "nüsse" kept once.
@@ -71,6 +74,10 @@ class Household < ApplicationRecord
   end
 
   private
+
+  def forget_todays_meals
+    meal_suggestions.where(served_on: local_now.to_date - 1..).delete_all
+  end
 
   def excluded_foods_fit
     list = Array(excluded_foods)
