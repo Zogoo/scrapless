@@ -158,7 +158,11 @@
     "refine_label": "Suggest differently",
     "refine_quicker": "Quicker",
     "refine_no_cooking": "No cooking",
-    "refine_different": "Other ingredients"
+    "refine_different": "Other ingredients",
+    "ask_brotbox": "Do you pack lunchboxes on school days?",
+    "ask_exclude": "Leave some foods out?",
+    "ask_exclude_link": "In Settings.",
+    "ask_later": "Later"
   },
   "kitchen": {
     "title": "Kitchen",

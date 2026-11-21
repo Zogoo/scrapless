@@ -1,11 +1,30 @@
-import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  Injectable,
+  computed,
+  inject,
+  signal,
+  ChangeDetectionStrategy,
+} from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { FridgeService } from '../../core/services/fridge.service';
 import { LocaleService } from '../../core/services/locale.service';
 import { RecipesService } from '../../core/services/recipes.service';
 import { Meal, Recipe, Refinement } from '../../core/models';
+import { BROTBOX_CHOICES, DIETS, Diet } from '../../core/food-settings';
 import { dayWord, todayIn } from './school-day';
+
+/**
+ * "Später" on the question card lasts until the app is reloaded: kept in
+ * memory (a root service lives until then), not storage, so the next visit
+ * asks again until it is answered.
+ */
+@Injectable({ providedIn: 'root' })
+export class FoodQuestionsLater {
+  readonly later = signal(false);
+}
 
 /**
  * Breakfast, the Brotbox, lunch or dinner, from what is already in the kitchen.
@@ -16,7 +35,7 @@ import { dayWord, todayIn } from './school-day';
  */
 @Component({
   selector: 'app-recipes',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, RouterLink],
   templateUrl: './recipes.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './recipes.scss',
@@ -33,6 +52,32 @@ export class Recipes {
       ? ['breakfast', 'brotbox', 'lunch', 'dinner']
       : ['breakfast', 'lunch', 'dinner'],
   );
+  protected readonly brotboxChoices = BROTBOX_CHOICES;
+  protected readonly diets = DIETS;
+  private readonly later = inject(FoodQuestionsLater).later;
+
+  /**
+   * For kitchens that skipped onboarding's question or existed before it:
+   * only the questions still unanswered, until both are, or "Später".
+   */
+  protected readonly askBrotbox = computed(() => this.fridge.fridge()?.brotbox_count == null);
+  protected readonly askDiet = computed(() => this.fridge.fridge()?.diet == null);
+  protected readonly showQuestions = computed(
+    () => !!this.fridge.fridge() && !this.later() && (this.askBrotbox() || this.askDiet()),
+  );
+
+  protected answerBrotbox(count: number): void {
+    this.fridge.setFoodSettings({ brotbox_count: count }).subscribe();
+  }
+
+  protected answerDiet(diet: Diet): void {
+    this.fridge.setFoodSettings({ diet }).subscribe();
+  }
+
+  protected askLater(): void {
+    this.later.set(true);
+  }
+
   /** The school day the shown Brotbox is for. */
   protected readonly forDate = signal<string | null>(null);
   protected readonly selected = signal<Meal | null>(null);

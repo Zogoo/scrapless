@@ -158,7 +158,11 @@
     "refine_label": "Anders vorschlagen",
     "refine_quicker": "Schneller",
     "refine_no_cooking": "Ohne Kochen",
-    "refine_different": "Andere Zutaten"
+    "refine_different": "Andere Zutaten",
+    "ask_brotbox": "Packt ihr Brotboxen an Schultagen?",
+    "ask_exclude": "Lebensmittel ausschließen?",
+    "ask_exclude_link": "In den Einstellungen.",
+    "ask_later": "Später"
   },
   "kitchen": {
     "title": "Küche",

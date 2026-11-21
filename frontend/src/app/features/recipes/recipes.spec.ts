@@ -267,4 +267,80 @@ describe('Recipes', () => {
       ]);
     });
   });
+
+  describe('the one-time question card', () => {
+    function render(changes: Partial<Fridge>) {
+      (TestBed.inject(FridgeService) as unknown as { accept(f: Fridge): void }).accept({
+        ...kitchen(null),
+        ...changes,
+      });
+      const fixture = TestBed.createComponent(Recipes);
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+      const questions = () => [...root.querySelectorAll('.ask [id^="ask-"]')].map((p) => p.id);
+      return { fixture, root, questions };
+    }
+
+    it('asks only what is still unanswered', () => {
+      expect(render({ brotbox_count: null, diet: null }).questions()).toEqual([
+        'ask-brotbox',
+        'ask-diet',
+      ]);
+    });
+
+    it('asks only how the kitchen eats when the Brotbox count is known', () => {
+      expect(render({ brotbox_count: 0, diet: null }).questions()).toEqual(['ask-diet']);
+    });
+
+    it('is not there once both are answered', () => {
+      expect(render({ brotbox_count: 2, diet: 'all' }).root.querySelector('.ask')).toBeNull();
+    });
+
+    it('saves each answer at once, shows the Brotbox chip, and goes once both are answered', () => {
+      const { fixture, root } = render({ brotbox_count: null, diet: null });
+      const answer = (group: string, index: number, changes: Partial<Fridge>) => {
+        root
+          .querySelectorAll<HTMLButtonElement>(`[aria-labelledby="${group}"] button`)
+          [index].click();
+        const req = http.expectOne(`${environment.apiUrl}/fridge`);
+        expect(req.request.body).toEqual(changes);
+        req.flush({ ...kitchen(null), diet: null, ...changes }); // diet still unanswered
+        fixture.detectChanges();
+      };
+
+      answer('ask-brotbox', 2, { brotbox_count: 2 });
+      const meals = [...root.querySelectorAll('.meals button')].map((m) => m.textContent!.trim());
+      expect(meals).toContain('recipes.brotbox');
+      expect(root.querySelector('.ask')).not.toBeNull();
+
+      const flushDiet = root.querySelectorAll<HTMLButtonElement>(
+        '[aria-labelledby="ask-diet"] button',
+      );
+      flushDiet[1].click();
+      const req = http.expectOne(`${environment.apiUrl}/fridge`);
+      expect(req.request.body).toEqual({ diet: 'vegetarian' });
+      req.flush({ ...kitchen(2), diet: 'vegetarian' });
+      fixture.detectChanges();
+
+      expect(root.querySelector('.ask')).toBeNull();
+    });
+
+    it('stays away after "Später" until the app is reloaded, even on another visit to the tab', () => {
+      const { fixture, root } = render({ brotbox_count: null, diet: null });
+
+      (root.querySelector('.ask .later') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(root.querySelector('.ask')).toBeNull();
+
+      const again = TestBed.createComponent(Recipes);
+      again.detectChanges();
+      expect((again.nativeElement as HTMLElement).querySelector('.ask')).toBeNull();
+    });
+
+    it('points to Settings for foods to leave out', () => {
+      const link = render({ brotbox_count: null, diet: null }).root.querySelector('.ask a');
+
+      expect(link?.getAttribute('href')).toBe('/settings');
+    });
+  });
 });
